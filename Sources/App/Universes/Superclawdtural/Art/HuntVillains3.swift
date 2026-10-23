@@ -19,7 +19,7 @@ let huntVillains3: [HuntVillain: Persona] = [
     .lucifer: Persona(name: "Lucifer", weapon: .lightning, magic: Magic(core: C(0xFFFFFF), glow: C(0xE4202C)),
                       headTop: 22, signature: 3.6, callout: "Hello, Sam.", draw: drawLucifer),
     .michael: Persona(name: "Michael", weapon: .lightning,
-                      magic: Magic(core: C(0xFFFFF6), glow: C(0xF0C24A), jagged: false),
+                      magic: Magic(core: C(0xFFFFF6), glow: C(0xF0C24A), jagged: false, thick: true),
                       headTop: 21, signature: 3.6, draw: drawMichael),
     .zachariah: Persona(name: "Zachariah", weapon: .lightning,
                         magic: Magic(core: C(0xF4FAFF), glow: C(0x7AB6FF), jagged: false, touch: true),

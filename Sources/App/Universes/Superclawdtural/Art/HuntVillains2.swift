@@ -22,7 +22,7 @@ let huntVillains2: [HuntVillain: Persona] = [
                        magic: Magic(core: C(0xFFFFFF), glow: C(0xB4BCCC), jagged: false, rings: true),
                        headTop: 21, signature: 3.6, draw: drawAlastair),
     .abaddon: Persona(name: "Abaddon", weapon: .lightning,
-                      magic: Magic(core: C(0xFFD6CC), glow: C(0xD0182A), jagged: false),
+                      magic: Magic(core: C(0xFFD6CC), glow: C(0xD0182A), jagged: false, waves: true),
                       headTop: 19, signature: 3.0, draw: drawAbaddon),
     .cain: Persona(name: "Cain", weapon: .saber, headTop: 21, signature: 3.6, draw: drawCain),
     .asmodeus: Persona(name: "Asmodeus", weapon: .lightning, magic: Magic(core: C(0xFFFCE6), glow: C(0xF0C81E)),

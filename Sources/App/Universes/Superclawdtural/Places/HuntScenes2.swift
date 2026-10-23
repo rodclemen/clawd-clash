@@ -317,6 +317,13 @@ extension Scenes {
                 tall ? g * 40 / 100 : -1)
     }
 
+    /// Where the bar's odds and ends stand, shared by the still picture and the moving layer: the jukebox's middle,
+    /// the round table's middle, the corkboard's and the payphone's middles, and the string of bulbs' row.
+    static func huntRoadhouseExtras(_ c: PixelCanvas, _ g: Int) -> (jukebox: Int, table: Int, board: Int, phone: Int, bulbs: Int) {
+        let s = unit(g)
+        return (c.w * 60 / 100, c.w * 19 / 100, c.w * 19 / 100, c.w * 48 / 100, g - 58 * s)
+    }
+
     /// Harvelle's Roadhouse, the hunters' bar off a Nebraska highway: walls of warm vertical planks, a dark wood
     /// wainscot, the bar on the right with bottles on its back shelves and red stools, the pool table under its green
     /// lamp, Jo's dartboard on the left with knives stuck in it, neon beer signs on the wall and a ceiling fan. On the
@@ -439,6 +446,7 @@ extension Scenes {
         for r in stride(from: 26 * s, to: 4 * s, by: -4 * s) { c.ellipse(p.x, p.top + s, r + 10 * s, r / 3, C(0xF0E0A0, 0.04)) }
         for k in 0..<4 { let w = (6 + k * 4) * s; c.rect(p.x - w / 2, lampY + k * s, w, s, k == 0 ? C(0x4A7A52) : C(0x2E5A3A)) }
         c.rect(p.x - 9 * s, lampY + 4 * s, 18 * s, s, C(0xF4E2A8))
+        huntRoadhouseWall(c, g)
         // The wainscot: dark horizontal boards with a lit cap rail.
         c.rect(0, f.rail, c.w, g - f.rail, wood)
         for y in stride(from: f.rail + 3 * s, to: g, by: 3 * s) { c.rect(0, y, c.w, max(1, s / 2), woodD) }
@@ -468,9 +476,131 @@ extension Scenes {
             c.rect(x - 3 * s, g - 10 * s, 7 * s, 2 * s, C(0x6A2420)); c.rect(x - 3 * s, g - 10 * s, 7 * s, max(1, s / 2), C(0x8A3A30))
             c.rect(x, g - 8 * s, max(1, s), 8 * s, C(0x5A5A60)); c.rect(x - 2 * s, g - s, 5 * s, s, C(0x3A3A40))
         }
+        huntRoadhouseFloor(c, g)
         // The floor: old boards, dark and scuffed.
         c.ground(g, C(0x3A281A), edge: C(0x4E3624), speck: C(0x2E2014), seed: 63)
         for x in stride(from: 0, to: c.w, by: 30 * s) { c.rect(x, g + 1, max(1, s / 2), c.h - g - 1, C(0x2C1E12)) }
+    }
+
+    /// What hangs on the Roadhouse's walls: a string of bare bulbs looped along the top, the hunters' corkboard of
+    /// clippings and photos tied together with red string, the payphone, a deer's antlers over the back bar; on the
+    /// screen saver, a big map of the States stuck with red pins, a row of framed photos and two mounted deer heads.
+    private static func huntRoadhouseWall(_ c: PixelCanvas, _ g: Int) {
+        let s = unit(g), f = huntRoadhouseFrame(c, g), e = huntRoadhouseExtras(c, g), tall = isTall(c)
+        let woodD = C(0x2A180E), antler = C(0xD8C8A8), antlerD = C(0xA8946E)
+        // The string of bulbs: a wire sagging between nails, the bulbs warm and unlit here (the moving layer lights them).
+        for x in stride(from: 0, to: c.w, by: 3 * s) {
+            let u = Double(x % (40 * s)) / Double(40 * s), y = e.bulbs + Int(sin(u * .pi) * Double(3 * s))
+            c.rect(x, y, 3 * s, max(1, s / 2), C(0x1A120C))
+            if x % (8 * s) == 0 { c.rect(x, y + s, s, 2 * s, C(0x8A6A3A)) }
+        }
+        // The corkboard: a cork panel in a dark frame, newspaper clippings, photos, a map scrap, pins and red string.
+        let bx = e.board, by = g - 44 * s
+        c.rect(bx - 15 * s, by - 9 * s, 30 * s, 20 * s, woodD); c.rect(bx - 14 * s, by - 8 * s, 28 * s, 18 * s, C(0xB08A5A))
+        for i in 0..<40 { c.rect(bx - 14 * s + Int(noise(i + 1300) * Double(28 * s)), by - 8 * s + Int(noise(i + 1340) * Double(18 * s)), max(1, s), max(1, s), C(0x9A7448)) }
+        let notes: [(Int, Int, Int, Int, UInt32)] = [(-12, -6, 8, 6, 0xE8E2CC), (-2, -7, 6, 7, 0xD8D0B8), (6, -5, 7, 5, 0xEEE8D4),
+                                                     (-11, 2, 6, 6, 0x6A7A8A), (-3, 2, 9, 5, 0xE4DCC4), (8, 2, 5, 6, 0x8A6A5A)]
+        var pins: [(Int, Int)] = []
+        for (u, v, w, h, col) in notes {
+            c.rect(bx + u * s, by + v * s, w * s, h * s, C(col))
+            if col > 0xC00000 { for k in 0..<(h - 2) { c.rect(bx + u * s + s, by + (v + 1 + k) * s, (w - 2) * s, max(1, s / 2), C(0x8A8478)) } }
+            pins.append((bx + (u + w / 2) * s, by + v * s))
+            c.rect(bx + (u + w / 2) * s, by + v * s, max(1, s), max(1, s), C(0xD0302A))
+        }
+        for k in [0, 2, 4, 1] { let a = pins[k], b = pins[k == 4 ? 1 : k + 1]
+            c.glowLine(Double(a.0), Double(a.1), Double(b.0), Double(b.1), core: C(0xC0282A), glow: C(0, 0), coreR: Double(s) * 0.35, glowR: Double(s) * 0.4) }
+        // The payphone: a steel box on the wall, its handset hooked on the side, the coin slot and the keypad.
+        let px = e.phone, py = g - 36 * s
+        c.rect(px - 5 * s, py - 9 * s, 10 * s, 18 * s, C(0x6A6E76)); c.rect(px - 5 * s, py - 9 * s, 10 * s, s, C(0x9A9EA6))
+        c.rect(px + 4 * s, py - 9 * s, s, 18 * s, C(0x44484E))
+        c.rect(px - 3 * s, py - 6 * s, 5 * s, 2 * s, C(0x1A1C20)); c.rect(px - 3 * s, py - 2 * s, 5 * s, 6 * s, C(0x3A3E44))
+        for k in 0..<6 { c.rect(px - 3 * s + (k % 3) * 2 * s, py - s + (k / 3) * 2 * s, s, s, C(0xC8CCD4)) }
+        c.rect(px - 8 * s, py - 7 * s, 3 * s, 12 * s, C(0x1E2024)); c.rect(px - 8 * s, py - 7 * s, s, 12 * s, C(0x3A3E44))
+        c.glowLine(Double(px - 7 * s), Double(py + 5 * s), Double(px - 2 * s), Double(py + 9 * s), core: C(0x1E2024), glow: C(0, 0), coreR: Double(s) * 0.4, glowR: Double(s) * 0.5)
+        // A pair of deer antlers on a dark plaque over the back bar.
+        let ax = c.w * 77 / 100, ay = g - 47 * s
+        c.rect(ax - 3 * s, ay, 6 * s, 5 * s, woodD); c.rect(ax - 3 * s, ay, 6 * s, s, C(0x4A2E1A))
+        for k in [-1, 1] {
+            c.glowLine(Double(ax), Double(ay + s), Double(ax + k * 9 * s), Double(ay - 7 * s), core: antler, glow: C(0, 0), coreR: Double(s) * 0.7, glowR: Double(s) * 0.8)
+            for (d, h) in [(3, 4), (6, 4), (8, 3)] {
+                let tx = ax + k * d * s, ty = ay + s - d * 8 * s / 9
+                c.glowLine(Double(tx), Double(ty), Double(tx + k * s), Double(ty - h * s), core: antlerD, glow: C(0, 0), coreR: Double(s) * 0.5, glowR: Double(s) * 0.6)
+            }
+        }
+        guard tall else { return }
+        // On the screen saver: the big map of the States, pinned all over with the hunts.
+        let mx = c.w * 40 / 100, my = g - 118 * s
+        c.rect(mx - 36 * s, my - 21 * s, 72 * s, 42 * s, woodD); c.rect(mx - 35 * s, my - 20 * s, 70 * s, 40 * s, C(0xE2D6B4))
+        let land = C(0xB8C890), landD = C(0x8EA070)
+        c.ellipse(mx - 2 * s, my, 30 * s, 15 * s, land); c.rect(mx - 30 * s, my - 10 * s, 56 * s, 14 * s, land)
+        c.ellipse(mx + 24 * s, my + 10 * s, 5 * s, 6 * s, land)                      // Florida, roughly
+        c.rect(mx - 30 * s, my + 4 * s, 22 * s, 6 * s, land); c.rect(mx - 12 * s, my + 8 * s, 10 * s, 7 * s, land)
+        for x in stride(from: mx - 26 * s, to: mx + 26 * s, by: 8 * s) { c.rect(x, my - 12 * s, max(1, s / 2), 24 * s, landD) }
+        for y in stride(from: my - 8 * s, to: my + 12 * s, by: 6 * s) { c.rect(mx - 30 * s, y, 56 * s, max(1, s / 2), landD) }
+        for i in 0..<14 {
+            let x = mx - 26 * s + Int(noise(i + 1400) * Double(50 * s)), y = my - 9 * s + Int(noise(i + 1420) * Double(18 * s))
+            c.rect(x, y, 2 * s, 2 * s, C(0xD0302A)); c.rect(x, y, s, s, C(0xF08070))
+        }
+        // A row of framed photos.
+        for (k, x) in stride(from: c.w * 62 / 100, to: c.w * 96 / 100, by: 16 * s).enumerated() {
+            let y = g - 122 * s + (k % 2) * 3 * s
+            c.rect(x, y, 12 * s, 14 * s, woodD); c.rect(x + s, y + s, 10 * s, 12 * s, C(0x8A8070 + UInt32(k % 3) * 0x080808))
+            c.rect(x + 3 * s, y + 4 * s, 4 * s, 5 * s, C(0x4A4038)); c.rect(x + 2 * s, y + 9 * s, 7 * s, 4 * s, C(0x5A5048))
+        }
+        // Two mounted deer heads, facing each other across the room.
+        for k in [-1, 1] {
+            let hx = c.w / 2 + k * c.w * 43 / 100, hy = g - 150 * s
+            c.rect(hx - 5 * s, hy - 2 * s, 10 * s, 12 * s, woodD)
+            c.ellipse(hx, hy + 2 * s, 5 * s, 6 * s, C(0x8A6440)); c.ellipse(hx - k * 2 * s, hy + 7 * s, 3 * s, 3 * s, C(0x7A5434))
+            c.rect(hx - k * 4 * s - s, hy + 7 * s, 2 * s, 2 * s, C(0x1A120C))
+            c.rect(hx - 2 * s, hy, s, s, C(0x0C0806)); c.rect(hx + s, hy, s, s, C(0x0C0806))
+            for side in [-1, 1] {
+                c.glowLine(Double(hx + side * 2 * s), Double(hy - 3 * s), Double(hx + side * 10 * s), Double(hy - 14 * s), core: antler, glow: C(0, 0), coreR: Double(s) * 0.8, glowR: Double(s) * 0.9)
+                c.glowLine(Double(hx + side * 6 * s), Double(hy - 8 * s), Double(hx + side * 5 * s), Double(hy - 14 * s), core: antlerD, glow: C(0, 0), coreR: Double(s) * 0.6, glowR: Double(s) * 0.7)
+            }
+        }
+    }
+
+    /// What stands on the Roadhouse's floor against the wall: a jukebox with its arched top, a round table with two
+    /// chairs and empty bottles on it, and kegs and beer crates stacked in the corner.
+    private static func huntRoadhouseFloor(_ c: PixelCanvas, _ g: Int) {
+        let s = unit(g), e = huntRoadhouseExtras(c, g)
+        let wood = C(0x5A3620), woodL = C(0x7A4E30), woodD = C(0x2E1A0E)
+        // The jukebox: a walnut cabinet with a rounded top, the chrome grille, the glass dome over the records and the
+        // coloured light bands up its sides (the moving layer cycles them).
+        let jx = e.jukebox, top = g - 26 * s
+        c.ellipse(jx + 2 * s, g, 10 * s, s, C(0x0C0604, 0.5))
+        c.rect(jx - 8 * s, top + 6 * s, 16 * s, g - top - 6 * s, wood); c.circle(jx, top + 6 * s, 8 * s, wood)
+        c.rect(jx - 8 * s, top + 6 * s, s, g - top - 6 * s, woodL); c.rect(jx + 7 * s, top + 6 * s, s, g - top - 6 * s, woodD)
+        c.circle(jx, top + 7 * s, 5 * s, C(0xD8E0E8)); c.circle(jx, top + 7 * s, 4 * s, C(0x3A4250))
+        c.rect(jx - 4 * s, top + 13 * s, 8 * s, 4 * s, C(0xE8E0C8)); c.rect(jx - 4 * s, top + 13 * s, 8 * s, s, C(0xFFF4D8))
+        for y in stride(from: top + 18 * s, to: g - 2 * s, by: 2 * s) { c.rect(jx - 5 * s, y, 10 * s, max(1, s / 2), C(0xB8C0C8)) }
+        // The round table, its two chairs and a few bottles.
+        let tx = e.table
+        for k in [-1, 1] {
+            let cx = tx + k * 11 * s
+            c.rect(cx - 2 * s, g - 16 * s, 4 * s, 9 * s, wood); c.rect(cx - 3 * s, g - 8 * s, 6 * s, 2 * s, woodL)
+            c.rect(cx - 3 * s, g - 6 * s, s, 6 * s, woodD); c.rect(cx + 2 * s, g - 6 * s, s, 6 * s, woodD)
+        }
+        c.ellipse(tx, g - 11 * s, 9 * s, 2 * s, woodL); c.rect(tx - 9 * s, g - 11 * s, 18 * s, s, wood)
+        c.rect(tx - s, g - 10 * s, 2 * s, 9 * s, woodD); c.rect(tx - 4 * s, g - s, 8 * s, s, woodD)
+        for (u, col) in [(-4, 0x3A6A3A), (-1, 0xB0782A), (3, 0x5A3A1A)] as [(Int, UInt32)] {
+            c.rect(tx + u * s, g - 16 * s, 2 * s, 4 * s, C(col)); c.rect(tx + u * s, g - 18 * s, s, 2 * s, C(col))
+            c.rect(tx + u * s, g - 16 * s, max(1, s / 2), 4 * s, lerp(C(col), C(0xFFFFFF), 0.35))
+        }
+        // Kegs and crates stacked in the corner on the left.
+        for (k, (u, v)) in [(4, 0), (13, 0), (8, 1)].enumerated() {
+            let kx = u * s, ky = g - 9 * s - v * 9 * s
+            c.rect(kx - 4 * s, ky, 9 * s, 9 * s, C(0x8A8E96)); c.rect(kx - 4 * s, ky, 2 * s, 9 * s, C(0xB8BCC4))
+            for b in [ky + s, ky + 7 * s] { c.rect(kx - 4 * s, b, 9 * s, s, C(0x4A4E56)) }
+            if k == 2 { c.rect(kx, ky - s, s, s, C(0x4A4E56)) }
+        }
+        let cx = c.w * 2 / 100 + 20 * s
+        for v in 0..<2 {
+            let cy = g - 6 * s - v * 6 * s
+            c.rect(cx, cy, 10 * s, 6 * s, C(0x8A5A2A)); c.rect(cx, cy, 10 * s, s, C(0xB07A40))
+            c.rect(cx + 2 * s, cy + 2 * s, 6 * s, 2 * s, C(0xC8A040))
+        }
     }
 
     /// The bar's life: the neon beer signs humming, one of them stuttering now and then, and the ceiling fan's blades
@@ -493,6 +623,24 @@ extension Scenes {
             if front { c.rect(min(x0, x1), f.fan.y + s, abs(x1 - x0) + 1, max(1, s / 2), C(0x8A5E38)) }
         }
         c.rect(f.fan.x - 2 * s, f.fan.y - s, 4 * s, 2 * s, C(0x3A2A1E))
+        // The string of bulbs, lit warm, one or two dimming now and then.
+        let e = huntRoadhouseExtras(c, g)
+        for x in stride(from: 0, to: c.w, by: 8 * s) {
+            let u = Double(x % (40 * s)) / Double(40 * s), y = e.bulbs + Int(sin(u * .pi) * Double(3 * s)) + s
+            let dim = sin(t * 1.7 + Double(x) * 0.37) > 0.93
+            c.rect(x, y, s, 2 * s, dim ? C(0xB08A4A) : C(0xFFD890))
+            if !dim { c.rect(x - s, y, 3 * s, 3 * s, C(0xFFD890, 0.18)) }
+        }
+        // The jukebox's light bands cycling through red, amber, green and blue, and its dome glowing.
+        let jx = e.jukebox, top = g - 26 * s
+        let cols = [C(0xFF4A3A), C(0xFFB040), C(0x5AD06A), C(0x5AB0FF)]
+        for side in [-1, 1] {
+            for k in 0..<5 {
+                let col = cols[(Int(t * 3) + k + (side > 0 ? 2 : 0)) % 4]
+                c.rect(jx + side * 6 * s - (side > 0 ? s : 0), top + 8 * s + k * 3 * s, s, 3 * s, col)
+            }
+        }
+        c.circle(jx, top + 7 * s, 3 * s, C(0xFFE0A0, 0.25 + 0.1 * sin(t * 2)))
     }
 }
 

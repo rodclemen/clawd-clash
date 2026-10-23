@@ -542,6 +542,11 @@ extension Scenes {
         return (g - 34 * s, g - 16 * s, (x: c.w * 20 / 100, canopy: g - 32 * s), (x: c.w * 78 / 100, y: g - 2 * s), door)
     }
 
+    /// The rose arbour's middle and the garden bench's middle, shared by the still picture and the butterflies.
+    static func huntHeavenGarden(_ c: PixelCanvas, _ g: Int) -> (arbour: Int, bench: Int) {
+        (c.w * 43 / 100, c.w * 62 / 100)
+    }
+
     /// Heaven, as Joshua's garden: white light pouring down from above, a far bank of soft trees, a clipped hedge
     /// with flowers in it, the one great tree on the left spreading its canopy over everything, and a stone fountain
     /// on the right. The grass and the hedge stay mid-green, never white, so the crew stands out. On the screen saver
@@ -564,6 +569,14 @@ extension Scenes {
             c.ellipse(x - r / 3, y - r / 4, r / 2, r / 3, C(0x86B468))
         }
         c.rect(0, f.far + 3 * s, c.w, f.near - f.far - 3 * s, C(0x5A8A48))
+        // In the window, the doorway of light far off between the trees, a small bright arch with a halo round it: the
+        // screen saver shows it close up.
+        if !tall {
+            let dx = f.door.x, dy = f.far + 2 * s
+            for r in stride(from: 12 * s, to: 2 * s, by: -2 * s) { c.circle(dx, dy - 3 * s, r, C(0xFFFFFF, 0.09)) }
+            c.rect(dx - 2 * s, dy - 6 * s, 4 * s, 6 * s, C(0xFFFFFF)); c.circle(dx, dy - 6 * s, 2 * s, C(0xFFFFFF))
+            c.rect(dx - 3 * s, dy, 6 * s, s, C(0xE4DECA))
+        }
         // The near hedge, clipped flat, a little darker, flowers dotted along its top.
         c.rect(0, f.near, c.w, g - f.near, C(0x3E6A34))
         c.rect(0, f.near, c.w, s, C(0x5A8A48)); c.rect(0, f.near + s, c.w, max(1, s / 2), C(0x4E7C42))
@@ -573,6 +586,18 @@ extension Scenes {
             c.rect(x, y, max(1, s), max(1, s), tone)
         }
         for x in stride(from: 0, to: c.w, by: 8 * s) { c.rect(x, f.near + 3 * s, max(1, s / 2), g - f.near - 4 * s, C(0x365E2E)) }
+        // Rose bushes along the hedge's foot, big blooms in pink, white and gold, lit on top.
+        for i in 0..<(c.w / (9 * s)) {
+            let x = i * 9 * s + Int(noise(i * 5 + 720) * Double(4 * s)), y = g - 6 * s
+            c.ellipse(x, y, 4 * s, 3 * s, C(0x2E5A2A)); c.ellipse(x - s, y - s, 3 * s, 2 * s, C(0x427A36))
+            for k in 0..<3 {
+                let bx = x - 3 * s + Int(noise(i * 5 + k + 730) * Double(6 * s)), by = y - 2 * s + Int(noise(i * 5 + k + 740) * Double(3 * s))
+                let tone = [C(0xF08AB0), C(0xF8F4EC), C(0xF4D050), C(0xE05A78)][(i + k) % 4]
+                c.rect(bx, by, 2 * s, 2 * s, tone); c.rect(bx, by, s, s, C(0xFFFFFF, 0.5))
+            }
+        }
+        huntHeavenArbour(c, g)
+        huntHeavenBench(c, g)
         huntHeavenFountain(c, g)
         huntHeavenTree(c, g)
         // The grass: mid-green, plain, a few daisies.
@@ -617,6 +642,46 @@ extension Scenes {
         }
     }
 
+    /// A white rose arbour over the garden's path: two lattice posts, an arched top of white slats, and roses
+    /// climbing both posts and blooming over the arch.
+    private static func huntHeavenArbour(_ c: PixelCanvas, _ g: Int) {
+        let s = unit(g), x = huntHeavenGarden(c, g).arbour
+        let white = C(0xF2EEE2), whiteD = C(0xC8C2B0), leaf = C(0x3E7236), leafL = C(0x5A9246)
+        let half = 13 * s, top = g - 30 * s
+        c.ellipse(x + 2 * s, g, 18 * s, 2 * s, C(0x2E4A26, 0.5))
+        for px in [x - half, x + half - 3 * s] {   // the posts, a lattice of slats
+            c.rect(px, top + 6 * s, 3 * s, g - top - 6 * s, white); c.rect(px + 2 * s, top + 6 * s, s, g - top - 6 * s, whiteD)
+            for y in stride(from: top + 9 * s, to: g, by: 4 * s) { c.rect(px, y, 3 * s, max(1, s / 2), whiteD) }
+        }
+        for k in 0...(2 * half) {   // the arch, stepped
+            let u = Double(k - half) / Double(half), y = top + 6 * s - Int((1 - u * u) * Double(6 * s))
+            c.rect(x - half + k, y, 1, 2 * s, white); c.rect(x - half + k, y + 2 * s, 1, max(1, s / 2), whiteD)
+        }
+        // The roses climbing the posts and over the top.
+        for i in 0..<34 {
+            let side = i % 2 == 0, v = noise(i + 760)
+            let px = side ? x - half + s : x + half - 2 * s, py = top + 2 * s + Int(v * Double(g - top - 4 * s))
+            let over = i % 5 == 0
+            let lx = over ? x - half + Int(noise(i + 770) * Double(2 * half)) : px + Int((noise(i + 780) - 0.5) * Double(5 * s))
+            let ly = over ? top + Int(noise(i + 790) * Double(5 * s)) : py
+            c.rect(lx, ly, 2 * s, 2 * s, i % 3 == 0 ? leafL : leaf)
+            if i % 2 == 1 || over { c.rect(lx, ly, s, s, [C(0xF08AB0), C(0xE05A78), C(0xF8F4EC)][i % 3]) }
+        }
+    }
+
+    /// A garden bench of white stone before the hedge: a long seat on two scrolled legs, lit along its top.
+    private static func huntHeavenBench(_ c: PixelCanvas, _ g: Int) {
+        let s = unit(g), x = huntHeavenGarden(c, g).bench
+        let st = C(0xD8D4C4), stL = C(0xF0ECDE), stD = C(0xA8A496)
+        c.ellipse(x + 2 * s, g, 14 * s, s, C(0x2E4A26, 0.5))
+        c.rect(x - 12 * s, g - 8 * s, 24 * s, 2 * s, st); c.rect(x - 12 * s, g - 8 * s, 24 * s, max(1, s / 2), stL)
+        c.rect(x - 12 * s, g - 6 * s, 24 * s, max(1, s / 2), stD)
+        for lx in [x - 10 * s, x + 7 * s] {
+            c.rect(lx, g - 6 * s, 3 * s, 6 * s, st); c.rect(lx + 2 * s, g - 6 * s, s, 6 * s, stD)
+            c.rect(lx - s, g - s, 5 * s, s, st)
+        }
+    }
+
     /// The fountain: a wide stone basin, a pedestal, a smaller bowl and a finial, water spilling from the bowl's lip.
     private static func huntHeavenFountain(_ c: PixelCanvas, _ g: Int) {
         let s = unit(g), f = huntHeavenFrame(c, g)
@@ -643,7 +708,7 @@ extension Scenes {
     /// rise, rays fanning out from it, soft gold-edged clouds drifting either side.
     private static func huntHeavenDoor(_ c: PixelCanvas, _ g: Int) {
         let s = unit(g), f = huntHeavenFrame(c, g)
-        let dx = f.door.x, dy = f.door.y, glowY = dy - 18 * s
+        let dx = f.door.x, dy = f.door.y, glowY = dy - 30 * s
         // The blaze round the doorway: rings of white, and rays fanning up and out across the sky.
         for r in stride(from: 150 * s, to: 10 * s, by: -14 * s) { c.circle(dx, glowY, r, C(0xFFFFFF, 0.07)) }
         for k in 0..<9 {
@@ -661,17 +726,17 @@ extension Scenes {
         c.ellipse(dx, f.far + 6 * s, 130 * s, f.far + 8 * s - dy, C(0x7AAA5E))
         c.ellipse(dx - 10 * s, dy + 4 * s, 60 * s, 4 * s, C(0x8CBC6C))
         // The steps climbing to the doorway, white stone with grey treads.
-        for k in 0..<6 {
-            let w = (30 - k * 3) * s, y = dy + (5 - k) * 2 * s
+        for k in 0..<7 {
+            let w = (50 - k * 4) * s, y = dy + (6 - k) * 2 * s
             c.rect(dx - w / 2, y, w, 2 * s, C(0xD8D4C4)); c.rect(dx - w / 2, y + 2 * s - max(1, s / 2), w, max(1, s / 2), C(0xA8A496))
         }
-        // The doorway: a stone arch framing pure light, a glow spilling down the steps.
-        let w = 20 * s, h = 36 * s, top = dy - h
+        // The doorway: a tall stone arch framing pure light, a glow spilling down the steps.
+        let w = 34 * s, h = 62 * s, top = dy - h
         c.rect(dx - w / 2 - 3 * s, top + 4 * s, w + 6 * s, h - 4 * s, C(0xC8C2AE))
         c.circle(dx, top + 4 * s, w / 2 + 3 * s, C(0xC8C2AE))
         c.rect(dx - w / 2 - 3 * s, top + 4 * s, s, h - 4 * s, C(0xE4DECA)); c.rect(dx + w / 2 + 2 * s, top + 4 * s, s, h - 4 * s, C(0xA09A88))
         c.rect(dx - w / 2, top + 4 * s, w, h - 4 * s, C(0xFFFFFF)); c.circle(dx, top + 4 * s, w / 2, C(0xFFFFFF))
-        c.ellipse(dx, dy + 6 * s, 14 * s, 5 * s, C(0xFFFFFF, 0.3))
+        c.ellipse(dx, dy + 8 * s, 24 * s, 7 * s, C(0xFFFFFF, 0.3))
     }
 
     /// Heaven's life: leaves drifting down from the great tree, swaying as they fall, and the light shimmering:
@@ -691,6 +756,15 @@ extension Scenes {
                 let x = f.fountain.x - 12 * s + Int(noise(k + 950) * Double(24 * s)), y = f.fountain.y - 8 * s - Int(noise(k + 960) * Double(14 * s))
                 c.rect(x, y, max(1, s), max(1, s), C(0xFFFFFF, 0.9))
             }
+        }
+        // Two white butterflies fluttering round the arbour's roses, wings opening and shutting.
+        let arbour = huntHeavenGarden(c, g).arbour
+        for k in 0..<2 {
+            let ph = t * (0.35 + 0.1 * Double(k)) + Double(k) * 2.4
+            let x = arbour + Int(sin(ph * 1.3) * Double(16 * s)), y = g - 26 * s + Int(sin(ph * 2.1) * Double(5 * s))
+            let open = Int(t * 7 + Double(k)) % 2 == 0
+            c.rect(x, y, max(1, s), max(1, s), C(0x6A6A5A))
+            if open { c.rect(x - s, y - s, s, s, C(0xFFFFFA)); c.rect(x + s, y - s, s, s, C(0xFFFFFA)) } else { c.rect(x, y - s, s, s, C(0xFFFFFA)) }
         }
         // The falling leaves.
         for i in 0..<9 {
