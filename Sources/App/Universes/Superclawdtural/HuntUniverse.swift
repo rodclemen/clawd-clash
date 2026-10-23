@@ -33,8 +33,9 @@ struct HuntUniverse: UniverseModule {
     /// What Tools/Preview needs: the batch names for the art files (`huntHeroes1`, `huntVillains1`, one per
     /// file, in order; add each new file to its list) and the characters by enum case name.
     var preview: PreviewInfo {
-        .of(.hunters, heroes: "huntHeroes", [huntHeroes1, huntHeroes2, huntHeroes3],
-            villains: "huntVillains", [huntVillains1, huntVillains2, huntVillains3, huntVillains4])
+        .of(.hunters, heroes: "huntHeroes", [huntHeroes1, huntHeroes2, huntHeroes3, huntHeroes4, huntHeroes5, huntHeroes6],
+            villains: "huntVillains", [huntVillains1, huntVillains2, huntVillains3, huntVillains4, huntVillains5,
+                                              huntVillains6, huntVillains7])
     }
     /// The trips between places (HuntWipes.swift): `pick` chooses the next, `every` lists one of each kind for
     /// Tools/Transitions. nil would leave plain edge and clock wipes, as only Star Clawds keeps.

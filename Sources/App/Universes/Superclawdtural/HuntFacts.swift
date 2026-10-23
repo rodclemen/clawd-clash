@@ -20,6 +20,13 @@ enum HuntHero: Int, CaseIterable {
     case bobbyClawdsinger, ellenHarvell, joHarvell, charlieClawdbury
     // Friends and allies
     case ash, kevinTran, gabriel, rowenaMacClawd
+    // More hunters
+    case rufusTurner, garthFitzclawd, jodyMills, donnaHanscum, claireNovak, alexJones, eileenLeahy
+    case edZedmore, harrySpangler, frankDevereaux
+    // More friends and allies
+    case bennyLafitte, missouriMosley, pamelaBarnes, beckyRosen, victorHenriksen, mickDavies, tessa, balthaclawds
+    // Agent-only
+    case miracle
     case hem   // always last (`Universe.hem`)
 }
 
@@ -31,6 +38,16 @@ enum HuntVillain: Int, CaseIterable {
     case lucifer, michael, zachariah, metatron
     // Big Bads
     case dickRoman, chuck, war, famine, pestilence, death
+    // More angels
+    case uriel, raphael, naomi, gadreel
+    // More Big Bads
+    case eve, amara, billie
+    // Human villains
+    case toniBevell, arthurKetch, gordonWalker, belaTalbot
+    // Monsters of the week
+    case alphaVampire, bloodyMary, womanInWhite, hookman, shapeshifter, djinn, clown, scarecrow
+    // Agent-only small fry
+    case hellhound, leviathanBlob, demonSmoke
 }
 
 extension Universe {
@@ -43,7 +60,12 @@ enum HuntFacts {
     static let entry = UniverseEntry(universe: .hunters, key: "hunters", title: "Superclawdtural", facts: facts)
     static let facts = UniverseFacts(
         // The counts come from the enums, never typed by hand.
-        villainCount: HuntVillain.allCases.count, heroCount: HuntHero.allCases.count
+        villainCount: HuntVillain.allCases.count, heroCount: HuntHero.allCases.count,
+        // Miracle the dog, a hellhound, a Leviathan blob and a wisp of demon smoke only ever turn up as agents.
+        agentOnly: [HuntVillain.hellhound.rawValue, HuntVillain.leviathanBlob.rawValue, HuntVillain.demonSmoke.rawValue,
+                    UniverseFacts.heroBase + HuntHero.miracle.rawValue],
+        // Death and Billie never lead two sessions back to back: two Deaths in a row.
+        rivals: [HuntVillain.death.rawValue, HuntVillain.billie.rawValue]
         // Everything below is optional: uncomment what your universe needs. Ids here are local: a villain's is its
         // rawValue, a hero's `UniverseFacts.heroBase + rawValue`.
         //

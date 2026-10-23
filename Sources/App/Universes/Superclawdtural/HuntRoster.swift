@@ -19,10 +19,11 @@ extension HuntVillain {
 
 /// Every hero's persona, from the Art/HuntHeroes*.swift files (8 to 10 a file), and HEM's, who the engine draws
 /// in this universe's costume (HuntHem.swift). Add each new art file to the list.
-let huntHeroPersonas: [HuntHero: Persona] = [huntHeroes1, huntHeroes2, huntHeroes3]
+let huntHeroPersonas: [HuntHero: Persona] = [huntHeroes1, huntHeroes2, huntHeroes3, huntHeroes4, huntHeroes5, huntHeroes6]
     .reduce([.hem: hemPersona(.hunters)]) { $0.merging($1) { a, _ in a } }
 /// Every villain's persona, from the Art/HuntVillains*.swift files.
-let huntVillainPersonas: [HuntVillain: Persona] = [huntVillains1, huntVillains2, huntVillains3, huntVillains4]
+let huntVillainPersonas: [HuntVillain: Persona] = [huntVillains1, huntVillains2, huntVillains3, huntVillains4, huntVillains5,
+                                                   huntVillains6, huntVillains7]
     .reduce([:]) { $0.merging($1) { a, _ in a } }
 
 // MARK: - Homes
@@ -33,32 +34,42 @@ extension Location {
     /// ask for each new case.
     static func huntHome(of villain: HuntVillain) -> Location {
         switch villain {
-        case .crossroadsDemon, .megMasters, .ramiel: return .huntCrossroads
+        case .crossroadsDemon, .megMasters, .ramiel, .hellhound: return .huntCrossroads
         case .lucifer, .war, .pestilence: return .huntStull
-        case .clawdley, .lilith, .alastair, .abaddon, .asmodeus, .dagon: return .huntHell
-        case .zachariah: return .huntHeaven
-        case .ruby: return .huntMotel
+        case .clawdley, .lilith, .alastair, .abaddon, .asmodeus, .dagon, .demonSmoke: return .huntHell
+        case .zachariah, .uriel, .raphael, .naomi, .gadreel: return .huntHeaven
+        case .ruby, .belaTalbot: return .huntMotel
         case .demonDean: return .huntRoadhouse   // a bar and a karaoke mic
-        // Until their own places come in phase 3: Lawrence (Azazel), the orchard (Cain), Apocalypse World (Michael),
-        // Chuck's house (Chuck, Metatron), Roman Enterprises (Dick Roman) and the diner (Death, Famine).
-        case .azazel: return .huntHell
-        case .cain: return .huntCrossroads
-        case .michael, .metatron, .chuck: return .huntHeaven
-        case .dickRoman: return .huntMotel
-        case .death, .famine: return .huntRoadhouse
+        case .azazel: return .huntLawrence
+        case .cain, .scarecrow: return .huntOrchard   // his farm and his bees
+        case .michael: return .huntApocalypse
+        case .metatron, .chuck: return .huntChucks
+        case .dickRoman, .leviathanBlob: return .huntRoman
+        case .death, .famine: return .huntDiner   // chili dogs
+        case .eve, .alphaVampire, .djinn: return .huntPurgatory
+        case .amara, .billie: return .huntEmpty
+        case .toniBevell, .arthurKetch: return .huntBunker   // both broke in; Ketch lived there later
+        case .womanInWhite, .hookman, .gordonWalker: return .huntRoad
+        case .bloodyMary, .shapeshifter, .clown: return .huntAsylum
         }
     }
 
     static func huntHome(of hero: HuntHero) -> Location {
         switch hero {
-        case .deanWinclawdster, .samWinclawdster, .clawdstiel, .jackKlyne, .henryWinclawdster, .kevinTran, .hem:
+        case .deanWinclawdster, .samWinclawdster, .clawdstiel, .jackKlyne, .henryWinclawdster, .kevinTran, .eileenLeahy,
+             .mickDavies, .miracle, .hem:
             return .huntBunker
-        case .bobbyClawdsinger: return .huntSalvage
-        case .ellenHarvell, .joHarvell, .ash: return .huntRoadhouse
+        case .bobbyClawdsinger, .rufusTurner, .garthFitzclawd, .frankDevereaux: return .huntSalvage
+        case .ellenHarvell, .joHarvell, .ash, .pamelaBarnes: return .huntRoadhouse
+        case .victorHenriksen: return .huntMotel
+        case .maryWinclawdster, .johnWinclawdster, .missouriMosley: return .huntLawrence
         case .rowenaMacClawd: return .huntHell   // Queen of Hell, in the end
-        case .gabriel: return .huntHeaven
-        // Until their own places come in phase 3: Lawrence (Mary, John) and Moondoor (Charlie).
-        case .maryWinclawdster, .johnWinclawdster, .charlieClawdbury: return .huntBunker
+        case .gabriel, .balthaclawds, .tessa: return .huntHeaven
+        case .bennyLafitte: return .huntPurgatory
+        case .edZedmore, .harrySpangler: return .huntAsylum
+        case .charlieClawdbury: return .huntMoondoor
+        case .beckyRosen: return .huntChucks
+        case .jodyMills, .donnaHanscum, .claireNovak, .alexJones: return .huntSiouxFalls
         }
     }
 }
@@ -77,9 +88,8 @@ extension Cast {
 private let huntNemeses: [(HuntHero, HuntVillain)] = [
     (.deanWinclawdster, .michael), (.samWinclawdster, .lucifer), (.clawdstiel, .metatron), (.jackKlyne, .chuck),
     (.johnWinclawdster, .azazel), (.bobbyClawdsinger, .clawdley), (.charlieClawdbury, .dickRoman),
-    (.gabriel, .asmodeus), (.henryWinclawdster, .abaddon),
-    // Still to come with their characters in phase 3: Mary and Lady Toni Bevell, Kevin and Gadreel, Benny and Eve,
-    // Victor Henriksen and Lilith, Mick Davies and Arthur Ketch.
+    (.gabriel, .asmodeus), (.henryWinclawdster, .abaddon), (.maryWinclawdster, .toniBevell), (.kevinTran, .gadreel),
+    (.bennyLafitte, .eve), (.victorHenriksen, .lilith), (.mickDavies, .arthurKetch),
 ]
 
 let huntTheme = Theme(
@@ -88,7 +98,9 @@ let huntTheme = Theme(
     heroes: HuntHero.allCases.map(\.persona),
     // Every place, in menu order. The first is the default: where the crew stands when nobody's home is known. A full
     // universe has about 20.
-    places: [.huntBunker, .huntSalvage, .huntRoadhouse, .huntMotel, .huntCrossroads, .huntStull, .huntHell, .huntHeaven],
+    places: [.huntBunker, .huntSalvage, .huntRoadhouse, .huntMotel, .huntLawrence, .huntCrossroads, .huntStull, .huntHell,
+             .huntHeaven, .huntPurgatory, .huntEmpty, .huntRoad, .huntAsylum, .huntDiner, .huntRoman, .huntApocalypse,
+             .huntMoondoor, .huntOrchard, .huntChucks, .huntSiouxFalls],
     home: { c in
         c.isDark ? .huntHome(of: HuntVillain(rawValue: c.index) ?? .clawdley)
                  : .huntHome(of: HuntHero(rawValue: c.index) ?? .deanWinclawdster)
@@ -118,9 +130,21 @@ extension Location {
     static let huntStull = Location("huntStull")
     static let huntHell = Location("huntHell")
     static let huntHeaven = Location("huntHeaven")
+    static let huntLawrence = Location("huntLawrence")
+    static let huntPurgatory = Location("huntPurgatory")
+    static let huntEmpty = Location("huntEmpty")
+    static let huntRoad = Location("huntRoad")
+    static let huntAsylum = Location("huntAsylum")
+    static let huntDiner = Location("huntDiner")
+    static let huntRoman = Location("huntRoman")
+    static let huntApocalypse = Location("huntApocalypse")
+    static let huntMoondoor = Location("huntMoondoor")
+    static let huntOrchard = Location("huntOrchard")
+    static let huntChucks = Location("huntChucks")
+    static let huntSiouxFalls = Location("huntSiouxFalls")
 }
 
 /// Every place's drawing, from the Places/HuntScenes*.swift files (a few places a file). Add each new file to the
 /// list.
-let huntPlaces: [Location: Place] = [huntScenes1, huntScenes2, huntScenes3]
+let huntPlaces: [Location: Place] = [huntScenes1, huntScenes2, huntScenes3, huntScenes4, huntScenes5, huntScenes6]
     .reduce([:]) { $0.merging($1) { a, _ in a } }
