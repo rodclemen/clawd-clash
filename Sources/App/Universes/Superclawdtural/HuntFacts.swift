@@ -13,13 +13,24 @@ import Foundation
 
 enum HuntHero: Int, CaseIterable {
     // Team Free Will
-    case deanWinclawdster, samWinclawdster, clawdstiel
+    case deanWinclawdster, samWinclawdster, clawdstiel, jackKlyne
+    // The Winclawdster family
+    case maryWinclawdster, johnWinclawdster, henryWinclawdster
+    // Hunters
+    case bobbyClawdsinger, ellenHarvell, joHarvell, charlieClawdbury
+    // Friends and allies
+    case ash, kevinTran, gabriel, rowenaMacClawd
     case hem   // always last (`Universe.hem`)
 }
 
 enum HuntVillain: Int, CaseIterable {
     // Demons
-    case clawdley
+    case clawdley, azazel, megMasters, ruby, lilith, alastair, abaddon, cain, asmodeus, dagon, ramiel, demonDean
+    case crossroadsDemon
+    // Angels
+    case lucifer, michael, zachariah, metatron
+    // Big Bads
+    case dickRoman, chuck, war, famine, pestilence, death
 }
 
 extension Universe {

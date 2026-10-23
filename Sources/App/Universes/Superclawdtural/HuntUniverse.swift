@@ -1,6 +1,6 @@
 import Foundation
 
-// Superclawdtural: the Supernatural parody, all fifteen seasons. The Winclawster brothers, their angel and the hunters
+// Superclawdtural: the Supernatural parody, all fifteen seasons. The Winclawdster brothers, their angel and the hunters
 // against demons, angels gone bad, the Big Bads and the monsters of the week, in the Bunker, Singer Salvage, the
 // Roadhouse, Hell, Heaven and on the open road in the Impala. The plan is clawd-plans' in-progress/superclawdtural.md;
 // the folder follows clawdify_guide.md (one universe, one folder, nothing outside it).
@@ -33,7 +33,8 @@ struct HuntUniverse: UniverseModule {
     /// What Tools/Preview needs: the batch names for the art files (`huntHeroes1`, `huntVillains1`, one per
     /// file, in order; add each new file to its list) and the characters by enum case name.
     var preview: PreviewInfo {
-        .of(.hunters, heroes: "huntHeroes", [huntHeroes1], villains: "huntVillains", [huntVillains1])
+        .of(.hunters, heroes: "huntHeroes", [huntHeroes1, huntHeroes2, huntHeroes3],
+            villains: "huntVillains", [huntVillains1, huntVillains2, huntVillains3, huntVillains4])
     }
     /// The trips between places (HuntWipes.swift): `pick` chooses the next, `every` lists one of each kind for
     /// Tools/Transitions. nil would leave plain edge and clock wipes, as only Star Clawds keeps.
