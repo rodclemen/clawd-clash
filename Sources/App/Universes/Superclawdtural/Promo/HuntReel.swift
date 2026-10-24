@@ -34,6 +34,13 @@ struct HuntReel: PromoReel {
                    prompt: "You: “salt and burn the flaky tests”", otherPrompt: "You: “make a deal for the merge”")
     }
     func sound(_ m: Mix) { huntSound(m) }
+    /// Its panel on the promo's comic page: Dean against Clawdley, and the trailer's demon smoke pouring out of Meg
+    /// over the devil's trap, with a roar and a thud as it goes into the floor.
+    var comic: ComicPanel? {
+        ComicPanel(hero: .hero(HuntHero.deanWinclawdster), villain: .villain(HuntVillain.clawdley), sound: "KA-CHUNK!", pop: (0x4A6AE8, 0x9CB0FF),
+                   word: "HISSSS!", piece: { huntSmokeOut($0, local: smokeAt - 0.3 + $1, t: $2) },
+                   hit: { m, at in m.roar(at + 0.05, 0.9, vol: 0.14); m.boom(at + 0.8, vol: 0.18) })
+    }
 }
 
 /// The end card's line under "Have fun. Keep track.": never a count of universes.
