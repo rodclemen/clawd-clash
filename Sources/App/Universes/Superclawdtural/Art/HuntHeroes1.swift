@@ -206,10 +206,16 @@ private func drawClawdstiel(_ c: PixelCanvas, _ p: Pose) {
     let coat = C(0xC8B48A), coatD = C(0xA08C64), coatL = C(0xDECCA2), belt = C(0x9A845C)
     let shirt = C(0xF2F0EA), tie = C(0x2E4E9A), tieD = C(0x1E3470)
     let hair = C(0x2E2420), hairD = C(0x1A1412), hairL = C(0x4A3A32)
-    // The signature: the wings' shadow opens, holds spread, and folds again.
-    let wings = p.signature.map { $0 > 0.06 && $0 < 0.94 ? sin(($0 - 0.06) / 0.88 * .pi) : 0 } ?? 0
+    // The signature: the wings' shadow opens, holds spread, and folds again. Turning up behind someone, or going home
+    // (HuntHabits.swift), they flutter open for a moment in a flash of pale light.
+    let flutter = huntClawdstielFlutter
+    let wings = max(p.signature.map { $0 > 0.06 && $0 < 0.94 ? sin(($0 - 0.06) / 0.88 * .pi) : 0 } ?? 0, flutter)
 
-    // Behind everything: the wings' shadow on the wall.
+    // Behind everything: the flash, faint and see-through, and the wings' shadow on the wall.
+    if flutter > 0 {
+        c.ellipse(28, 31, Int(10 + 14 * flutter), Int(8 + 9 * flutter), C(0xF4F6FF, 0.22 * flutter))
+        c.ellipse(28, 31, Int(6 + 8 * flutter), Int(5 + 5 * flutter), C(0xFFFFFF, 0.2 * flutter))
+    }
     huntWingShadows(c, min(1, wings * 1.3))
 
     // Navy suit trousers and black shoes under the coat.
