@@ -55,7 +55,7 @@ private func hv3Glow(_ c: PixelCanvas, _ x: Double, _ y: Double, _ col: Px, radi
 /// she closes her fingers on it.
 private func drawDagon(_ c: PixelCanvas, _ p: Pose) {
     let dress = C(0x1E1C26), dressD = C(0x0C0B10), dressL = C(0x403C4E)
-    let hair = C(0x16141C), hairD = C(0x070609), hairL = C(0x3A3648)
+    let hair = C(0x1C1A2A), hairD = C(0x08070E), hairL = C(0x5A5A82)
     let s = p.signature ?? -1
     let bloom = s > 0.04 && s < 0.96 ? (s - 0.04) / 0.92 : -1
     let up = bloom < 0 ? 0 : min(1, bloom / 0.14, (1 - bloom) / 0.12)
@@ -87,7 +87,8 @@ private func drawDagon(_ c: PixelCanvas, _ p: Pose) {
     c.rect(37, 33, 1, 5, C(0x050407)); c.rect(18, 37, 20, 1, dressD)
     c.rect(15, 35, 3, 1, dressD)
 
-    // Long straight black hair, parted in the middle, a sheen down each side, falling past her shoulders.
+    // Long straight black hair with a cold blue sheen, parted in the middle and falling past her shoulders behind
+    // her, so her cheeks show and the hair hangs clear of her face, a lit streak running down each side.
     c.pattern(16, 20, [
         "......HHHHHHHHHHHH......",
         "....HHHHHHHlHHHHHHHH....",
@@ -97,12 +98,12 @@ private func drawDagon(_ c: PixelCanvas, _ p: Pose) {
         ".HHlHHHHHhHHHHhHHHHlHHH.",
         ".HHlH..............HlHH.",
         "HHHlh..............hlHHH",
-        "HHHlh..............hHHHH",
-        "HHHlh...............HHHH",
-        "HHHh................hHHH",
-        "HHHh................hHHH",
-        "HHhh................hhHH",
-        ".Hh..................hH.",
+        "HHlh................hlHH",
+        "HHl..................lHH",
+        "Hlh..................hlH",
+        "Hl....................lH",
+        "Hl....................lH",
+        "lh....................hl",
         ".h....................h.",
     ], ["H": hair, "h": hairD, "l": hairL])
     c.rect(22, 28, 2, 1, hairD); c.rect(32, 28, 2, 1, hairD)
@@ -118,17 +119,19 @@ private func drawDagon(_ c: PixelCanvas, _ p: Pose) {
         let size = Int((grow * 5).rounded())
         guard size > 0 else { return }
         let flick = Int(p.t * 10) % 2 == 0
+        let tipA = flick ? "....o.." : "..o....", tipB = flick ? "..o.o.." : ".o..o.."
         let frames: [[String]] = [
-            ["..o..", ".oYo."],
-            ["..o..", ".oYo.", ".YWY."],
-            [flick ? "...o." : ".o...", "..o..", ".oYo.", "oYWYo", ".YWY."],
-            [flick ? "...o." : ".o...", "..o..", ".oYo.", ".oYo.", "oYWYo", "oYWYo", ".YWY."],
-            [flick ? "...o." : ".o...", flick ? "..o.o" : "o.o..", ".ooo.", ".oYo.", "oYYYo", "oYWYo", "oWWWo", ".YWY."],
+            ["...o...", "..oYo.."],
+            ["...o...", "..oYo..", "..YWY.."],
+            [tipA, "...o...", "..oYo..", ".oYWYo.", "..YWY.."],
+            [tipA, "...o...", "..ooo..", ".oYYYo.", ".oYWYo.", "oYWWWYo", ".YWWWY."],
+            [tipA, tipB, "...o...", "..oYo..", ".ooYoo.", ".oYYYo.", "oYYWYYo", "oYWWWYo", "oYWWWYo", ".YWWWY."],
         ]
         let rows = frames[size - 1]
         let mid = Double(hy) - Double(rows.count) / 2
-        hv3Glow(c, 39.5, mid, C(0xFF9A30), radius: 4 + Double(size), strength: 0.24)
-        c.pattern(37, hy - rows.count, rows, ["o": C(0xE8501A), "Y": C(0xFFB030), "W": C(0xFFF2B0)])
+        hv3Glow(c, 39.5, mid, C(0xFF9A30), radius: 5 + Double(size) * 1.4, strength: 0.32)
+        c.pattern(36, hy - rows.count + 1, rows, ["o": C(0xE8501A), "Y": C(0xFFB030), "W": C(0xFFF2B0)])
+        c.rect(38, hy + 1, 3, 1, clawdOrange); c.px(40, hy + 1, clawdShade)   // her fingers round the base of it
         return
     }
 
@@ -151,7 +154,7 @@ private func drawDagon(_ c: PixelCanvas, _ p: Pose) {
 private func drawRamiel(_ c: PixelCanvas, _ p: Pose) {
     let vest = C(0x8E8658), vestD = C(0x645E3A), vestL = C(0xB0A878)
     let shirt = C(0x3E4836), shirtD = C(0x283022)
-    let hair = C(0xB49858), hairD = C(0x846C3A), hairL = C(0xD6BE84), beard = C(0x9A7E48)
+    let hair = C(0xA88C50), hairD = C(0x6E5830), hairL = C(0xD6BE84), beard = C(0x9A7E48), beardD = C(0x76603A)
     let s = p.signature ?? -1
     let k = s > 0.03 && s < 0.97 ? (s - 0.03) / 0.94 : -1
 
@@ -183,25 +186,28 @@ private func drawRamiel(_ c: PixelCanvas, _ p: Pose) {
     c.rect(37, 33, 1, 5, vestD); c.rect(18, 37, 20, 1, vestD)
     c.rect(15, 35, 3, 1, shirtD)
 
-    // Long scraggly hair, parted down the middle, falling in strands past his ears; a scruffy beard round his chin.
+    // Long scraggly hair, parted down the middle, falling in strands past his ears: a ragged top, dark strokes running
+    // down and out through it, lit on the crown, so it reads as hair and not a cap. A scruffy beard on his jaw and
+    // chin, a moustache over a dark mouth, kept clear of his eyes.
     c.pattern(16, 20, [
-        ".......HHHHHHHHH........",
-        "....HHHHllHHHHllHHH.....",
-        "...HHhHHHHlHHHHHlHHHH...",
-        "..HHlHHhHHHhHHHlHHhHHH..",
-        ".HHlHHHhHHHhhHHHlHHhHHH.",
-        ".HhHHHhHHHhHHhHHHhHHhHH.",
-        ".HHhHH...........HHhHHH.",
-        ".HhHH.............HHHHH.",
-        "HHHh...............hHHH.",
-        ".HHh...............hHHd.",
+        "......H.HHH.HHHH.HH.H...",
+        "....HHHHHlllHHlllHHHH...",
+        "...HHlHHhHHHHHHHhHHlHH..",
+        "..HHlHHhHHHhHHhHHhHHlHH.",
+        ".HHlHHhHHHhHHHHhHHhHHlH.",
+        ".HHlHhHHHhHHHHHHhHHhHlH.",
+        ".HhlHH...........HHlhHH.",
+        ".HhlH.............HlhHH.",
+        "HHhl...............lhHH.",
+        ".Hhl...............lhHd.",
         "HHd................d.HH.",
         ".Hd.................dH..",
         "Hd...................dH.",
         "d.....................d.",
     ], ["H": hair, "h": hairD, "l": hairL, "d": hairD])
     c.rect(22, 28, 2, 1, hairD); c.rect(32, 28, 2, 1, hairD)
-    c.pattern(23, 31, ["b.bb..bb.b", ".bbbbbbbb.", "..bbbbbb..", "....bb...."], ["b": beard])
+    c.pattern(20, 32, ["bb..mmmmmm..bb", ".bbbb.oo.bbbb.", "..bbbbbbbbbb..", "....bBBBBb...."],
+              ["b": beard, "m": beardD, "o": C(0x5A2A1E), "B": beardD])
 
     if k >= 0 {
         drawRamielCast(c, p, k)
@@ -319,25 +325,29 @@ private func drawDemonDean(_ c: PixelCanvas, _ p: Pose) {
         ".HH................HH.",
         ".Hh................h..",
     ], ["H": hair, "h": hairD, "l": hairL])
-    // Brows drawn down hard over black eyes: the whole eye black, wider than Clawd's, a cold glint in each. Shut tight
-    // while he sings.
+    // Brows drawn down hard over black eyes: the whole eye black, wider than Clawd's and glossy like wet ink, a white
+    // glint at the top left and a cold blue sheen at the bottom right, so they read as black eyes and not just his
+    // own. Shut tight while he sings.
     c.rect(21, 28, 3, 1, hairD); c.rect(32, 28, 3, 1, hairD)
     if belting {
         c.rect(21, 30, 3, 1, C(0x0A0A0C)); c.rect(32, 30, 3, 1, C(0x0A0A0C))
         c.rect(26, 31, 3, 2, C(0x5A1A18)); c.px(27, 31, C(0x2A0A0A))   // mouth open, mid-song
     } else {
         for x in [21, 32] {
-            c.rect(x, 29, 3, 3, C(0x020203)); c.px(x, 29, C(0x6E7488)); c.px(x + 2, 31, C(0x1C1C22))
+            c.rect(x, 29, 3, 3, C(0x020203)); c.px(x, 29, C(0xF6F8FF)); c.px(x + 1, 29, C(0x5A6480))
+            c.px(x, 30, C(0x6E7896)); c.px(x + 2, 31, C(0x3C4866))
         }
     }
 
-    // The sleeve pushed up his right forearm, bare, the Mark of Cain on it glowing a deep pulsing red.
+    // The sleeve pushed up his right forearm, bare and reaching a pixel further out, the Mark of Cain on it glowing a
+    // deep pulsing red: a hooked brand with a bar across it, a hot core at the hook, in a red haze.
     let hy = 33 - raise
-    c.rect(38, hy, 3, 3, clawdOrange); c.px(40, hy + 2, clawdShade)
+    c.rect(38, hy, 4, 3, clawdOrange); c.px(41, hy + 2, clawdShade)
     c.rect(37, hy, 1, 3, jacketD)
     let pulse = 0.7 + 0.3 * sin(p.t * 3)
-    hv3Glow(c, 39.5, Double(hy) + 1.5, C(0xFF2020), radius: 2.6, strength: 0.18 * pulse)
-    c.pattern(38, hy, ["..M", "MM.", ".M."], ["M": C(0xE81E1E).mix(C(0xFF8A6A), pulse - 0.7)])
+    let mark = C(0xE81E1E).mix(C(0xFF6A4A), (pulse - 0.7) * 2), core = C(0xFFB49A).mix(C(0xFFE6D8), pulse - 0.7)
+    hv3Glow(c, 39.5, Double(hy) + 1.5, C(0xFF2020), radius: 4.2, strength: 0.3 * pulse)
+    c.pattern(38, hy, ["..MM", "MMC.", ".M.."], ["M": mark, "C": core])
 
     if sing >= 0 {
         // The mic in his raised fist, up at his mouth: a silver mesh head, the black handle, its cable looping to the
@@ -345,7 +355,6 @@ private func drawDemonDean(_ c: PixelCanvas, _ p: Pose) {
         if raise >= 3 {
             c.pattern(33, hy - 4, [".mm..", "mMMm.", "mMMm.", ".mmhh", "...hh"],
                       ["m": C(0x8A8E98), "M": C(0xD4D8E0), "h": C(0x1A1A20)])
-            c.rect(38, hy, 3, 3, clawdOrange)
             let cx = 39.0, cy = Double(hy) + 3
             for i in 0...14 {
                 let u = Double(i) / 14
@@ -378,8 +387,8 @@ private func drawDemonDean(_ c: PixelCanvas, _ p: Pose) {
         c.rect(Int(h.x.rounded()) - 1, Int(h.y.rounded()) - 1, 3, 3, clawdOrange)
     } else {
         c.pattern(39, 36, ["Bb.", "Bbt", "Bb.", "Bbt", "Bb.", "Bbt", ".B."], ["B": bone, "b": boneD, "t": tooth])
-        c.rect(38, 33, 3, 3, clawdOrange); c.px(40, 35, clawdShade)
-        c.pattern(38, 33, ["..M", "MM.", ".M."], ["M": C(0xE81E1E)])
+        c.rect(38, 33, 4, 3, clawdOrange); c.px(41, 35, clawdShade)
+        c.pattern(38, 33, ["..MM", "MMC.", ".M.."], ["M": mark, "C": core])
     }
 }
 
@@ -400,21 +409,32 @@ private func drawCrossroadsDemon(_ c: PixelCanvas, _ p: Pose) {
     let fill = hv3Ramp(k, 0.42, 0.68)
     if hole {
         let fade = hv3Ramp(k, 0.86, 0.98)
+        let earthL = C(0x9A7452)
         if fill < 1 {
-            c.rect(44, 42, 6, 2, earthD); c.rect(45, 42, 4, 1, C(0x1E140C))
-            let heap = Int(((1 - fill) * 3).rounded())
+            // The hole, dark inside with a lit lip, and the heap of dug earth beside it, a few clods on top.
+            c.rect(43, 42, 9, 2, earthD); c.rect(44, 42, 7, 1, C(0x1E140C)); c.px(43, 42, earth); c.px(51, 42, earth)
+            let heap = Int(((1 - fill) * 5).rounded())
             if heap > 0 {
-                c.rect(50, 44 - heap, 4, heap, earth); c.rect(51, 43 - heap, 2, 1, earth)
-                c.px(50, 44 - heap, C(0x8A6648))
+                let widths = [7, 6, 5, 3, 2]
+                for row in 0..<heap {
+                    c.rect(53 + (7 - widths[row]) / 2, 43 - row, widths[row], 1, row == heap - 1 ? earthL : earth)
+                }
+                c.px(55, 43, earthD); if heap >= 2 { c.px(57, 42, earthD) }
             }
         }
-        if k > 0.34 && fill < 0.6 { c.rect(45, 41, 4, 2, tin); c.rect(45, 41, 4, 1, C(0xD8DCE2)); c.px(48, 42, tinD) }
+        // The tin box, set down in the hole: its lit lid, the lid's edge and a latch.
+        if k > 0.34 && fill < 0.6 {
+            c.rect(44, 39, 7, 4, tin); c.rect(44, 39, 7, 1, C(0xE4E8EE)); c.rect(44, 40, 7, 1, tinD)
+            c.rect(50, 40, 1, 3, tinD); c.px(47, 41, C(0x5A5E66))
+        }
         if fill > 0 {
-            let w = 6 - Int((fade * 6).rounded())
+            // Filled in, a mound patted down over it, sinking flat at the end.
+            let w = 9 - Int((fade * 9).rounded())
             if w > 0 {
-                let h = fill < 0.5 ? 1 : 2
-                c.rect(44 + (6 - w) / 2, 44 - h, w, h, earth)
-                if w > 2 { c.rect(45 + (6 - w) / 2, 44 - h, w - 2, 1, C(0x8A6648)) }
+                let h = fill < 0.5 ? 1 : fill < 0.85 ? 2 : 3
+                c.rect(43 + (9 - w) / 2, 44 - h, w, h, earth)
+                if w > 2 { c.rect(44 + (9 - w) / 2, 44 - h, w - 2, 1, earthL) }
+                if h > 1 && w > 4 { c.rect(43 + (9 - w) / 2, 44 - h, 1, h, earthD) }
             }
         }
     }
@@ -481,8 +501,9 @@ private func drawCrossroadsDemon(_ c: PixelCanvas, _ p: Pose) {
     }
     c.rect(hx - 1, hy - 1, 3, 3, clawdOrange); c.px(hx + 1, hy + 1, clawdShade)
     if k >= 0 && k < 0.34 {
-        // The little tin box in her hand, its lid lit.
-        c.rect(hx, hy - 3, 4, 2, tin); c.rect(hx, hy - 3, 4, 1, C(0xD8DCE2)); c.px(hx + 3, hy - 2, tinD)
+        // The little tin box in her hand, its lit lid, the lid's edge and a latch.
+        c.rect(hx - 1, hy - 5, 6, 4, tin); c.rect(hx - 1, hy - 5, 6, 1, C(0xE4E8EE)); c.rect(hx - 1, hy - 4, 6, 1, tinD)
+        c.rect(hx + 4, hy - 4, 1, 3, tinD); c.px(hx + 1, hy - 3, C(0x5A5E66))
     }
 }
 
@@ -553,9 +574,18 @@ private func drawMichael(_ c: PixelCanvas, _ p: Pose) {
     let wings = s < 0 ? 0 : sin(hv3Ramp(s, 0.14, 0.94) * .pi)
     let glow = C(0xFFF4D6)
 
-    // The light about him, always there, too faint to touch his outline.
+    // The light about him, always there: a warm gold haze round him, too faint to touch his outline, and a few motes of
+    // light rising slowly through it either side of him, clear of his silhouette.
     let shimmer = 0.85 + 0.15 * sin(p.t * 2)
-    c.glowLine(27.5, 24, 27.5, 38, core: glow.alpha(0), glow: glow, coreR: 0.1, glowR: 12, strength: 0.08 * shimmer)
+    c.glowLine(27.5, 24, 27.5, 38, core: glow.alpha(0), glow: C(0xFFDE8C), coreR: 0.1, glowR: 13, strength: 0.16 * shimmer)
+    for i in 0..<4 {
+        let f = frac(p.t * 0.22 + Double(i) * 0.25)
+        let x = [12, 45, 9, 48][i] + Int((sin(p.t * 1.3 + Double(i) * 2) * 1.2).rounded()), y = 40 - Int(f * 24)
+        let a = 0.9 * min(1, f / 0.2, (1 - f) / 0.3)
+        c.px(x, y, C(0xFFF6D8).alpha(a))
+        c.px(x - 1, y, C(0xFFD870).alpha(a * 0.45)); c.px(x + 1, y, C(0xFFD870).alpha(a * 0.45))
+        c.px(x, y - 1, C(0xFFD870).alpha(a * 0.45)); c.px(x, y + 1, C(0xFFD870).alpha(a * 0.45))
+    }
     // The burst: rays of white-gold light from behind him, brightest away from his body.
     if burst > 0.02 {
         for i in 0..<14 {
@@ -684,10 +714,12 @@ private func drawZachariah(_ c: PixelCanvas, _ p: Pose) {
         c.rect(40 + out, hy, 1, 3, shirt)
         c.rect(41 + out, hy + shake, 3, 3, clawdOrange); c.px(43 + out, hy + 2 + shake, clawdShade)
         if look > 0.6 {
-            let wx = 38 + out
-            c.rect(wx, hy - 1, 3, 2, C(0xD8A838)); c.px(wx, hy - 1, C(0xF4D47A))
-            c.px(wx + 1, hy - 1, C(0xF8F8F2)); c.px(wx + 1, hy, C(0xF8F8F2))
-            if Int(p.t * 2) % 2 == 0 { c.px(wx + 1, hy - 1, C(0x2A2A30)) }
+            // The watch on top of his wrist, standing up off it: a gold case lit on top, its white face two by two
+            // with a dark hand that ticks across it.
+            let wx = 37 + out
+            c.rect(wx, hy - 2, 4, 3, C(0xD8A838)); c.rect(wx, hy - 2, 4, 1, C(0xF4D47A)); c.px(wx + 3, hy, C(0x9A7420))
+            c.rect(wx + 1, hy - 1, 2, 2, C(0xF8F8F2))
+            c.px(wx + 1 + (Int(p.t * 2) % 2), hy - 1, C(0x2A2A30))
         }
     }
 }

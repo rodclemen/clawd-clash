@@ -56,9 +56,15 @@ private func hvEyes(_ c: PixelCanvas, _ col: Px, low: Px? = nil, big: Bool = fal
     }
 }
 
-/// Black eyes: grown and filled black, a cold glint in each.
+/// Black eyes: grown a pixel up and in towards the nose (so they stay clear of the hair framing the face) and filled
+/// black from edge to edge, glossy like wet ink: a bright white glint at the top left with a paler run under it, and a
+/// cold blue sheen at the bottom right. The shine is what tells them from Clawd's own dark eyes at 1×.
 private func hvBlackEyes(_ c: PixelCanvas) {
-    hvEyes(c, C(0x060608), big: true, glint: C(0x9CA4B4))
+    for x in [22, 31] {
+        c.rect(x, 28, 3, 4, C(0x060608))
+        c.px(x, 28, C(0xF6F8FF)); c.px(x, 29, C(0x8C96B0)); c.px(x + 1, 28, C(0x5A6480))
+        c.px(x + 2, 31, C(0x3C4866))
+    }
 }
 
 /// A knife held point down at the side, the fist round its grip, for whoever carries one when not fighting.
@@ -290,7 +296,14 @@ private func drawRuby(_ c: PixelCanvas, _ p: Pose) {
         let tip = huntReach(huntHand, a + 8, 8.5)   // the curve near the point
         c.px(Int(tip.x.rounded()), Int(tip.y.rounded()), steel)
     } else {
-        hvKnifeAtRest(c, grip: grip, steel: steel, steelD: C(0x8A9098), edge: edge, notch: notch)
+        // At rest the knife hangs point down a little out from her side, clear of her hair, so it shows against
+        // whatever's behind her: the carved grip's pommel above her fist, lit on its near edge, and the long blade
+        // below, bright down its edge and curving forward at the point.
+        c.rect(38, 34, 2, 2, jacket)                                          // the sleeve, reaching out
+        c.rect(42, 31, 2, 3, grip); c.px(42, 31, C(0x5A4636)); c.px(43, 32, notch)
+        c.rect(41, 34, 3, 3, clawdOrange); c.px(43, 36, clawdShade)           // her fist round the grip
+        c.rect(42, 37, 2, 5, steel); c.rect(43, 37, 1, 5, C(0x8A9098)); c.rect(42, 37, 1, 5, edge)
+        c.px(43, 42, steel); c.px(44, 42, edge)
     }
 }
 
@@ -301,7 +314,7 @@ private func drawRuby(_ c: PixelCanvas, _ p: Pose) {
 /// jagged white blast. Signature: her eyes go white, growing and glowing in a white haze, then fade back.
 private func drawLilith(_ c: PixelCanvas, _ p: Pose) {
     let dress = C(0xF2F0EC), dressD = C(0xC8C6D2), dressL = C(0xFFFFFF), fold = C(0xDCDAE4)
-    let hair = C(0xE6DAB4), hairD = C(0xBCAA7C), hairL = C(0xFAF2D8)
+    let hair = C(0xE6DAB4), hairD = C(0xAE9C6E), hairL = C(0xFAF2D8)
     let s = p.signature ?? -1
     let white = s > 0.08 && s < 0.92 ? min(1, (s - 0.08) / 0.18, (0.92 - s) / 0.18) : 0
 
@@ -330,24 +343,25 @@ private func drawLilith(_ c: PixelCanvas, _ p: Pose) {
     c.px(21, 35, fold); c.px(31, 35, fold); c.rect(18, 37, 20, 1, dressD)
     c.px(36, 35, dressD)
 
-    // Long sleek platinum hair from a centre parting, straight down past her shoulders.
+    // Long sleek platinum hair from a centre parting, straight down past her shoulders: fine strands fanning out from
+    // the parting and down each side, a sheen along them, the ends parting into points.
     c.pattern(16, 21, [
-        ".......HHHHHHHHHH.......",
-        ".....HHHHHHdHHHHHHH.....",
-        "...HHHlHHHHdHHHHHlHHH...",
-        "..HHlHHHHHHdHHHHHHHlHH..",
-        "..HlHHHHHHHdHHHHHHHHlH..",
-        ".HHlHHHHHHd..dHHHHHHlHH.",
-        ".HlHHHHHd......dHHHHHlH.",
+        ".......HHlHHHlHHH.......",
+        ".....HHlHHHdHHlHHHH.....",
+        "...HHlHHHdHdHHHdHlHHH...",
+        "..HlHHHdHHHdHHHHdHHlHH..",
+        "..HlHHdHHHHdHHHHHdHHlH..",
+        ".HHlHdHHHHd..dHHHHdHlHH.",
+        ".HlHdHHHd......dHHHdHlH.",
         ".HlHHd............dHHlH.",
         ".HlHd..............dHlH.",
+        ".dlHd..............dHld.",
         ".HlHd..............dHlH.",
+        ".dlHd..............dHld.",
         ".HlHd..............dHlH.",
+        ".dlHd..............dHld.",
         ".HlHd..............dHlH.",
-        ".HlHd..............dHlH.",
-        ".HlHd..............dHlH.",
-        ".HlHd..............dHlH.",
-        "..ld................dl..",
+        ".l.d................d.l.",
     ], ["H": hair, "d": hairD, "l": hairL])
 
     if white > 0.2 {
@@ -556,7 +570,8 @@ private func drawCain(_ c: PixelCanvas, _ p: Pose) {
     let raise = swarm < 0 ? 0 : Int(min(1, swarm / 0.12, (1 - swarm) / 0.12) * 3)
 
     // The bees: out of his raised hand, swirling round him on a wide ring, then back. Each is striped yellow, black
-    // and yellow, its wing flicking. The ones behind him are drawn before he is.
+    // and yellow, its wing flicking. The ones behind him are drawn before he is. They're nearly solid, so they hold up
+    // on a dark desktop, but not quite: no outline, which would bury three pixels of bee in a white blob.
     let spread = swarm < 0 ? 0 : min(1, swarm / 0.22, (1 - swarm) / 0.22)
     func bees(front: Bool) {
         guard spread > 0.12 else { return }
@@ -567,8 +582,8 @@ private func drawCain(_ c: PixelCanvas, _ p: Pose) {
             guard (sin(th) > 0) == front else { continue }
             let rx = 20 * spread * (0.88 + 0.12 * noise(i)), ry = 12 * spread * (0.85 + 0.15 * noise(i + 9))
             let x = Int((cx + cos(th) * rx).rounded()), y = Int((cy + sin(th) * ry).rounded())
-            c.px(x, y, C(0xF2C21C)); c.px(x + 1, y, C(0x1E1610)); c.px(x + 2, y, C(0xF2C21C))
-            c.px(x + 1, y - 1, Int(p.t * 14 + Double(i)) % 2 == 0 ? C(0xE4ECF4) : C(0xB4C0CC))
+            c.px(x, y, C(0xFFD02A, 0.92)); c.px(x + 1, y, C(0x4A3412, 0.92)); c.px(x + 2, y, C(0xF2B81C, 0.92))
+            c.px(x + 1, y - 1, Int(p.t * 14 + Double(i)) % 2 == 0 ? C(0xE4ECF4, 0.85) : C(0xB4C0CC, 0.6))
         }
     }
     bees(front: false)
@@ -599,26 +614,27 @@ private func drawCain(_ c: PixelCanvas, _ p: Pose) {
     c.rect(15, 35, 3, 1, knitD)
     c.rect(38, 35 - raise, 3, 1, knitD)
 
-    // Dark hair going grey, swept back, the grey in strokes along it.
+    // Dark hair going grey, swept back: the grey in long streaks combed back from the brow, and grey at the temples.
     c.pattern(17, 21, [
         ".....HHHHHHHHHH.......",
-        "...HHHggHHHHHggHH.....",
-        "..HHHHHggHHHHHHggHH...",
-        ".HHHHHHHHHHHHHHHHHHH..",
+        "...HHggggHHHHgggHH....",
+        "..HHHHHHHHgggggHHHH...",
+        ".HHggggHHHHHHHHHgggH..",
         ".HHhhHHHHHHHhhHHHHHHH.",
-        ".HHHHH.........HHHHH..",
-        ".HHH.............HgH..",
-        ".HgH..............gH..",
-        ".gH...............Hg..",
-    ], ["H": hair, "h": hairD, "g": grey])
+        ".HgHHH.........HHHgH..",
+        ".Hgg.............ggH..",
+        ".Hgg.............ggH..",
+        ".gG...............Gg..",
+    ], ["H": hair, "h": hairD, "g": grey, "G": C(0x6A645E)])
     c.rect(22, 28, 2, 1, hairD); c.rect(32, 28, 2, 1, hairD)
-    // The beard: full and close-cut, from the sideburns round his mouth and down over his chest, greying in strokes.
+    // The beard: full and close-cut, from the sideburns round his mouth and down over his chest, grey at the
+    // sideburns and in two long streaks from the corners of his mouth, the rest still dark.
     c.pattern(19, 30, [
-        "BB..............BB",
-        "BBB...MMMMMM...BBB",
-        "BBllBBBBBBBBBBllBB",
-        ".BBBllBBBBBBllBBB.",
-        "..BBBBBddBBBBBBB..",
+        "lB..............Bl",
+        "lBB...MMMMMM...BBl",
+        "BBlllBBBBBBBBlllBB",
+        ".BBBBlllBBlllBBBB.",
+        "..BBBBBBBBBBBBBB..",
         "....dBBBBBBBBd....",
     ], ["B": beard, "M": beardD, "l": beardL, "d": beardD])
 
@@ -694,7 +710,8 @@ private func drawAsmodeus(_ c: PixelCanvas, _ p: Pose) {
     ], ["H": hair, "h": hairD, "l": hairL])
     c.rect(22, 28, 2, 1, hairD); c.rect(32, 28, 2, 1, hairD)
     c.rect(26, 32, 4, 1, hair); c.px(25, 32, hairL); c.px(30, 32, hairL)
-    hvEyes(c, C(0xF2CC2C), low: C(0xB4880E))
+    // Yellow eyes, paler and brassier than Azazel's, with a gleam.
+    hvEyes(c, C(0xFFE45C), low: C(0xD09A12), glint: C(0xFFFCE8))
 
     // The cane: planted out front with his hand on its gold top; twirled two turns round his raised hand, held by the
     // middle, then planted again.
