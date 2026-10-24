@@ -8,20 +8,21 @@ import Foundation
 
 extension HuntTrip {
     /// A frame `k` (0…1) of the Hellhound, over the whole of `r`. The old place darkens (0–0.5); four rakes rip
-    /// across it, at 0.1, 0.27, 0.44 and 0.6, each three curved tears drawn out fast from one end with a spark at the
+    /// across it, at 0.08, 0.22, 0.36 and 0.5, each three curved tears drawn out fast from one end with a spark at the
     /// claw's tip, the picture jolting as it goes; between them a pair of red eyes opens in the dark, blinks and is
-    /// gone, somewhere else each time; then every tear widens, slowly and then all at once, and the new place is
-    /// all there is (0.68–1). The tears' rims are ember orange, their edges glowing.
+    /// gone, somewhere else each time, always on a quiet, dark patch of the old place away from the tears; then
+    /// every tear widens, steadily and then faster, and the new place is all there is (0.58–1). The tears' rims are
+    /// ember orange, their edges glowing.
     func drawHellhound(_ ctx: CGContext, old: CGImage, new: CGImage, k: Double, in r: CGRect) {
         guard k < 1 else { ctx.drawShot(new, in: r); return }
         let art = HuntArt(r)
         let c = art.c, w = art.w, h = art.h
         let fw = Double(w), fh = Double(h)
-        let open = pow(Self.span(k, 0.68, 1), 2.6)
+        let open = pow(Self.span(k, 0.58, 1), 1.6)
 
         // The rakes: where their middles fall, which way they run (radians, 0 is right, y down), when they come.
         let rakes: [(x: Double, y: Double, a: Double, at: Double)] = [
-            (0.3, 0.42, 0.75, 0.1), (0.7, 0.4, 2.3, 0.27), (0.48, 0.66, -0.4, 0.44), (0.85, 0.55, 1.95, 0.6),
+            (0.3, 0.42, 0.75, 0.08), (0.7, 0.4, 2.3, 0.22), (0.48, 0.66, -0.4, 0.36), (0.85, 0.55, 1.95, 0.5),
         ]
         let len = min((fw * fw + fh * fh).squareRoot() * 0.45, fh * 1.25)
         let gap = fh * 0.07                                   // between the three claws of a rake
@@ -41,7 +42,7 @@ extension HuntTrip {
                 // A slit at first, opening a little as it settles.
                 let settle = Self.span(k, rk.at + 0.05, rk.at + 0.2)
                 tears.append(Tear(x0: sx, y0: sy, dx: dx, dy: dy, nx: nx, ny: ny, len: l, bend: bend,
-                                  reach: reach, base: 1.0 + 1.6 * settle + gap * 0.45 * Self.ease(Self.span(k, 0.62, 0.8))))
+                                  reach: reach, base: 1.0 + 1.6 * settle + gap * 0.45 * Self.ease(Self.span(k, 0.52, 0.72))))
                 if reach > 0 && reach < 1 {
                     let t = reach * l, b = sin(reach * .pi) * bend
                     tips.append((sx + nx * b + dx * t, sy + ny * b + dy * t))
@@ -52,8 +53,9 @@ extension HuntTrip {
         }
 
         // What each art pixel is: 0 the old place, 1 a tear (the new place), 2 its burning rim, 3 the glow round it.
-        // At the end each tear also swells out round its whole length, raggedly, until they swallow the frame.
-        let swell = pow(Self.span(k, 0.7, 1), 4) * max(fw, fh) * 0.75
+        // At the end each tear also swells out round its whole length, raggedly, until they swallow the frame: slowly
+        // at first, so the last rake's tears get their moment, then faster.
+        let swell = pow(Self.span(k, 0.58, 1), 2.2) * max(fw, fh) * 0.75
         var kind = [UInt8](repeating: 0, count: w * h)
         for y in 0..<h {
             for x in 0..<w {
@@ -93,17 +95,17 @@ extension HuntTrip {
             ctx.saveGState(); ctx.clip(to: through); ctx.drawShot(new, in: r); ctx.restoreGState()
         }
 
-        // Red eyes, low in the dark between the rakes: a pair opens, looks, blinks, and is gone.
-        let eyes: [(x: Double, y: Double, from: Double, to: Double)] = [(0.74, 0.6, 0.15, 0.36), (0.24, 0.52, 0.34, 0.58),
-                                                                         (0.58, 0.42, 0.55, 0.74)]
+        // Red eyes, low in the dark between the rakes: a pair opens, looks, blinks, and is gone, each pair somewhere
+        // new, on the quietest dark patch of the old place that's clear of every tear torn while it's there.
+        let eyes = huntHoundEyes(old, fw: fw, fh: fh, rakes: rakes, len: len, gap: gap)
         for e in eyes where k > e.from && k < e.to {
             let s = (k - e.from) / (e.to - e.from)
             let a = (min(1, s * 6) * min(1, (1 - s) * 5) * 4).rounded() / 4
             let blink = s > 0.5 && s < 0.58
-            let ex = Int(e.x * fw), ey = Int(e.y * fh)
+            let ex = Int(e.x), ey = Int(e.y)
             guard a > 0, kind[min(h - 1, max(0, ey)) * w + min(w - 1, max(0, ex))] == 0 else { continue }
-            c.ellipse(ex, ey, 16, 9, C(0x020001, 0.25 * a))                // the darker dark it's standing in
-            c.ellipse(ex, ey, 11, 6, C(0x020001, 0.25 * a))
+            c.ellipse(ex, ey, 17, 10, C(0x020001, 0.375 * a))               // the darker dark it's standing in
+            c.ellipse(ex, ey, 12, 7, C(0x020001, 0.5 * a))
             for side in [-1, 1] {
                 let cx = ex + side * 4
                 c.ellipse(cx, ey, 4, 3, C(0xE0200E, 0.3 * a))
@@ -146,5 +148,55 @@ extension HuntTrip {
             }
         }
         art.show(ctx)
+    }
+
+    /// Where the three pairs of eyes go, and when, in art pixels: the old place shrunk to a coarse grid, and for each
+    /// pair the grid cell low in the frame that's darkest and plainest (least different from its neighbours), at least
+    /// a rake's width clear of every tear torn before the pair is gone, and well away from the pair before it.
+    private func huntHoundEyes(_ old: CGImage, fw: Double, fh: Double, rakes: [(x: Double, y: Double, a: Double, at: Double)],
+                               len: Double, gap: Double) -> [(x: Double, y: Double, from: Double, to: Double)] {
+        let times: [(Double, Double)] = [(0.12, 0.3), (0.27, 0.45), (0.42, 0.6)]
+        let gw = 48, gh = max(8, Int((48 * fh / fw).rounded()))
+        var lum = [Double](repeating: 0.5, count: gw * gh)
+        if let g = CGContext(data: nil, width: gw, height: gh, bitsPerComponent: 8, bytesPerRow: gw * 4,
+                             space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue) {
+            g.interpolationQuality = .low
+            g.draw(old, in: CGRect(x: 0, y: 0, width: gw, height: gh))
+            if let d = g.data?.assumingMemoryBound(to: UInt8.self) {
+                for i in 0..<(gw * gh) {
+                    lum[i] = (0.3 * Double(d[i * 4]) + 0.55 * Double(d[i * 4 + 1]) + 0.15 * Double(d[i * 4 + 2])) / 255
+                }
+            }
+        }
+        var out: [(x: Double, y: Double, from: Double, to: Double)] = []
+        for (n, t) in times.enumerated() {
+            var best = (score: 1e9, x: fw / 2, y: fh / 2)
+            for cy in 1..<(gh - 1) {
+                let y = (Double(cy) + 0.5) / Double(gh) * fh
+                guard y > fh * 0.3, y < fh * 0.74 else { continue }
+                for cx in 2..<(gw - 2) {
+                    let x = (Double(cx) + 0.5) / Double(gw) * fw
+                    guard x > fw * 0.1, x < fw * 0.9 else { continue }
+                    if let last = out.last, abs(last.x - x) < fw * 0.22 { continue }
+                    // Clear of the tears: far enough from the middle line of every rake torn by now.
+                    var clear = true
+                    for rk in rakes where rk.at < t.1 {
+                        let dx = cos(rk.a), dy = sin(rk.a), px = x - rk.x * fw, py = y - rk.y * fh
+                        let along = max(-len / 2, min(len / 2, px * dx + py * dy))
+                        let ex = px - dx * along, ey = py - dy * along
+                        if (ex * ex + ey * ey).squareRoot() < gap * 2.6 + 14 { clear = false; break }
+                    }
+                    guard clear else { continue }
+                    var busy = 0.0
+                    let me = lum[cy * gw + cx]
+                    for oy in -1...1 { for ox in -2...2 { busy += abs(lum[(cy + oy) * gw + cx + ox] - me) } }
+                    // Dark and plain, and the lower the better: it's a dog.
+                    let score = me + busy / 15 * 2 + (0.74 - y / fh) * 0.25 + noise(n * 131 + cy * 17 + cx) * 0.02
+                    if score < best.score { best = (score, x, y) }
+                }
+            }
+            out.append((best.x, best.y, t.0, t.1))
+        }
+        return out
     }
 }

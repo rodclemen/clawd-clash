@@ -9,10 +9,11 @@ import Foundation
 // Funny-eerie, never gory: the goo is glossy black with purple-grey light on it, so it reads on a dark place.
 
 extension HuntTrip {
-    /// A frame `k` (0…1) of Leviathan Maw, over the whole of `r`. The grin spreads from the middle (0–0.12); the jaws
-    /// open on the throat (0.1–0.34); they snap shut with a shake (0.36–0.43) and goo oozes from the seam and runs
-    /// down (0.43–0.62); they open again on the new place and leave the screen top and bottom, goo strands snapping
-    /// between them (0.6–0.96).
+    /// A frame `k` (0…1) of Leviathan Maw, over the whole of `r`. The grin spreads from the middle, a thin slit first
+    /// and the teeth growing in behind its ends (0–0.2); the jaws open on the throat (0.16–0.34); they snap shut with
+    /// a shake (0.36–0.43) and goo oozes from the seam and runs down (0.43–0.62); they open again on the new place and
+    /// leave the screen top and bottom, goo strands snapping between them (0.6–0.96). Each half of the old place moves
+    /// with its jaw in one piece, so the picture splits rather than bends.
     func drawLeviathanMaw(_ ctx: CGContext, old: CGImage, new: CGImage, k: Double, in r: CGRect) {
         let art = HuntArt(r)
         let c = art.c, w = art.w, h = art.h
@@ -20,12 +21,12 @@ extension HuntTrip {
         let frame = Int(k * 54)
 
         // How open the jaws are, and how far they go: a first bite on the throat, the snap, then wide and away.
-        let first = Self.ease(Self.span(k, 0.1, 0.32))
+        let first = Self.ease(Self.span(k, 0.16, 0.34))
         let shut = pow(Self.span(k, 0.36, 0.43), 2)
         let away = Self.ease(Self.span(k, 0.6, 0.96))
         let onNew = k >= 0.6
         let snapShake = k > 0.43 && k < 0.5 ? Int(((noise(frame * 13) - 0.5) * 4).rounded()) : 0
-        let reveal = Self.ease(Self.span(k, 0, 0.12))
+        let reveal = Self.ease(Self.span(k, 0, 0.2))
 
         // The smile line: low in the middle, the corners turned up; how wide the mouth gapes along it, nearly shut at
         // the corners until it opens right out.
@@ -37,12 +38,13 @@ extension HuntTrip {
         func pinch(_ x: Int) -> Double { pow(max(0, 1 - pow(e(x), 2.4)), 0.6) }
         // Each jaw stands off the seam by its gum and half its teeth once the grin has spread that far, so shut, the
         // fangs meet and interlock along the smile instead of crossing.
-        let tw = 10, tBase = art.wide ? 11 : 13, gum = art.wide ? 2 : 3
-        let reach = reveal * cx + 2, grow = 0.4 + 0.6 * reveal
+        // In the window's short strip the fangs come bigger, so they read at its size.
+        let tw = art.wide ? 14 : 10, tBase = art.wide ? 18 : 13, gum = art.wide ? 3 : 3
+        let reach = reveal * (cx + Double(tw)) + 2, grow = 0.4 + 0.6 * reveal
         func clear(_ x: Int) -> Int {
             let inside = reach - abs(Double(x) + 0.5 - cx)
             guard inside > 0 else { return 0 }
-            let taper = reveal < 1 ? min(1, inside / 10) : 1    // the spreading ends of the grin come to a point
+            let taper = reveal < 1 ? min(1, inside / Double(tw * 3)) : 1    // the spreading ends of the grin come to a point
             return Int((Double(gum + 1) * taper + Double(tBase) * (0.35 + 0.65 * pinch(x)) * grow * 0.55 * taper).rounded())
         }
         func upper(_ x: Int) -> Int {
@@ -62,21 +64,28 @@ extension HuntTrip {
         // Behind the jaws: the new place once they open the second time (the throat is drawn in the art).
         if onNew { ctx.drawShot(new, in: r) }
 
-        // The two halves of the old place, each column moved with its jaw, grouped by how far they've moved.
+        // The two halves of the old place, cut along the jaws: each moves in one piece, as far as its jaw has opened
+        // in the middle, so the picture splits open rather than bending.
+        let mid = min(w - 1, max(0, Int(cx)))
         for upperJaw in [true, false] {
-            var groups: [Int: [CGRect]] = [:]
+            var rects: [CGRect] = []
             for x in 0..<w {
-                let d = upperJaw ? upper(x) : lower(x)
                 let rect = upperJaw ? art.frame(x, 0, 1, max(0, top[x])) : art.frame(x, bottom[x], 1, max(0, h - bottom[x]))
-                if rect.height > 0 { groups[d, default: []].append(rect) }
+                if rect.height > 0 {
+                    // Neighbouring columns of the same height make one rectangle.
+                    if let last = rects.last, last.maxX == rect.minX, last.minY == rect.minY, last.height == rect.height {
+                        rects[rects.count - 1] = last.union(rect)
+                    } else {
+                        rects.append(rect)
+                    }
+                }
             }
-            for (d, rects) in groups {
-                ctx.saveGState()
-                ctx.clip(to: rects)
-                let dy = CGFloat(d - snapShake) * art.px
-                ctx.drawShot(old, in: r.offsetBy(dx: 0, dy: upperJaw ? dy : -dy))
-                ctx.restoreGState()
-            }
+            guard !rects.isEmpty else { continue }
+            ctx.saveGState()
+            ctx.clip(to: rects)
+            let dy = CGFloat((upperJaw ? upper(mid) : lower(mid)) - clear(mid) - snapShake) * art.px
+            ctx.drawShot(old, in: r.offsetBy(dx: 0, dy: upperJaw ? dy : -dy))
+            ctx.restoreGState()
         }
 
         // The throat, between the jaws until they open on the new place.
@@ -117,7 +126,7 @@ extension HuntTrip {
             let th = max(2, Int((Double(tBase) * size).rounded()))
             for rrow in -1..<th + 1 {
                 let f = Double(max(0, rrow)) / Double(th)
-                let hw = Int((Double(tw / 2) * (1 - f)).rounded())
+                let hw = Int((Double(tw / 2) * (1 - f) * min(1, 0.45 + size)).rounded())
                 for dx in -hw - 1...hw {
                     let x = x0 + dx
                     guard x >= 0 && x < w, abs(Double(x) + 0.5 - cx) < reach else { continue }
@@ -138,8 +147,12 @@ extension HuntTrip {
         }
         for x0 in stride(from: 0, to: w + tw, by: tw) {
             let p = pinch(min(w - 1, max(0, x0)))
-            fang(x0, down: true, (0.35 + 0.65 * p) * grow, dim: false)
-            fang(x0 + tw / 2, down: false, (0.35 + 0.65 * p) * grow, dim: false)
+            // Near the spreading ends of the grin the fangs are still growing in, so they come smoothly.
+            for (fx, down) in [(x0, true), (x0 + tw / 2, false)] {
+                let grown = min(1, (reach - abs(Double(fx) + 0.5 - cx)) / Double(tw * 3))
+                guard grown > 0.15 else { continue }
+                fang(fx, down: down, (0.35 + 0.65 * p) * grow * grown, dim: false)
+            }
         }
 
         // The goo. Drips hang from the upper jaw and fall; after the snap it oozes out along the seam and runs down
@@ -182,21 +195,22 @@ extension HuntTrip {
                 let a = top[x], b = bottom[x], gap = b - a
                 let snapAt = Double(h) * (0.35 + 0.4 * noise(i * 3 + 52))
                 if Double(gap) < snapAt {
-                    // Still holding: thick at both ends, thin in the middle, sagging a little to one side.
+                    // Still holding: thick at both ends, thinner in the middle, sagging a little to one side, a pale
+                    // purple light down both its edges so it shows on a dark, busy place.
                     let thin = Double(gap) / snapAt
                     for y in a..<b {
                         let t = Double(y - a) / Double(max(1, gap))
-                        let wdt = max(1, Int((3.5 - (2.5 + thin) * sin(t * .pi)).rounded()))
+                        let wdt = max(3, Int((7 - (3 + 1.5 * thin) * sin(t * .pi)).rounded()))
                         let sx = x + Int((sin(t * .pi) * Double(gap) * 0.05).rounded())
                         c.rect(sx - wdt / 2, y, wdt, 1, C(0x141018))
-                        c.px(sx - wdt / 2 - 1, y, C(0x5A4A7A)); c.px(sx + (wdt + 1) / 2, y, C(0x2A2038))
-                        if (y + i) % 9 == 0 { c.px(sx - wdt / 2, y, C(0xC8C0E8)) }
+                        c.px(sx - wdt / 2 - 1, y, C(0x9A8AC0)); c.px(sx + (wdt + 1) / 2, y, C(0x6A5A8A))
+                        if (y + i) % 7 < 2 { c.px(sx - wdt / 2 + 1, y, C(0xC8C0E8)) }
                     }
                 } else {
                     // Snapped: a stub hanging from the top and a puddle sagging off the bottom.
                     let over = min(1, (Double(gap) - snapAt) / (Double(h) * 0.3))
-                    huntMawDrip(c, x, a, Int(4 + 8 * (1 - over)), bulb: true)
-                    huntMawDrip(c, x + 1, b - Int(4 + 6 * (1 - over)), Int(4 + 6 * (1 - over)), bulb: false)
+                    huntMawDrip(c, x, a, Int(6 + 10 * (1 - over)), bulb: true, fat: true)
+                    huntMawDrip(c, x + 1, b - Int(5 + 7 * (1 - over)), Int(5 + 7 * (1 - over)), bulb: false, fat: true)
                 }
             }
         }
@@ -205,8 +219,20 @@ extension HuntTrip {
 
     /// A drip of Leviathan goo hanging from (x, y), `len` rows long: glossy black, a purple-grey light down its left
     /// side and a dark rim down its right, and a fat bead on the end with a white glint, so it reads on a dark place.
-    private func huntMawDrip(_ c: PixelCanvas, _ x: Int, _ y: Int, _ len: Int, bulb: Bool) {
+    /// `fat`: the thick ends of a snapped strand, twice as wide, with a light down both sides and a gloss streak.
+    private func huntMawDrip(_ c: PixelCanvas, _ x: Int, _ y: Int, _ len: Int, bulb: Bool, fat: Bool = false) {
         guard len > 0 else { return }
+        if fat {
+            c.rect(x - 1, y, 5, len, C(0x141018))
+            c.rect(x - 2, y, 1, len, C(0x9A8AC0)); c.rect(x + 4, y, 1, len, C(0x6A5A8A))
+            c.rect(x, y, 1, max(1, len - 2), C(0x5A4A7A))
+            guard bulb else { return }
+            let by = y + len
+            c.rect(x - 2, by - 1, 7, 6, C(0x141018)); c.rect(x - 1, by + 5, 5, 1, C(0x141018))
+            c.rect(x - 3, by, 1, 4, C(0x9A8AC0)); c.rect(x + 5, by, 1, 4, C(0x6A5A8A))
+            c.px(x - 1, by, C(0xEEE8FF)); c.px(x, by + 1, C(0xC8C0E8)); c.rect(x - 1, by + 6, 5, 1, C(0x6A5A8A))
+            return
+        }
         c.rect(x, y, 2, len, C(0x141018))
         c.rect(x - 1, y, 1, len, C(0x5A4A7A)); c.rect(x + 2, y, 1, len, C(0x2A2038))
         guard bulb else { return }

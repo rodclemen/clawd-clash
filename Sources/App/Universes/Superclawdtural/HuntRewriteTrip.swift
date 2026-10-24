@@ -3,41 +3,54 @@ import Foundation
 
 // Chuck's Rewrite (`HuntWipe.rewrite`, only with Chuck or Becky about): the old place turns into a page of the
 // Supernatural novels, cream paper with the running head along the top, a chapter title and the scene typed out in
-// lines. A cursor adds "ACTUALLY, NO." to the end of it; Chuck's hand comes in, in his maroon bathrobe sleeve, and
-// scrunches the page up into a ball, creases and all, and tosses it away. A fresh page lies under it: the cursor types
-// a new chapter onto it, and the page fades into the new place.
+// lines, fed up over the picture a line at a time like paper into a typewriter. A cursor adds "ACTUALLY, NO." to the
+// end of it; Chuck's hand comes in, in his maroon bathrobe sleeve, and scrunches the page up into a ball, creases and
+// all, and tosses it away. A fresh page lies under it: the cursor types a new chapter onto it, and the page feeds on
+// up and out of the top, the new place underneath.
 
 extension HuntTrip {
-    /// A frame `k` (0…1) of Chuck's Rewrite, over the whole of `r`. The old place washes into a printed page (0–0.16);
-    /// the cursor types its last words (0.16–0.32); Chuck's hand reaches in (0.29–0.37) and crumples the page into a
-    /// ball over the blank page beneath (0.36–0.56), then tosses it off to the right (0.56–0.68); the cursor types the
-    /// new chapter (0.62–0.86) and the page fades into the new place (0.86–1).
+    /// A frame `k` (0…1) of Chuck's Rewrite, over the whole of `r`. The page feeds up over the old place, a line at a
+    /// time (0–0.16); the cursor types its last words (0.16–0.32); Chuck's hand reaches in (0.29–0.37) and crumples
+    /// the page into a ball over the blank page beneath (0.36–0.56), then tosses it off to the right (0.56–0.68); the
+    /// cursor types the new chapter (0.6–0.88) and the page feeds out of the top, the new place under it (0.88–1).
     func drawRewrite(_ ctx: CGContext, old: CGImage, new: CGImage, k: Double, in r: CGRect) {
         let art = HuntArt(r)
         let c = art.c, w = art.w, h = art.h
         let blink = Int(k * 40) % 2 == 0
+        let step = max(6, h / 16)                                    // a line's feed, as the platen clicks round
 
         // The old page, and its last words being typed.
         let oldText = huntRewriteOld + (k < 0.16 ? "" : String(" ACTUALLY, NO.".prefix(Int(Self.span(k, 0.18, 0.32) * 14))))
         let typingOld = k >= 0.16 && k < 0.36
-        let wash = (Self.span(k, 0, 0.16) * 8).rounded() / 8
 
         if k < 0.36 {
             ctx.drawShot(old, in: r)
-            huntRewritePage(c, chapter: "CHAPTER 4", text: oldText, cursor: typingOld && (blink || k < 0.32))
-            art.show(ctx, alpha: wash)
+            // Fed up from the bottom in clicks, its top edge throwing a shadow on the place above it.
+            let fed = Int(Self.ease(Self.span(k, 0, 0.16)) * Double(h + step - 1)) / step * step
+            let top = max(0, h - fed)
+            if top < h {
+                c.oy = top
+                huntRewritePage(c, chapter: "CHAPTER 4", text: oldText, cursor: typingOld && (blink || k < 0.32))
+                c.oy = 0
+                if top > 0 { c.rect(0, top - 2, w, 2, C(0x000000, 0.35)) }
+            }
+            art.show(ctx)
             huntRewriteHand(ctx, art, k: k, ball: nil)
             return
         }
 
-        // From here the fresh page lies underneath: blank, then the new chapter typed onto it.
-        let fade = (Self.span(k, 0.86, 1) * 8).rounded() / 8
-        if fade > 0 { ctx.drawShot(new, in: r) }
-        let typed = Self.span(k, 0.62, 0.86)
-        let newText = String(huntRewriteNew.prefix(Int(Double(huntRewriteNew.count) * Self.span(typed, 0.2, 1))))
+        // From here the fresh page lies underneath: blank, then the new chapter typed onto it, then fed out of the top
+        // in clicks, the new place under it.
+        let out = Int(Self.ease(Self.span(k, 0.88, 1)) * Double(h + step - 1)) / step * step
+        if out > 0 { ctx.drawShot(new, in: r) }
+        let typed = Self.span(k, 0.6, 0.88)
+        let newText = String(huntRewriteNew.prefix(Int(Double(huntRewriteNew.count) * Self.span(typed, 0.22, 0.95))))
         let title = String("CHAPTER 5".prefix(Int(9 * Self.span(typed, 0, 0.18))))
-        huntRewritePage(c, chapter: title, text: newText, cursor: k >= 0.6 && k < 0.9 && (blink || (typed > 0 && typed < 1)))
-        art.show(ctx, alpha: 1 - fade)
+        c.oy = -out
+        huntRewritePage(c, chapter: title, text: newText, cursor: k >= 0.58 && (blink || (typed > 0 && typed < 1)))
+        c.oy = 0
+        if out > 0 && out < h { c.rect(0, h - out, w, 2, C(0x000000, 0.35)) }
+        art.show(ctx)
 
         // The old page, crumpling into a ball in Chuck's hand and thrown away.
         let crumple = Self.ease(Self.span(k, 0.36, 0.56))
@@ -45,7 +58,7 @@ extension HuntTrip {
         if toss < 1 {
             let page = PixelCanvas(w, h)
             huntRewritePage(page, chapter: "CHAPTER 4", text: oldText, cursor: false)
-            let ballR = Double(h) * 0.2
+            let ballR = Double(h) * (art.wide ? 0.32 : 0.22)
             let g = (x: Double(w) * 0.5 + toss * Double(w) * 0.62, y: Double(h) * 0.5 - sin(toss * .pi) * Double(h) * 0.25)
             let ballArt = HuntArt(r)
             huntRewriteCrumple(ballArt.c, page, crumple, centre: g, ballR: ballR)
@@ -55,51 +68,73 @@ extension HuntTrip {
     }
 
     /// Chuck's hand: in from the right in his maroon bathrobe sleeve, a cuff at the wrist and Clawd's orange hand on the
-    /// end, closing round the ball and carrying it off. A dark edge round all of it, so it reads on paper and on a dark
-    /// place alike.
+    /// end, seen from the back: a palm, four fingers, each its own rounded stroke parted from the next by a dark line,
+    /// bending at the knuckle, and a thumb over the top. The fingers reach out flat for the page, then curl down round
+    /// the ball as it grips, and it carries the ball off. A dark edge round all of it, so it reads on paper and on a
+    /// dark place alike.
     private func huntRewriteHand(_ ctx: CGContext, _ base: HuntArt, k: Double, ball: (x: Double, y: Double, r: Double)?) {
         let reachIn = Self.ease(Self.span(k, 0.29, 0.37))
         guard reachIn > 0 else { return }
         let art = HuntArt(base.r)
         let c = art.c, w = art.w, h = art.h
-        let size = Int(Double(h) * 0.26)
-        let rest = (x: Double(w) * 0.5 + Double(h) * 0.12, y: Double(h) * 0.5)
-        var hx = Double(w + size) + (rest.x - Double(w + size)) * reachIn, hy = rest.y
-        if let b = ball, k >= 0.36 { hx = b.x + b.r * 0.6; hy = b.y }
-        let grip = Self.span(k, 0.36, 0.46)
-        let x = Int(hx.rounded()), y = Int(hy.rounded()) - size / 2
-        let outline = C(0x2A120E)
+        let size = Double(h) * (art.wide ? 0.42 : 0.3)
+        let u = size / 18                                            // the hand's own unit
+        let rest = (x: Double(w) * 0.5 + size * 0.45, y: Double(h) * 0.5)
+        var hx = Double(w) + size + (rest.x - Double(w) - size) * reachIn, hy = rest.y
+        if let b = ball, k >= 0.36 { hx = b.x + b.r * 0.55 + size * 0.2; hy = b.y }
+        let grip = Self.ease(Self.span(k, 0.36, 0.48))
+        let outline = C(0x2A120E), skin = C(0xD97757), lit = C(0xE8957A), shade = C(0xB85F40)
+        // The palm's left edge (the knuckles) at hx, its middle at hy.
+        let px0 = hx, py0 = hy - 8 * u
 
-        // The sleeve, out to the right edge, sloping up a little, with folds and its lit top edge.
-        let sx = x + size - 2, sh = size + 4
-        c.rect(sx - 1, y - 3, w - sx + 2, sh + 2, outline)
-        c.rect(sx, y - 2, w - sx, sh, C(0x7C3A40))
-        c.rect(sx, y - 2, w - sx, 2, C(0xA05A5E)); c.rect(sx, y + sh - 4, w - sx, 2, C(0x52242A))
-        for fx in stride(from: sx + 7, to: w, by: 9) { c.rect(fx, y + 1, 1, sh - 6, C(0x5E2A30)) }
-        // The cuff: a band of the robe turned back, lighter.
-        c.rect(sx - 1, y - 3, 5, sh + 2, outline); c.rect(sx, y - 2, 3, sh, C(0xA05A5E)); c.rect(sx, y - 2, 1, sh, C(0xC07A7C))
-
-        // The hand: Clawd's orange, a block with the fingers curled round the front of the ball and the thumb over
-        // the top; it closes a little as it grips.
-        let fingers = Int(Double(size) * (0.45 + 0.15 * grip))
-        let palmX = x + size - fingers - 2
-        c.rect(palmX - 1, y - 1, fingers + 4, size + 2, outline)
-        c.rect(palmX, y, fingers + 2, size, C(0xD97757))
-        c.rect(palmX, y, fingers + 2, 1, C(0xE8957A)); c.rect(palmX + fingers + 1, y, 1, size, C(0xB85F40))
-        // Four curled fingers reaching left over the ball, each a stub with a knuckle line.
-        let fw = max(3, size / 4), reach = Int(Double(size) * (0.35 - 0.12 * grip))
-        for i in 0..<4 {
-            let fy = y + i * fw
-            let len = reach - (i == 0 || i == 3 ? 2 : 0)
-            c.rect(palmX - len - 1, fy, len + 1, fw, outline)
-            c.rect(palmX - len, fy + 1, len, fw - 2, C(0xD97757))
-            c.rect(palmX - len, fy + 1, len, 1, C(0xE8957A))
-            c.px(palmX - 1, fy + fw / 2, C(0xB85F40))
+        // The sleeve, out to the right edge, with folds and its lit top edge; the cuff turned back, lighter.
+        let sx = Int(px0 + 9 * u), sy = Int(py0 - 1.5 * u), sh = Int(19 * u)
+        if sx < w {
+            c.rect(sx - 1, sy - 1, w - sx + 2, sh + 2, outline)
+            c.rect(sx, sy, w - sx, sh, C(0x7C3A40))
+            c.rect(sx, sy, w - sx, 2, C(0xA05A5E)); c.rect(sx, sy + sh - 3, w - sx, 2, C(0x52242A))
+            for fx in stride(from: sx + Int(5 * u), to: w, by: max(6, Int(6 * u))) { c.rect(fx, sy + 3, 1, sh - 7, C(0x5E2A30)) }
+            let cw = max(3, Int(2.5 * u))
+            c.rect(sx - 1, sy - 2, cw + 2, sh + 4, outline); c.rect(sx, sy - 1, cw, sh + 2, C(0xA05A5E)); c.rect(sx, sy - 1, 1, sh + 2, C(0xC07A7C))
         }
-        // The thumb, along the top.
-        c.rect(palmX - reach / 2 - 1, y - fw / 2 - 1, reach / 2 + 4, fw, outline)
-        c.rect(palmX - reach / 2, y - fw / 2, reach / 2 + 3, fw - 2, C(0xD97757))
-        c.rect(palmX - reach / 2, y - fw / 2, reach / 2 + 3, 1, C(0xE8957A))
+
+        /// A rounded stroke from (x0, y0) to (x1, y1), `t` thick: its dark edge, the skin, and a lit line along its top.
+        func stroke(_ x0: Double, _ y0: Double, _ x1: Double, _ y1: Double, _ t: Double, edge: Bool) {
+            if edge { huntLine(c, x0, y0, x1, y1, outline, t / 2 + 1) } else {
+                huntLine(c, x0, y0, x1, y1, skin, t / 2)
+                huntLine(c, x0, y0 - t * 0.3, x1, y1 - t * 0.3, lit, 0.5)
+            }
+        }
+        // The palm: a rounded block behind the knuckles.
+        let palm = (x: px0 + 1.5 * u, y: py0 + 1 * u, w: 8.5 * u, h: 15 * u)
+        c.rect(Int(palm.x) - 1, Int(palm.y) - 1, Int(palm.w) + 2, Int(palm.h) + 2, outline)
+        c.rect(Int(palm.x), Int(palm.y), Int(palm.w), Int(palm.h), skin)
+        c.rect(Int(palm.x), Int(palm.y), Int(palm.w), 1, lit)
+        c.rect(Int(palm.x + palm.w) - 1, Int(palm.y), 1, Int(palm.h), shade)
+        // The fingers, the little one at the bottom first, so each lies over the one below it with a dark line
+        // between them. Each a first joint out from the knuckle and a second bending down as it grips.
+        let fingers: [(y: Double, len1: Double, len2: Double, a: Double)] = [
+            (14, 5.5, 3.5, 186), (10, 7, 4.5, 181), (6, 7.5, 5, 178), (2.2, 7, 4.5, 174),
+        ]
+        let ft = 3.6 * u
+        for f in fingers {
+            // Angles in degrees, 180 pointing straight out to the left, more bending it down.
+            let kx = px0 + 2 * u, ky = py0 + (f.y + 0.6) * u
+            let a1 = (f.a + 10 * grip) * .pi / 180, a2 = (f.a + 10 * grip + 75 * grip) * .pi / 180
+            let jx = kx + cos(a1) * f.len1 * u, jy = ky - sin(a1) * f.len1 * u
+            let tx = jx + cos(a2) * f.len2 * u, ty = jy - sin(a2) * f.len2 * u
+            // Its dark edge over the finger below it, then the skin, a crease at the knuckle and the joint.
+            stroke(kx, ky, jx, jy, ft, edge: true); stroke(jx, jy, tx, ty, ft * 0.92, edge: true)
+            stroke(kx, ky, jx, jy, ft, edge: false); stroke(jx, jy, tx, ty, ft * 0.92, edge: false)
+            c.px(Int(jx.rounded()), Int((jy + ft * 0.2).rounded()), shade)
+            c.px(Int(kx.rounded()), Int((ky + ft * 0.2).rounded()), shade)
+        }
+        // The thumb, over the top of the hand, angled up and out, curling in as it grips.
+        let ta = (215 - 30 * grip) * .pi / 180
+        let tbx = px0 + 6 * u, tby = py0 + 1 * u
+        let tex = tbx + cos(ta) * 7.5 * u, tey = tby + sin(ta) * 7.5 * u
+        stroke(tbx, tby, tex, tey, 3.8 * u, edge: true)
+        stroke(tbx, tby, tex, tey, 3.8 * u, edge: false)
         art.show(ctx)
     }
 }
@@ -113,41 +148,40 @@ private let huntRewriteOld = "DEAN SLAMMED THE TRUNK OF THE IMPALA. SALT, IRON, 
     + "THE AIR WENT COLD. SAM SAID THEY HAD TO GO. DEAN SAID FIVE MORE MINUTES. THE WALLS DISAGREED. THE BROTHERS RAN, "
     + "THEN STOPPED, THEN RAN AGAIN, AND THE NIGHT CLOSED IN BEHIND THEM LIKE A DOOR."
 
-/// The new chapter, typed onto the fresh page.
-private let huntRewriteNew = "LET'S TRY THAT AGAIN. THEY ARRIVED, AND EVERYTHING WAS EXACTLY WHERE IT WAS SUPPOSED TO BE. "
-    + "SAM NOTICED. DEAN DID NOT. THE WRITER WAS PLEASED."
+/// The new chapter, typed onto the fresh page: short, so it types at a pace you can read.
+private let huntRewriteNew = "LET'S TRY THAT AGAIN. THEY ARRIVED. SAM NOTICED. DEAN DID NOT."
 
 /// A page of the novels onto `c`, over the whole of it: cream paper with a yellowed edge, CARVER EDLUND and
-/// SUPERNATURAL along the top over a rule, the page number, the chapter title and `text` wrapped into lines, and a
-/// block cursor after its last letter.
+/// SUPERNATURAL along the top over a rule, the page number, the chapter title and `text` wrapped into lines with room
+/// between them, and a block cursor after its last letter.
 private func huntRewritePage(_ c: PixelCanvas, chapter: String, text: String, cursor: Bool) {
     let w = c.w, h = c.h
     let ink = C(0x2A2420), head = C(0x8A7A5E)
     c.rect(0, 0, w, h, C(0xEEE6D0))
     for i in 0..<(w * h / 40) { c.px(Int(noise(i * 3 + 700) * Double(w)), Int(noise(i * 3 + 701) * Double(h)), C(0xE2D8BE)) }
     c.rect(0, 0, w, 2, C(0xD8CCA8)); c.rect(0, h - 2, w, 2, C(0xD8CCA8)); c.rect(0, 0, 2, h, C(0xD8CCA8)); c.rect(w - 2, 0, 2, h, C(0xD8CCA8))
-    let mx = max(8, w * 8 / 100)
+    let mx = max(10, w * 10 / 100)
     huntTripText(c, mx, 4, "CARVER EDLUND", head, 1)
     huntTripCentred(c, w / 2, 4, "SUPERNATURAL", head, 1)
     huntTripText(c, w - mx - huntTripTextWidth("213", 1), 4, "213", head, 1)
     c.rect(mx, 11, w - 2 * mx, 1, C(0xC8BC9C))
     huntTripCentred(c, w / 2, 15, chapter, ink, 2)
 
-    // The text, wrapped to the page's width, as many lines as fit.
-    let perLine = max(10, (w - 2 * mx) / 4)
+    // The text, wrapped to the page's width, a line every ten rows, as many lines as fit.
+    let perLine = max(10, (w - 2 * mx) / 4), lead = 10
     var lines: [String] = [], line = ""
     for word in text.split(separator: " ", omittingEmptySubsequences: false) {
         if line.count + word.count + 1 > perLine { lines.append(line); line = String(word) }
         else { line = line.isEmpty ? String(word) : line + " " + word }
     }
     lines.append(line)
-    let first = 31, room = max(1, (h - first - 4) / 8)
+    let first = 32, room = max(1, (h - first - 4) / lead)
     if lines.count > room { lines = Array(lines.suffix(room)) }
-    for (i, l) in lines.enumerated() { huntTripText(c, mx, first + i * 8, l, ink, 1) }
+    for (i, l) in lines.enumerated() { huntTripText(c, mx, first + i * lead, l, ink, 1) }
     if cursor {
         let last = lines.last ?? ""
         let cx = mx + huntTripTextWidth(last, 1) + (last.isEmpty ? 0 : 2)
-        c.rect(cx, first + (lines.count - 1) * 8 - 1, 3, 7, C(0x2A2420))
+        c.rect(cx, first + (lines.count - 1) * lead - 1, 3, 7, C(0x2A2420))
     }
 }
 
