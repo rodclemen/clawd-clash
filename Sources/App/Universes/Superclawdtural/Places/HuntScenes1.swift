@@ -14,6 +14,17 @@ let huntScenes1: [Location: Place] = [
 
 // MARK: - The Bunker
 
+/// The world on the map table's glass, a row a unit, each dot two units wide: the Americas on the left, Europe and
+/// Africa in the middle, Asia and Australia on the right.
+private let huntBunkerMap = [
+    "..#########........###..##########....",
+    "...#######........####.############...",
+    "....#####.........###...##########....",
+    "......##..........####....######..#...",
+    ".......###.........###......#....##...",
+    "........##..........#............###..",
+]
+
 extension Scenes {
     /// Where things stand in the war room, shared by the still picture and the moving layer so they line up: the
     /// wainscot's top, the map table (its middle, half its width and its top), the wall lamps' row and x positions,
@@ -24,7 +35,7 @@ extension Scenes {
         let lamps = [c.w * 34 / 100, c.w * 62 / 100]
         // On the screen saver the stairs climb all the way to the door's landing, two units across for every three up.
         let stairs = isTall(c) ? max(c.w * 66 / 100, c.w - 34 * s - (g - huntBunkerLanding(g)) * 2 / 3) : c.w * 76 / 100
-        return (g - 9 * s, (x: c.w * 48 / 100, half: 30 * s, top: g - 15 * s), g - 27 * s, lamps, stairs)
+        return (g - 9 * s, (x: c.w * 48 / 100, half: 40 * s, top: g - 20 * s), g - 27 * s, lamps, stairs)
     }
 
     /// The screen saver's landing at the top of the stairs, and the balcony's floor.
@@ -160,25 +171,33 @@ extension Scenes {
                 c.rect(x - 5 * s, y + 3 * s, 10 * s, s, C(0xF4E2A8))
             }
         }
-        // The map table: heavy walnut, its glass top lit from inside, the continents on it in warm amber lines, the
+        // The map table: long and heavy walnut, its glass top lit from inside, the world on it in warm amber, the
         // light spilling up onto the wall behind it. Its legs stand on the floor; the crew stands in front of it.
         let t = f.table
-        for r in stride(from: 26 * s, to: 4 * s, by: -3 * s) {
-            c.ellipse(t.x, t.top, t.half + r, r / 2, C(0xF0D890, 0.03))
+        for r in stride(from: 30 * s, to: 4 * s, by: -3 * s) {
+            c.ellipse(t.x, t.top, t.half + r, r / 2, C(0xF0D890, 0.035))
         }
-        // The glass, seen from a little above: lit cream, a faint grid of latitude lines, the continents in amber.
-        c.rect(t.x - t.half, t.top, 2 * t.half, 5 * s, C(0xE4CE92))
-        c.rect(t.x - t.half, t.top, 2 * t.half, max(1, s / 2), C(0xFFF2C8))
-        for y in [t.top + 2 * s, t.top + 4 * s] { c.rect(t.x - t.half, y, 2 * t.half, max(1, s / 2), C(0xD2B97C)) }
-        for x in stride(from: t.x - t.half + 6 * s, to: t.x + t.half, by: 8 * s) { c.rect(x, t.top + s, max(1, s / 2), 4 * s, C(0xD2B97C)) }
-        for (u, v, w, h) in [(-26, 1, 7, 2), (-24, 3, 4, 2), (-14, 1, 5, 1), (-13, 2, 3, 3), (-3, 1, 10, 2),
-                             (0, 3, 4, 2), (12, 1, 7, 2), (15, 3, 3, 1), (21, 3, 5, 1)] {   // the continents
-            c.rect(t.x + u * s, t.top + v * s, w * s, h * s, C(0xB08A44))
+        // The glass, seen from a little above: lit cream, brightest along the far edge, a faint grid of latitude and
+        // longitude lines, and the world map in amber.
+        c.rect(t.x - t.half, t.top, 2 * t.half, 8 * s, C(0xE4CE92))
+        c.rect(t.x - t.half, t.top, 2 * t.half, s, C(0xFFF2C8))
+        for y in [t.top + 3 * s, t.top + 6 * s] { c.rect(t.x - t.half, y, 2 * t.half, max(1, s / 2), C(0xD2B97C)) }
+        for x in stride(from: t.x - t.half + 7 * s, to: t.x + t.half, by: 10 * s) { c.rect(x, t.top + s, max(1, s / 2), 7 * s, C(0xD2B97C)) }
+        let mapW = huntBunkerMap[0].count
+        for (v, row) in huntBunkerMap.enumerated() {
+            for (u, ch) in row.enumerated() where ch == "#" {
+                c.rect(t.x + (2 * u - mapW) * s, t.top + (v + 1) * s, 2 * s, s, C(0xB08A44))
+            }
         }
-        c.rect(t.x - t.half - s, t.top + 5 * s, 2 * t.half + 2 * s, 2 * s, wood)
-        c.rect(t.x - t.half - s, t.top + 5 * s, 2 * t.half + 2 * s, max(1, s / 2), woodL)
-        c.rect(t.x - t.half - s, t.top + 7 * s, 2 * t.half + 2 * s, s, woodD)
-        for x in [t.x - t.half, t.x + t.half - 3 * s] { c.rect(x, t.top + 8 * s, 3 * s, g - t.top - 8 * s, woodD) }
+        // The heavy rim round the glass, lit along its top, the apron under it and three square legs.
+        c.rect(t.x - t.half - 2 * s, t.top - s, 2 * t.half + 4 * s, s, woodL)
+        c.rect(t.x - t.half - 2 * s, t.top, 2 * s, 8 * s, wood); c.rect(t.x + t.half, t.top, 2 * s, 8 * s, woodD)
+        c.rect(t.x - t.half - 2 * s, t.top + 8 * s, 2 * t.half + 4 * s, 2 * s, wood)
+        c.rect(t.x - t.half - 2 * s, t.top + 8 * s, 2 * t.half + 4 * s, max(1, s / 2), woodL)
+        c.rect(t.x - t.half - 2 * s, t.top + 10 * s, 2 * t.half + 4 * s, s, woodD)
+        for x in [t.x - t.half, t.x - 2 * s, t.x + t.half - 4 * s] {
+            c.rect(x, t.top + 11 * s, 4 * s, g - t.top - 11 * s, woodD); c.rect(x, t.top + 11 * s, max(1, s / 2), g - t.top - 11 * s, wood)
+        }
         // The floor: dark polished tile in big squares, plain enough that the crew reads on it.
         c.ground(g, C(0x3A2E26), edge: C(0x54443A), speck: C(0x30261E), seed: 41)
         for x in stride(from: 0, to: c.w, by: 24 * s) { c.rect(x, g + 1, max(1, s / 2), c.h - g - 1, C(0x30261E)) }
@@ -188,10 +207,11 @@ extension Scenes {
     /// lamp's bulb flickering now and then, as old wiring does.
     static func huntBunkerLife(_ c: PixelCanvas, _ g: Int, _ t: Double) {
         let s = unit(g), f = huntBunkerFrame(c, g)
-        let pins = [(-20, C(0xFF4A3A)), (-6, C(0xFFD04A)), (4, C(0xFF4A3A)), (15, C(0x6AD0FF)), (23, C(0xFFD04A))]
-        for (k, (u, col)) in pins.enumerated() {
+        let pins = [(-30, 2, C(0xFF4A3A)), (-24, 4, C(0xFFD04A)), (-6, 2, C(0xFF4A3A)), (8, 3, C(0x6AD0FF)),
+                    (18, 2, C(0xFFD04A)), (-20, 6, C(0x6AD0FF)), (30, 6, C(0xFF4A3A))]
+        for (k, (u, v, col)) in pins.enumerated() {
             let on = sin(t * (1.3 + Double(k) * 0.37) + Double(k) * 1.7) > 0.1
-            if on { c.rect(f.table.x + u * s, f.table.top + (2 + k % 2) * s, max(1, s), max(1, s), col) }
+            if on { c.rect(f.table.x + u * s, f.table.top + v * s, max(1, s), max(1, s), col) }
         }
         // The flicker: most of the time steady; for a few moments every dozen seconds, the bulb stutters.
         let phase = t.truncatingRemainder(dividingBy: 11.0)

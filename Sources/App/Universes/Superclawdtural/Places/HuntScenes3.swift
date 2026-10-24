@@ -78,15 +78,20 @@ extension Scenes {
         }
         // The grave in the middle distance, dug open: its headstone, the dark pit, the dirt heaped beside it with the
         // shovel standing in it, and a cylinder of salt. The fire is in the moving layer; here, its glow on the ground.
+        // The grave is a long straight-sided slot, seen from a little above: the far wall of the pit lit by the fire,
+        // its floor black, a lip of fresh dirt along the near side (the moving layer draws it again over the flames'
+        // feet), the headstone at its head end lit on its face, the spoil heaped at the foot with the shovel in it.
         let gx = f.grave.x, gy = f.grave.y
-        for r in stride(from: 16 * s, to: 2 * s, by: -3 * s) { c.ellipse(gx, gy, r * 3 / 2, r / 2, C(0xE87A2A, 0.05)) }
-        huntStullStone(c, gx - 2 * s, gy - 2 * s, 5 * s, 7 * s, cross: false, s: s)
-        c.rect(gx - 2 * s, gy - 9 * s + 2 * s, s, 5 * s, C(0xB89060, 0.45))   // firelight on its face
-        c.ellipse(gx, gy + s, 8 * s, 2 * s, C(0x120C08))
-        c.ellipse(gx + 11 * s, gy, 5 * s, 2 * s, C(0x4A3624)); c.ellipse(gx + 10 * s, gy - s, 3 * s, s, C(0x5E4630))
-        c.rect(gx + 12 * s, gy - 8 * s, max(1, s / 2) + s / 2, 7 * s, C(0x6A4A2A))   // the shovel's handle
-        c.rect(gx + 11 * s, gy - 9 * s, 3 * s, s, C(0x6A4A2A)); c.rect(gx + 11 * s, gy - 2 * s, 3 * s, 2 * s, C(0x7A8088))
-        c.rect(gx - 11 * s, gy - 2 * s, 2 * s, 3 * s, C(0x2E5A9A)); c.rect(gx - 11 * s, gy - 2 * s, 2 * s, max(1, s / 2), C(0xE8E8E0))
+        for r in stride(from: 18 * s, to: 2 * s, by: -3 * s) { c.ellipse(gx, gy, r * 2, r / 2, C(0xE87A2A, 0.05)) }
+        c.ellipse(gx, gy + s, 13 * s, 2 * s, C(0x2E2A20))                          // the dug-over earth round it
+        huntStullStone(c, gx - 15 * s, gy - s, 6 * s, 10 * s, cross: false, s: s)
+        c.rect(gx - 10 * s, gy - 9 * s, s, 7 * s, C(0xD8A060, 0.5))                 // firelight on its face
+        c.rect(gx - 8 * s, gy - s, 16 * s, s, C(0x7A3E1C)); c.rect(gx - 8 * s, gy, 16 * s, s, C(0x120C08))
+        c.rect(gx - 9 * s, gy + s, 18 * s, s, C(0x26221C))
+        c.ellipse(gx + 13 * s, gy, 5 * s, 2 * s, C(0x4A3624)); c.ellipse(gx + 12 * s, gy - s, 3 * s, s, C(0x5E4630))
+        c.rect(gx + 14 * s, gy - 8 * s, max(1, s / 2) + s / 2, 7 * s, C(0x6A4A2A))   // the shovel's handle
+        c.rect(gx + 13 * s, gy - 9 * s, 3 * s, s, C(0x6A4A2A)); c.rect(gx + 13 * s, gy - 2 * s, 3 * s, 2 * s, C(0x7A8088))
+        c.rect(gx - 19 * s, gy - s, 2 * s, 3 * s, C(0x2E5A9A)); c.rect(gx - 19 * s, gy - s, 2 * s, max(1, s / 2), C(0xE8E8E0))
         huntStullImpala(c, f.car.x, f.car.y, s)
         // The floor: muddy grass, plain and dark so the crew reads.
         c.ground(g, C(0x2C3228), edge: C(0x404A3C), speck: C(0x252A22), seed: 71)
@@ -99,28 +104,37 @@ extension Scenes {
         }
     }
 
-    /// The storm clouds: a ragged ceiling in the window, heavy piled banks on the screen saver, lit faintly from beneath.
+    /// The storm clouds, as layers of low ragged cloud one behind another: a few in the window, a deep stack on the
+    /// screen saver, lit faintly from beneath.
     private static func huntStullClouds(_ c: PixelCanvas, _ g: Int) {
         let s = unit(g), f = huntStullFrame(c, g), tall = isTall(c)
-        // One billow: a dark body over a band lit faintly from beneath, a little light on its crown.
-        func billow(_ x: Int, _ y: Int, _ r: Int, _ seed: Int, dark: Px, lit: Px) {
-            for k in 0..<4 {
-                let dx = Int((noise(seed * 5 + k) - 0.5) * Double(r * 3)), rr = r * (3 + k % 2) / 4 + s
-                c.ellipse(x + dx, y + rr / 3 + s, rr * 3 / 2, rr / 2 + s, lit)
-            }
-            for k in 0..<4 {
-                let dx = Int((noise(seed * 5 + k) - 0.5) * Double(r * 3)), rr = r * (3 + k % 2) / 4 + s
-                c.ellipse(x + dx, y - rr / 4, rr * 3 / 2, rr * 2 / 3, dark)
+        // One layer: a sheet of cloud whose lower edge sags in heavy, uneven rolls, deep in places and pinched up in
+        // others, black-blue above, shading lighter down towards the edge in two steps, with a thin rim lit faintly
+        // from beneath. It fills up to the top, and the next, nearer layer is drawn over it, so each layer shows as a
+        // band of rolls.
+        func layer(_ base: Int, _ amp: Int, _ seed: Int, dark: Px, mid: Px, lit: Px) {
+            let f1 = 1 / Double(9 * s + amp), f2 = 1 / Double(31 * s + amp * 3), f3 = 1 / Double(4 * s + amp / 3)
+            let ph = noise(seed) * 40, ph2 = noise(seed + 1) * 40, ph3 = noise(seed + 2) * 40
+            let shade = lerp(dark, mid, 0.5)
+            for x in 0..<c.w {
+                let u = Double(x)
+                let swell = sin(u * f2 + ph2) * 0.5 + 0.5
+                let roll = abs(sin(u * f1 + ph)) * (0.35 + 0.45 * swell) + swell * 0.4 + (sin(u * f3 + ph3) * 0.5 + 0.5) * 0.12
+                let edge = base + Int(roll * Double(amp)) - amp / 2
+                guard edge > 0 else { continue }
+                let depth = max(2 * s, Int(roll * Double(amp)) / 2 + 2 * s)
+                c.rect(x, 0, 1, edge, dark)
+                c.rect(x, max(0, edge - depth), 1, min(edge, depth), shade)
+                c.rect(x, max(0, edge - depth / 2), 1, min(edge, depth / 2), mid)
+                c.rect(x, max(0, edge - s), 1, min(edge, s), lit)
             }
         }
         if !tall {
-            // In the window: a low ragged ceiling, black above, billows hanging down along its edge.
-            c.rect(0, 0, c.w, f.cloudBase - 3 * s, C(0x0C1016))
-            var x = -6 * s, i = 0
-            while x < c.w + 8 * s {
-                let r = (5 + Int(noise(i + 200) * 5)) * s
-                billow(x, f.cloudBase - r / 3 - Int(noise(i + 201) * Double(3 * s)), r, i + 210, dark: C(0x161C26), lit: C(0x34405A))
-                x += r * 2 + Int(noise(i + 202) * Double(3 * s)); i += 1
+            // In the window: a low ragged ceiling of two layers, the lower and further one paler.
+            for (k, (dy, amp)) in [(0, 6), (-4, 5)].enumerated() {
+                let d = Double(k)
+                layer(f.cloudBase + dy * s, amp * s, 200 + k * 3, dark: lerp(C(0x161C26), C(0x0C1016), d),
+                      mid: lerp(C(0x222A38), C(0x141A24), d), lit: lerp(C(0x3E4A66), C(0x26304A), d))
             }
             return
         }
@@ -134,25 +148,27 @@ extension Scenes {
                 }
             }
         }
-        // The storm piled overhead: heaped clumps of cloud, small and far off low down, big and near overhead, each
-        // a mound of rounded puffs, black on top and lit faintly blue along its belly. The far ones go first.
-        let count = c.w * f.cloudBase / (900 * s * s) + 8
-        let clumps = (0..<count).map { i -> (x: Int, y: Int, k: Double) in
+        // The storm piled overhead: heavy banks of cloud, small and far off low down, big and near overhead, each a
+        // long mass with a flattish base and a heaped, lumpy top. Each bank is drawn as one shape: its lobes all in
+        // the lit tone a little low, then all in a mid tone, then all in the dark, so the light runs only along the
+        // bank's underside instead of round every lobe. The far ones go first.
+        let count = c.w * f.cloudBase / (1400 * s * s) + 6
+        let banks = (0..<count).map { i -> (x: Int, y: Int, k: Double) in
             let k = noise(i * 3 + 400)
             return (Int(noise(i * 3 + 401) * Double(c.w + 40 * s)) - 20 * s, f.cloudBase - Int(k * Double(f.cloudBase)), k)
         }.sorted { $0.y > $1.y }
-        for (i, cl) in clumps.enumerated() {
-            let r = (6 + Int(cl.k * 12) + Int(noise(i + 450) * 4)) * s
-            let dark = lerp(C(0x2A3448), C(0x0E121A), cl.k), mid = lerp(C(0x323E56), C(0x141A24), cl.k)
-            let lit = lerp(C(0x56668A), C(0x2C3850), cl.k)
-            c.ellipse(cl.x, cl.y + r / 2, r * 2, r / 2 + s, lit)
-            for p in 0..<5 {
-                let px = cl.x + Int((noise(i * 11 + p + 460) - 0.5) * Double(r * 3))
-                let pr = r * (2 + p % 3) / 4 + s
-                let py = cl.y - Int(noise(i * 11 + p + 470) * Double(r / 2))
-                c.circle(px, py, pr, mid)
-                c.circle(px + pr / 4, py + pr / 5, pr * 3 / 4, dark)
+        for (i, b) in banks.enumerated() {
+            let r = (7 + Int(b.k * 14) + Int(noise(i + 450) * 5)) * s
+            let dark = lerp(C(0x2A3448), C(0x0E121A), b.k), mid = lerp(C(0x323E56), C(0x161C28), b.k)
+            let lit = lerp(C(0x56668A), C(0x2C3850), b.k)
+            let lobes = (0..<6).map { p -> (x: Int, y: Int, w: Int, h: Int) in
+                let w = r * (14 + Int(noise(i * 11 + p + 460) * 12)) / 10, h = r * (4 + Int(noise(i * 11 + p + 480) * 4)) / 10 + s
+                let x = b.x + Int((noise(i * 11 + p + 470) - 0.5) * Double(r * 5))
+                return (x, b.y - h + Int(noise(i * 11 + p + 490) * Double(r / 4)), w, h)
             }
+            for l in lobes { c.ellipse(l.x, l.y + 2 * s, l.w, l.h, lit) }
+            for l in lobes { c.ellipse(l.x, l.y + s, l.w, l.h, mid) }
+            for l in lobes { c.ellipse(l.x, l.y - s, l.w, l.h, dark) }
         }
     }
 
@@ -296,21 +312,30 @@ extension Scenes {
                 bx = nx; by = ny; k += 1
             }
         }
-        // The burning grave.
+        // The burning grave: a long sheet of fire the length of the slot, tongues of uneven heights licking up out of
+        // the ground, their feet hidden behind the dark near lip, sparks lifting off it and a thick smoke, lit orange
+        // by the fire low down, rolling up and away to the right.
         let gx = f.grave.x, gy = f.grave.y
-        for k in 0..<7 {
-            let fx = gx - 6 * s + k * 2 * s
-            let flick = sin(t * (7.0 + Double(k) * 1.3) + Double(k) * 2.1) * 0.5 + 0.5
-            let edge = 1.0 - abs(Double(k) - 3.0) / 4.0
-            let h = max(s, Int((2.0 + edge * 5.0 + flick * 2.5) * Double(s)))
-            c.rect(fx, gy - h, 2 * s, h, C(0xC8361A))
-            c.rect(fx, gy - h * 2 / 3, 2 * s, h * 2 / 3, C(0xF07A22))
-            c.rect(fx + s / 2, gy - h / 3, max(1, s), h / 3, C(0xFFD46A))
+        for k in 0..<16 {
+            let fx = gx - 8 * s + k * s
+            let flick = sin(t * (6.0 + Double(k % 5) * 1.7) + Double(k) * 2.3) * 0.5 + 0.5
+            let base = 2.0 + noise(k + 3100) * 4.0 - (k == 0 || k == 15 ? 1.5 : 0)
+            let h = max(2 * s, Int((base + flick * 3.0) * Double(s)))
+            c.rect(fx, gy - h, s, h + s, C(0xC8361A))
+            c.rect(fx, gy - h * 2 / 3, s, h * 2 / 3 + s, C(0xF07A22))
+            if k > 1 && k < 14 { c.rect(fx, gy - h / 3, s, h / 3 + s, C(0xFFD46A)) }
         }
-        for k in 0..<4 {   // the smoke, see-through, curling up and away to the right
-            let u = (t * 0.35 + Double(k) * 0.25).truncatingRemainder(dividingBy: 1)
-            let sx = gx + Int(u * Double(10 * s) + sin(t + Double(k)) * Double(s)), sy = gy - 9 * s - Int(u * Double(16 * s))
-            c.ellipse(sx, sy, (2 + Int(u * 3)) * s, (1 + Int(u * 2)) * s, C(0x5A606A, 0.35 * (1 - u)))
+        c.rect(gx - 9 * s, gy + s, 18 * s, s, C(0x26221C))
+        for k in 0..<5 {   // sparks
+            let u = (t * 0.6 + noise(k + 3120)).truncatingRemainder(dividingBy: 1)
+            let sx = gx - 7 * s + Int(noise(k + 3130) * Double(14 * s)) + Int(u * Double(5 * s)), sy = gy - 5 * s - Int(u * Double(14 * s))
+            c.rect(sx, sy, max(1, s), max(1, s), C(0xFFB040, 0.9 * (1 - u)))
+        }
+        for k in 0..<8 {   // the smoke, see-through, rolling up and away to the right
+            let u = (t * 0.28 + Double(k) / 8).truncatingRemainder(dividingBy: 1)
+            let sx = gx - 6 * s + Int(u * Double(20 * s) + sin(t + Double(k)) * Double(s)) + (k % 3) * 4 * s
+            let sy = gy - 7 * s - Int(u * Double(28 * s))
+            c.ellipse(sx, sy, (3 + Int(u * 5)) * s, (1 + Int(u * 3)) * s, lerp(C(0x9A6448), C(0x5A606A), min(1, u * 2.5)).alpha(0.32 * (1 - u)))
         }
     }
 }
@@ -326,7 +351,7 @@ extension Scenes {
         let s = unit(g)
         let throneX = c.w * 82 / 100
         let vault = isTall(c) ? g * 34 / 100 : -40 * s
-        return (g - 24 * s, c.w * 62 / 100, (x: throneX, dais: g - 5 * s), [c.w * 6 / 100, throneX - 20 * s, throneX + 20 * s],
+        return (g - 38 * s, c.w * 62 / 100, (x: throneX, dais: g - 5 * s), [c.w * 6 / 100, throneX - 20 * s, throneX + 20 * s],
                 g - 19 * s, vault)
     }
 
@@ -338,13 +363,25 @@ extension Scenes {
     static func huntHell(_ c: PixelCanvas, _ g: Int) {
         let s = unit(g), f = huntHellFrame(c, g), tall = isTall(c)
         let red = C(0x4A1410), redD = C(0x2C0A08), redL = C(0x6A2018), gold = C(0xC8A04A), goldD = C(0x8A6A2A)
-        // The wall: dark red stone, blackest up high, in staggered courses with lit tops here and there.
+        // The wall: dark red stone, blackest up high, in big rough-cut blocks of uneven lengths, course on course,
+        // some a shade darker or warmer than the next, lit along the top here and there, a crack running through
+        // the odd one. Below the queue's ledge the joints are fainter, so the wall behind the crew stays calm.
         c.gradient(0, g, C(0x160404), red, bands: 7)
-        for (row, y) in stride(from: g - 4 * s, to: -4 * s, by: -4 * s).enumerated() {
-            c.rect(0, y, c.w, max(1, s / 2), redD)
-            for x in stride(from: (row % 2) * 5 * s, to: c.w, by: 10 * s) {
-                c.rect(x, y - 4 * s, max(1, s / 2), 4 * s, redD)
-                if noise(row * 53 + x / max(1, s)) > 0.75 { c.rect(x + s, y - 4 * s + max(1, s / 2), 8 * s, max(1, s / 2), redL.alpha(0.5)) }
+        for (row, y) in stride(from: g - 6 * s, to: -6 * s, by: -6 * s).enumerated() {
+            let calm = y > f.ledge, joint = calm ? redD.alpha(0.55) : redD
+            c.rect(0, y, c.w, max(1, s / 2), joint)
+            var x = -Int(noise(row + 2000) * 12) * s, i = row * 31
+            while x < c.w {
+                let len = (9 + Int(noise(i + 2010) * 10)) * s
+                let shade = noise(i + 2020)
+                if shade > 0.72 { c.rect(x, y - 6 * s, len, 6 * s, C(0x0C0202, calm ? 0.12 : 0.2)) }
+                else if shade < 0.18 { c.rect(x, y - 6 * s, len, 6 * s, C(0x8A2A1E, calm ? 0.06 : 0.1)) }
+                if !calm && noise(i + 2030) > 0.7 { c.rect(x + s, y - 6 * s + max(1, s / 2), len - 2 * s, max(1, s / 2), redL.alpha(0.5)) }
+                if !calm && noise(i + 2040) > 0.9 {   // a crack, stepping down across the block
+                    for k in 0..<4 { c.rect(x + (3 + k) * s, y - (5 - k) * s, max(1, s / 2), s, redD) }
+                }
+                c.rect(x, y - 6 * s, max(1, s / 2), 6 * s, joint)
+                x += len; i += 1
             }
         }
         // Pillars down the wall, lit on their left, with gold-banded capitals.
@@ -363,6 +400,7 @@ extension Scenes {
         // The ledge the queue stands on: a stone shelf with a lit lip, and the shadow under it.
         c.rect(0, f.ledge, ax + 12 * s, 3 * s, redD); c.rect(0, f.ledge, ax + 12 * s, max(1, s / 2), redL)
         c.rect(0, f.ledge + 3 * s, ax + 12 * s, s, C(0x140303))
+        for k in 0..<3 { c.rect(0, f.ledge + (4 + 2 * k) * s, ax + 12 * s, 2 * s, C(0x0C0202, 0.3 - Double(k) * 0.1)) }
         huntHellRope(c, g)
         // The wall's foot: a plain dark plinth, so the crew reads in front of it.
         c.rect(0, g - 9 * s, c.w, 9 * s, C(0x340E0B)); c.rect(0, g - 9 * s, c.w, max(1, s / 2), C(0x541A14))
@@ -424,19 +462,30 @@ extension Scenes {
     /// hanging down, and the far wall's queue zigzagging up into the dark.
     private static func huntHellVault(_ c: PixelCanvas, _ g: Int) {
         let s = unit(g), f = huntHellFrame(c, g)
-        // The zigzag of more souls on ramps up the wall, faint and far off.
-        let rampW = c.w * 46 / 100, rx = c.w * 8 / 100
-        for k in 0..<4 {
-            let y0 = f.ledge - 40 * s - k * 22 * s, y1 = y0 - 14 * s
-            guard y1 > f.vault + 10 * s else { break }
-            let left = k % 2 == 0
-            let xa = left ? rx : rx + rampW, xb = left ? rx + rampW : rx
-            for i in 0..<16 {
-                let u = (Double(i) + 0.5) / 16
-                let px = Int(Double(xa) + Double(xb - xa) * u), py = Int(Double(y0) + Double(y1 - y0) * u)
-                c.rect(px - s, py - 5 * s, 3 * s, 5 * s, C(0xB0A0A8, 0.4)); c.circle(px, py - 6 * s, s, C(0xB0A0A8, 0.4))
+        // The zigzag of more souls on ramps up the wall, faint and far off and fainter the higher they go: each ramp
+        // its own length and pitch, a stone landing at each turn, the souls of uneven heights with gaps in the line
+        // here and there, a short flight of steps up from each landing to the next ramp.
+        let rx = c.w * 8 / 100
+        var x0 = rx, y0 = f.ledge - 34 * s, k = 0
+        while y0 - 16 * s > f.vault + 8 * s && k < 5 {
+            let len = c.w * (38 + Int(noise(k + 2100) * 18)) / 100, rise = (5 + Int(noise(k + 2110) * 6)) * s
+            let dir = k % 2 == 0 ? 1 : -1, x1 = min(c.w * 68 / 100, max(c.w * 5 / 100, x0 + dir * len)), y1 = y0 - rise
+            let fade = max(0.15, 0.42 - Double(k) * 0.06), soul = C(0xB0A0A8, fade)
+            c.glowLine(Double(x0), Double(y0), Double(x1), Double(y1), core: C(0x6A2018), glow: C(0x2A0806), coreR: Double(s) * 0.8, glowR: Double(s) * 2.2)
+            let n = abs(x1 - x0) / (5 * s)
+            for i in 0..<n where noise(k * 41 + i + 2120) > 0.14 {
+                let u = (Double(i) + 0.5) / Double(n), hh = 4 + Int(noise(k * 41 + i + 2160) * 3)
+                let px = x0 + Int(Double(x1 - x0) * u), py = y0 + Int(Double(y1 - y0) * u)
+                c.rect(px - s, py - hh * s, 3 * s, hh * s, soul); c.circle(px + (noise(k * 41 + i + 2200) > 0.5 ? s / 2 : 0), py - (hh + 1) * s, s, soul)
             }
-            c.glowLine(Double(xa), Double(y0), Double(xb), Double(y1), core: C(0x6A2018), glow: C(0x2A0806), coreR: Double(s) * 0.8, glowR: Double(s) * 2.2)
+            // The landing at the turn, a short flat ledge lit on top, and the steps up from it to the next ramp.
+            let climb = (12 + Int(noise(k + 2120) * 6)) * s
+            c.rect(x1 - (dir > 0 ? 2 : 8) * s, y1, 10 * s, 2 * s, C(0x3A0E0A)); c.rect(x1 - (dir > 0 ? 2 : 8) * s, y1, 10 * s, max(1, s / 2), C(0x6A2018))
+            for j in 1...4 {
+                let sx = x1 + dir * (5 - j) * 2 * s - (dir > 0 ? 0 : 2 * s)
+                c.rect(sx, y1 - j * climb / 4, 3 * s, max(1, s), C(0x6A2018)); c.rect(sx, y1 - j * climb / 4 + max(1, s), 3 * s, climb / 4 - max(1, s), C(0x3A0E0A))
+            }
+            x0 = x1; y0 = y1 - climb; k += 1
         }
         // The vault: black up top, ribs in pointed arches from pillar to pillar.
         c.gradient(0, f.vault, C(0x080101), C(0x1E0605), bands: 5)
@@ -482,31 +531,41 @@ extension Scenes {
     static func huntHellLife(_ c: PixelCanvas, _ g: Int, _ t: Double) {
         let s = unit(g), f = huntHellFrame(c, g)
         let gap = 10 * s, span = f.arch + 6 * s
-        let period = 3.2, step = floor(t / period), frac = t / period - step
-        let ease = frac < 0.25 ? (1 - cos(frac / 0.25 * .pi)) / 2 : 1.0
-        let shift = (step + ease) * Double(gap)
-        let count = span / gap + 2
-        let back = Int(step)
-        for i in 0..<count {
-            // Soul number `id` is the one standing at slot i; its look stays its own as it moves up the line.
-            let base = Double(i * gap) + shift.truncatingRemainder(dividingBy: Double(gap))
-            let id = i - back
-            let x = Int(base) - gap
+        let period = 3.2, step = Int(floor(t / period)), frac = t / period - floor(t / period)
+        // Soul number `id` keeps its own look all the way up the line. The front of the queue shuffles forward first
+        // and the step ripples back down the line, the way a real queue moves, each soul taking a fifth of the
+        // round to make its step, with a little lift as it goes; in between they sway where they stand.
+        for id in (-step - 2)...(span / gap - step + 2) {
+            let rest = (id + step) * gap - gap
+            let delay = 0.45 * min(1, max(0, Double(span - rest) / Double(span)))
+            let k = min(1, max(0, (frac - delay) / 0.2))
+            let ease = (1 - cos(k * .pi)) / 2
+            let sway = k <= 0 || k >= 1 ? Int((sin(t * (0.9 + noise(id * 7 + 1004) * 0.6) + Double(id)) * 0.8).rounded()) * s : 0
+            let x = rest + Int(ease * Double(gap)) + sway
             guard x > -3 * s, x < span + 3 * s else { continue }
             let fadeIn = min(1, Double(x + 3 * s) / Double(8 * s)), fadeOut = min(1, Double(span - x) / Double(8 * s))
             let a = max(0, min(fadeIn, fadeOut))
-            let h = (12 + Int(noise(id * 7 + 1000) * 3)) * s
-            let body = C(noise(id * 7 + 1001) > 0.5 ? 0xA89AA2 : 0x9AA6B4, 0.6 * a), rim = C(0xE4DCE4, 0.45 * a)
-            let y = f.ledge
-            // A soul in the queue, see-through and pale: the head bowed forward, slumped shoulders, arms hanging, two
-            // legs, waiting.
-            let top = y - h
-            c.rect(x, top, 3 * s, 3 * s, body); c.rect(x + s, top + 3 * s, s, s, body)
-            c.rect(x - 3 * s, top + 4 * s, 7 * s, 2 * s, body)
-            c.rect(x - 2 * s, top + 6 * s, 5 * s, h - 9 * s, body)
-            c.rect(x - 3 * s, top + 6 * s, s, 4 * s, body); c.rect(x + 3 * s, top + 6 * s, s, 4 * s, body)
+            let tints: [UInt32] = [0xA89AA2, 0x9AA6B4, 0xB0A496]
+            let h = (11 + Int(noise(id * 7 + 1000) * 5)) * s, wide = noise(id * 7 + 1002) > 0.7 ? s : 0
+            let body = C(tints[Int(noise(id * 7 + 1001) * 3) % 3], 0.6 * a), rim = C(0xE4DCE4, 0.45 * a)
+            let y = f.ledge - (k > 0.2 && k < 0.8 ? s : 0)
+            let pose = noise(id * 7 + 1003)                              // how this one waits
+            let stoop = pose < 0.45 ? s : 0, lookBack = pose > 0.88
+            // A soul in the queue, see-through and pale: the head bowed or turned back down the line, the shoulders
+            // slumped, the arms hanging, folded or one hand up to its face, two legs, waiting.
+            let top = y - h, hx = lookBack ? x - 2 * s : x + stoop
+            c.rect(hx, top, 3 * s, 3 * s, body); c.rect(x + s, top + 3 * s, s, s, body)
+            c.rect(x - 3 * s - wide, top + 4 * s, 7 * s + 2 * wide, 2 * s, body)
+            c.rect(x - 2 * s - wide, top + 6 * s, 5 * s + 2 * wide, h - 9 * s, body)
+            if pose > 0.6 && pose <= 0.75 {
+                c.rect(x - 2 * s, top + 7 * s, 5 * s, s, rim)                                     // arms folded
+            } else if pose > 0.75 && pose <= 0.88 {
+                c.rect(x - 3 * s - wide, top + 6 * s, s, 4 * s, body); c.rect(x + 3 * s + wide, top + 2 * s, s, 4 * s, body)   // a hand to its face
+            } else {
+                c.rect(x - 3 * s - wide, top + 6 * s, s, 4 * s, body); c.rect(x + 3 * s + wide, top + 6 * s, s, 4 * s, body)
+            }
             c.rect(x - 2 * s, y - 3 * s, 2 * s, 3 * s, body); c.rect(x + s, y - 3 * s, 2 * s, 3 * s, body)
-            c.rect(x - 3 * s, top + 4 * s, max(1, s / 2), 6 * s, rim); c.rect(x, top, max(1, s / 2), 3 * s, rim)
+            c.rect(x - 3 * s - wide, top + 4 * s, max(1, s / 2), 6 * s, rim); c.rect(hx, top, max(1, s / 2), 3 * s, rim)
         }
         huntHellRope(c, g)
         // The braziers' flames and the embers drifting up off them.
@@ -547,16 +606,28 @@ extension Scenes {
         (c.w * 43 / 100, c.w * 62 / 100)
     }
 
-    /// Heaven, as Joshua's garden: white light pouring down from above, a far bank of soft trees, a clipped hedge
+    /// Heaven, as Joshua's garden: white light pouring from a far-off doorway, a far bank of soft trees, a clipped hedge
     /// with flowers in it, the one great tree on the left spreading its canopy over everything, and a stone fountain
     /// on the right. The grass and the hedge stay mid-green, never white, so the crew stands out. On the screen saver
     /// the sky blazes white, rays fan out from a doorway of light standing on a green rise beyond the garden, steps of
     /// white stone climbing to it.
     static func huntHeaven(_ c: PixelCanvas, _ g: Int) {
         let s = unit(g), f = huntHeavenFrame(c, g), tall = isTall(c)
-        // The sky: blinding cream-white, warming to pale gold low down.
-        c.gradient(0, f.far, C(0xFFFCF0), C(0xEADFAE), bands: 6)
-        if tall { huntHeavenDoor(c, g) }
+        // The sky: blinding cream-white, warming to pale gold low down. In the window it's a warmer gold, so the white
+        // light pouring from the doorway (below) stands out against it.
+        if tall { c.gradient(0, f.far, C(0xFFFCF0), C(0xEADFAE), bands: 6); huntHeavenDoor(c, g) }
+        else {
+            c.gradient(0, f.far, C(0xEEDCA4), C(0xE2CC8C), bands: 5)
+            // The light from the doorway, far off between the trees: a blaze of white round it and broad rays
+            // fanning up and out across the sky.
+            let dx = f.door.x, dy = f.far
+            for r in stride(from: 60 * s, to: 4 * s, by: -6 * s) { c.ellipse(dx, dy, r * 2, r, C(0xFFFFF4, 0.10)) }
+            for k in 0..<7 {
+                let a = Double.pi + Double(k + 1) / 8 * Double.pi, len = Double(c.w)
+                c.glowLine(Double(dx), Double(dy), Double(dx) + cos(a) * len, Double(dy) + sin(a) * len,
+                           core: C(0xFFFFF4, 0.2), glow: C(0xFFFFF4, 0.08), coreR: Double(2 * s), glowR: Double(6 * s))
+            }
+        }
         // Rays of light slanting down from the upper left, see-through.
         for k in 0..<5 {
             let x0 = c.w * (8 + k * 21) / 100, w = (6 + k % 3 * 3) * s
@@ -573,9 +644,12 @@ extension Scenes {
         // screen saver shows it close up.
         if !tall {
             let dx = f.door.x, dy = f.far + 2 * s
-            for r in stride(from: 12 * s, to: 2 * s, by: -2 * s) { c.circle(dx, dy - 3 * s, r, C(0xFFFFFF, 0.09)) }
-            c.rect(dx - 2 * s, dy - 6 * s, 4 * s, 6 * s, C(0xFFFFFF)); c.circle(dx, dy - 6 * s, 2 * s, C(0xFFFFFF))
-            c.rect(dx - 3 * s, dy, 6 * s, s, C(0xE4DECA))
+            for r in stride(from: 16 * s, to: 2 * s, by: -2 * s) { c.circle(dx, dy - 3 * s, r, C(0xFFFFFF, 0.12)) }
+            c.rect(dx - 3 * s, dy - 7 * s, 6 * s, 7 * s, C(0xD8D2BE)); c.circle(dx, dy - 7 * s, 3 * s, C(0xD8D2BE))
+            c.rect(dx - 2 * s, dy - 7 * s, 4 * s, 7 * s, C(0xFFFFFF)); c.circle(dx, dy - 7 * s, 2 * s, C(0xFFFFFF))
+            c.rect(dx - 4 * s, dy, 8 * s, s, C(0xE4DECA))
+            // Its light falling on the garden: the hedge's top washed paler either side of it.
+            c.ellipse(dx, f.near, 60 * s, 4 * s, C(0xFFFFF0, 0.18))
         }
         // The near hedge, clipped flat, a little darker, flowers dotted along its top.
         c.rect(0, f.near, c.w, g - f.near, C(0x3E6A34))
@@ -722,9 +796,47 @@ extension Scenes {
         for (k, (u, v, r)) in banks.enumerated() {
             cloud(c, c.w * u / 100, g * v / 100, r * s, seed: 40 + k, top: C(0xFFFFFA), base: C(0xF2DC98))
         }
-        // The green rise beyond the garden that the doorway stands on, lit along its crest.
-        c.ellipse(dx, f.far + 6 * s, 130 * s, f.far + 8 * s - dy, C(0x7AAA5E))
-        c.ellipse(dx - 10 * s, dy + 4 * s, 60 * s, 4 * s, C(0x8CBC6C))
+        // The green rise beyond the garden that the doorway stands on: a long hill with a gentle shoulder to one side,
+        // its crest lit white-gold from the doorway, the slopes stepping down through mid greens to a shade at the
+        // foot, two terraces following its shape, a white path winding up it to the steps, and dark cypresses and
+        // round bushes dotted over it.
+        let foot = f.far + 6 * s, rise = foot - dy + 2 * s, half = 140 * s
+        func crest(_ x: Int) -> Int? {
+            let d = Double(x - dx) / Double(half)
+            guard abs(d) < 1 else { return nil }
+            let shoulder = 0.18 * exp(-pow((d + 0.55) / 0.22, 2)) - 0.08 * exp(-pow((d - 0.5) / 0.2, 2))
+            return foot - Int(Double(rise) * (pow(1 - d * d, 1.4) + shoulder))
+        }
+        for x in max(0, dx - half)..<min(c.w, dx + half) {
+            guard let top = crest(x) else { continue }
+            let depth = foot - top
+            c.rect(x, top, 1, depth, C(0x6E9E54))
+            c.rect(x, top, 1, depth * 55 / 100, C(0x7AAA5E))
+            c.rect(x, top, 1, max(1, min(depth, 3 * s)), abs(x - dx) < 70 * s ? C(0xA8D486) : C(0x8CBC6C))
+            for frac in [40, 72] where depth * frac / 100 > 4 * s {   // the terraces
+                c.rect(x, top + depth * frac / 100, 1, max(1, s), C(0x5E8E48)); c.rect(x, top + depth * frac / 100 - max(1, s / 2), 1, max(1, s / 2), C(0x96C478))
+            }
+        }
+        // The path, winding up from the garden to the foot of the steps.
+        var prev: (Double, Double)? = nil
+        for k in 0...40 {
+            let u = Double(k) / 40
+            let p = (Double(dx) + sin(u * .pi * 2.2) * Double(26 * s) * (1 - u) + Double(30 * s) * (1 - u), Double(foot) - Double(foot - dy - 12 * s) * u)
+            if let q = prev {
+                c.glowLine(q.0, q.1, p.0, p.1, core: C(0xF0EAD4), glow: C(0xC8C2A8, 0.6), coreR: Double(s) * (1.6 - u), glowR: Double(s) * (2.4 - u))
+            }
+            prev = p
+        }
+        // Cypresses, tall and dark, and round bushes, standing on the slopes.
+        for (k, xp) in [-110, -86, -60, 52, 78, 104, 122].enumerated() {
+            let x = dx + xp * s
+            guard let top = crest(x) else { continue }
+            if k % 2 == 0 {
+                c.ellipse(x, top - 7 * s, 3 * s, 9 * s, C(0x2E5A2E)); c.ellipse(x - s, top - 9 * s, s, 6 * s, C(0x4A7A3E))
+            } else {
+                c.ellipse(x, top - 2 * s, 6 * s, 4 * s, C(0x3E7236)); c.ellipse(x - 2 * s, top - 3 * s, 3 * s, 2 * s, C(0x5A9246))
+            }
+        }
         // The steps climbing to the doorway, white stone with grey treads.
         for k in 0..<7 {
             let w = (50 - k * 4) * s, y = dy + (6 - k) * 2 * s

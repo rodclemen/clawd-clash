@@ -7,8 +7,8 @@ import Foundation
 //
 // The universe's palette: rust, amber, Impala black, dusty denim blue and the odd motel-sign neon. The floor and the
 // band just above it stay plain and mid-to-dark so the crew's outlines and names read; the busy detail goes higher up
-// and at the sides; props keep their size in `Scenes.unit(g)` steps. The two signs (SINGER SALVAGE, VACANCY) are
-// lettered two pixels a dot so they read in the window.
+// and at the sides; props keep their size in `Scenes.unit(g)` steps. The signs (SINGER SALVAGE, VACANCY, and
+// ROADHOUSE on the screen saver) are lettered two pixels a dot so they read in the window.
 
 let huntScenes2: [Location: Place] = [
     .huntSalvage: Place(name: "Singer Salvage", panel: 0x1E1612, still: Scenes.huntSalvage, moving: Scenes.huntSalvageLife),
@@ -21,9 +21,10 @@ let huntScenes2: [Location: Place] = [
 
 /// A blocky 5-row alphabet, three dots wide (N four), for the signs.
 private let huntP2Glyphs: [Character: String] = [
-    "A": "010101111101101", "C": "011100100100011", "E": "111100110100111", "G": "011100101101011",
-    "I": "111010010010111", "L": "100100100100111", "N": "10011101101110011001", "R": "110101110101101",
-    "S": "011100010001110", "V": "101101101101010", "Y": "101101010010010",
+    "A": "010101111101101", "C": "011100100100011", "D": "110101101101110", "E": "111100110100111",
+    "G": "011100101101011", "H": "101101111101101", "I": "111010010010111", "L": "100100100100111",
+    "N": "10011101101110011001", "O": "010101101101010", "R": "110101110101101", "S": "011100010001110",
+    "U": "101101101101111", "V": "101101101101010", "Y": "101101010010010",
 ]
 
 /// How wide `text` comes out at `p` pixels a dot (a space is two dots).
@@ -48,7 +49,10 @@ private func huntP2Text(_ c: PixelCanvas, _ x: Int, _ y: Int, _ text: String, _ 
 
 /// One junked car side-on, 24 units long and 8 high, standing on row `base`: faded paint lit along its top, a cabin
 /// with dark glass, rust eating through, a wheel or two gone. `haze` fades it into the dusk for the far ones.
-private func huntP2Car(_ c: PixelCanvas, _ x: Int, _ base: Int, _ s: Int, _ seed: Int, haze: Double) {
+/// `crushed`: flattened for the stacks, its roof pressed down to a lump one unit high, 6 high in all; `wheels`: false
+/// for one stacked on another, its arches empty and dark.
+private func huntP2Car(_ c: PixelCanvas, _ x: Int, _ base: Int, _ s: Int, _ seed: Int, haze: Double,
+                       crushed: Bool = false, wheels: Bool = true) {
     let paints: [UInt32] = [0x7A3A22, 0x5A4A3A, 0x3E4C5E, 0x6E5A2A, 0x26262A, 0x5A2A20, 0x4A564A, 0x6A4430]
     let far = C(0x2E2634)
     func h(_ p: Px, _ k: Double = 1) -> Px { lerp(p, far, haze * k) }
@@ -62,19 +66,25 @@ private func huntP2Car(_ c: PixelCanvas, _ x: Int, _ base: Int, _ s: Int, _ seed
     c.rect(x, base - 5 * s, 24 * s, s, lit)
     c.rect(x, base - 2 * s, 24 * s, s, shade)
     c.rect(x - s, base - 4 * s, s, 2 * s, h(C(0x6A6664))); c.rect(x + 24 * s, base - 4 * s, s, 2 * s, h(C(0x5A5654)))
-    // The cabin, its roof lit, two dark windows (one smashed through), the pillar between them.
-    c.rect(cab + s, base - 8 * s, 9 * s, 3 * s, paint)
-    c.rect(cab + s, base - 8 * s, 9 * s, s, lit)
-    c.rect(cab, base - 7 * s, s, 2 * s, paint); c.rect(cab + 10 * s, base - 7 * s, s, 2 * s, shade)
-    c.rect(cab + 2 * s, base - 7 * s, 3 * s, 2 * s, glass); c.rect(cab + 6 * s, base - 7 * s, 3 * s, 2 * s, glass)
-    if noise(seed * 7 + 3) > 0.55 { c.rect(cab + 6 * s, base - 7 * s, 2 * s, s, black) }
+    if crushed {
+        // The roof squashed flat onto the body: a lump of paint lit on top, a slit of dark where the glass was.
+        c.rect(cab, base - 6 * s, 11 * s, s, lit); c.rect(cab + 2 * s, base - 5 * s, 7 * s, max(1, s / 2), glass)
+    } else {
+        // The cabin, its roof lit, two dark windows (one smashed through), the pillar between them.
+        c.rect(cab + s, base - 8 * s, 9 * s, 3 * s, paint)
+        c.rect(cab + s, base - 8 * s, 9 * s, s, lit)
+        c.rect(cab, base - 7 * s, s, 2 * s, paint); c.rect(cab + 10 * s, base - 7 * s, s, 2 * s, shade)
+        c.rect(cab + 2 * s, base - 7 * s, 3 * s, 2 * s, glass); c.rect(cab + 6 * s, base - 7 * s, 3 * s, 2 * s, glass)
+        if noise(seed * 7 + 3) > 0.55 { c.rect(cab + 6 * s, base - 7 * s, 2 * s, s, black) }
+    }
     // Rust patches eating the paint, worst low down.
     for k in 0..<3 {
         let rx = x + Int(noise(seed * 7 + 10 + k) * 20) * s, rw = (2 + Int(noise(seed * 7 + 20 + k) * 3)) * s
         c.rect(rx, base - (3 + k % 2) * s, rw, s, rust)
     }
-    // The wheel arches, with a tyre in each, or none.
+    // The wheel arches, with a tyre in each, or none; a car up in a stack has only the dark arches.
     for (k, wx) in [x + 5 * s, x + 19 * s].enumerated() {
+        guard wheels else { c.rect(wx - 2 * s, base - 2 * s, 4 * s, s, black); continue }
         c.circle(wx, base - s, 2 * s, black)
         if noise(seed * 7 + 30 + k) > 0.3 {
             c.circle(wx, base - s, 2 * s - max(1, s / 2), h(C(0x1E1C1C))); c.rect(wx - s / 2, base - s - s / 2, max(1, s), max(1, s), h(C(0x5A5654)))
@@ -82,11 +92,16 @@ private func huntP2Car(_ c: PixelCanvas, _ x: Int, _ base: Int, _ s: Int, _ seed
     }
 }
 
-/// A stack of `n` cars crushed one on another, each a little off the one under it.
+/// A stack of `n` cars crushed flat and piled one straight on another, each a little off the one under it, the
+/// bottom one sitting on its tyres with its shadow on the ground; a dark seam where each rests on the next, so the
+/// stack reads as weight pressing down, not as cars hanging in the air. One car alone stands whole.
 private func huntP2Stack(_ c: PixelCanvas, _ x: Int, _ base: Int, _ n: Int, _ s: Int, _ seed: Int, haze: Double) {
+    guard n > 1 else { huntP2Car(c, x, base, s, seed * 5, haze: haze); return }
+    c.ellipse(x + 12 * s, base, 17 * s, 2 * s, C(0x140E10, 0.55))
     for i in 0..<n {
-        let dx = Int((noise(seed * 13 + i) - 0.5) * 6) * s
-        huntP2Car(c, x + dx, base - i * 8 * s, s, seed * 5 + i, haze: haze)
+        let dx = Int((noise(seed * 13 + i) - 0.5) * 4.5) * s, b = base - i * 5 * s
+        huntP2Car(c, x + dx, b, s, seed * 5 + i, haze: haze, crushed: true, wheels: i == 0)
+        if i > 0 { c.rect(x + dx, b - s, 24 * s, s, lerp(C(0x120C0E), C(0x2E2634), haze * 0.6)) }
     }
 }
 
@@ -159,14 +174,14 @@ extension Scenes {
                 c.rect(wx - w / 2, legTop - 25 * s - k * s, w, s, k < 2 ? C(0x3A2A20) : C(0x4E3626))
             }
             c.rect(wx - s / 2, legTop - 40 * s, max(1, s), 4 * s, C(0x3A2A20))
-            // The towers of cars: five and six high at the sides.
-            huntP2Stack(c, c.w * 22 / 100, f.horizon + 4 * s, 6, s, 61, haze: 0.45)
-            huntP2Stack(c, c.w * 68 / 100, f.horizon + 4 * s, 5, s, 67, haze: 0.45)
-            huntP2Stack(c, c.w * 36 / 100, f.horizon + 4 * s, 4, s, 69, haze: 0.5)
-            huntP2Stack(c, c.w * 84 / 100, f.horizon + 4 * s, 7, s, 71, haze: 0.4)
+            // The towers of cars, eight to eleven crushed flat and piled high, standing on the yard's dirt.
+            huntP2Stack(c, c.w * 22 / 100, f.horizon + 4 * s, 9, s, 61, haze: 0.45)
+            huntP2Stack(c, c.w * 68 / 100, f.horizon + 4 * s, 8, s, 67, haze: 0.45)
+            huntP2Stack(c, c.w * 36 / 100, f.horizon + 4 * s, 6, s, 69, haze: 0.5)
+            huntP2Stack(c, c.w * 84 / 100, f.horizon + 4 * s, 11, s, 71, haze: 0.4)
         }
-        // The rows of junked cars across the back of the yard, two and three high.
-        let row: [(Int, Int, Int)] = [(20, 2, 3), (31, 3, 5), (60, 2, 7), (72, 1, 9), (96, 2, 11), (46, 1, 13)]
+        // The rows of junked cars across the back of the yard, two to four high.
+        let row: [(Int, Int, Int)] = [(20, 3, 3), (31, 4, 5), (60, 3, 7), (72, 1, 9), (96, 3, 11), (46, 1, 13)]
         for (xp, n, seed) in row { huntP2Stack(c, c.w * xp / 100, g - 6 * s, n, s, seed, haze: 0.22) }
         // The boom crane on the right: a squat rust-red cab on tracks, the lattice boom angled up to the left.
         let cr = f.crane, boomBase = (x: cr.x - 2 * s, y: g - 16 * s)
@@ -313,7 +328,7 @@ extension Scenes {
         let signs: [(x: Int, y: Int, kind: Int)] = [(c.w * 27 / 100, g - 48 * s, 0), (c.w * 55 / 100, g - 46 * s, 1),
                                                      (c.w * 86 / 100, g - 52 * s, 2)]
         return (g - 13 * s, (x: c.w * 68 / 100, top: g - 17 * s), (x: c.w * 38 / 100, half: 24 * s, top: g - 12 * s),
-                (x: c.w * 11 / 100, y: g - 40 * s), signs, (x: c.w * 46 / 100, y: tall ? g - 76 * s : g - 61 * s),
+                (x: c.w * 11 / 100, y: g - 41 * s), signs, (x: c.w * 46 / 100, y: tall ? g - 76 * s : g - 51 * s),
                 tall ? g * 40 / 100 : -1)
     }
 
@@ -327,18 +342,41 @@ extension Scenes {
     /// Harvelle's Roadhouse, the hunters' bar off a Nebraska highway: walls of warm vertical planks, a dark wood
     /// wainscot, the bar on the right with bottles on its back shelves and red stools, the pool table under its green
     /// lamp, Jo's dartboard on the left with knives stuck in it, neon beer signs on the wall and a ceiling fan. On the
-    /// screen saver the room opens up into the gable: rafters, a tie beam with lanterns hanging from it, licence plates
-    /// along the wall and a shotgun over the bar.
+    /// screen saver the room opens up into the gable: rafters, a ROADHOUSE board between two round windows, a tie beam
+    /// with lanterns hanging from it, the planks pieced and nailed along girts, licence plates along the wall and a
+    /// shotgun over the bar.
     static func huntRoadhouse(_ c: PixelCanvas, _ g: Int) {
         let s = unit(g), f = huntRoadhouseFrame(c, g), tall = isTall(c)
         let plankA = C(0x5A3A24), plankB = C(0x4E321E), plankL = C(0x6E4A2E), plankD = C(0x2E1C10)
         let wood = C(0x4A2C18), woodD = C(0x2A180E), woodL = C(0x6A4428)
-        // The plank wall, warmer in the middle where the lamps are, each board lit on its left edge.
+        // The plank wall, each board lit on its left edge and its own shade of old pine, a knot here and there. On the
+        // screen saver the boards are pieced: short lengths butted end to end, a few newer, paler ones patched in, and
+        // they're nailed along horizontal girts, a row of nail heads across the wall at each.
         c.rect(0, 0, c.w, f.rail, plankA)
+        let tones = [plankA, plankB, C(0x54361F), C(0x5E3E26)]
+        let girts = tall ? Array(stride(from: f.rail - 46 * s, to: f.eaves, by: -46 * s)) : []
         for (k, x) in stride(from: 0, to: c.w, by: 7 * s).enumerated() {
-            c.rect(x, 0, 7 * s, f.rail, k % 3 == 1 ? plankB : plankA)
+            c.rect(x, 0, 7 * s, f.rail, tones[Int(noise(k + 1500) * 4) % 4])
+            if tall {
+                // Between two girts, now and then a length of another shade or a newer, paler one, its end butted
+                // against the next.
+                for (j, gy) in girts.enumerated() where noise(k * 7 + j + 1520) > 0.55 {
+                    let tone = noise(k * 7 + j + 1540) > 0.75 ? C(0x7A5634) : tones[Int(noise(k * 7 + j + 1560) * 4) % 4]
+                    let top = max(f.eaves, gy - 46 * s)
+                    c.rect(x, top, 7 * s, gy - top, tone)
+                    c.rect(x, top + Int(noise(k * 7 + j + 1600) * Double(gy - top)), 7 * s, max(1, s / 2), plankD)
+                }
+            }
             c.rect(x, 0, max(1, s / 2), f.rail, plankL); c.rect(x + 6 * s, 0, max(1, s / 2), f.rail, plankD)
             for y in stride(from: Int(noise(k) * 30) * s + 4 * s, to: f.rail, by: 34 * s) { c.rect(x + 3 * s, y, max(1, s / 2), max(1, s / 2), plankD) }
+            if noise(k + 1580) > 0.72 {   // a knot: a dark streak along the grain, darker in its middle
+                let ky = Int(noise(k + 1590) * Double(f.rail - 6 * s)) + 3 * s
+                c.rect(x + 2 * s, ky, 3 * s, max(1, s / 2), C(0x3E2614)); c.rect(x + 3 * s, ky, max(1, s), max(1, s / 2), C(0x24140A))
+            }
+        }
+        for gy in girts {
+            c.rect(0, gy, c.w, 3 * s, C(0x4A2C18)); c.rect(0, gy, c.w, max(1, s / 2), C(0x7A5232)); c.rect(0, gy + 3 * s, c.w, s, C(0x24140A))
+            for x in stride(from: 3 * s, to: c.w, by: 7 * s) { c.rect(x, gy + s, max(1, s), max(1, s), C(0x8A8A8E)) }
         }
         c.gradient(0, f.rail, C(0x0C0604, 0.35), C(0x0C0604, 0), bands: 5)
         // On the screen saver: the gable end of the roof, its rafters, the tie beam and its lanterns, the king post.
@@ -364,6 +402,12 @@ extension Scenes {
                 c.stars(wy - wr, wy + wr, density: 14, seed: 30 + k, x0: wx - wr, x1: wx + wr) { x, y in (x - wx) * (x - wx) + (y - wy) * (y - wy) < (wr - s) * (wr - s) }
                 c.rect(wx - wr, wy - s / 2, 2 * wr, max(1, s), woodL); c.rect(wx - s / 2, wy - wr, max(1, s), 2 * wr, woodL)
             }
+            // A long hand-painted board up in the gable between them, ROADHOUSE in cream on faded red.
+            let word = "ROADHOUSE", p = 2 * s, bw = huntP2Width(word, p) + 10 * s, by = peak + (ey - peak) * 62 / 100 - 8 * s
+            c.rect(mx - bw / 2, by, bw, 16 * s, C(0x6A2A1C)); c.rect(mx - bw / 2, by, bw, s, C(0x8A4430))
+            c.rect(mx - bw / 2, by + 15 * s, bw, s, C(0x3A160E)); c.rect(mx - bw / 2, by + 8 * s, bw, max(1, s / 2), C(0x52201A))
+            huntP2Text(c, mx + s, by + 3 * s + s / 2, word, C(0x1E0E08, 0.6), p)
+            huntP2Text(c, mx, by + 3 * s, word, C(0xE2D2A8), p)
             c.rect(0, ey, c.w, 5 * s, wood); c.rect(0, ey, c.w, s, woodL); c.rect(0, ey + 4 * s, c.w, s, woodD)
             // Lanterns on chains from the tie beam.
             for xp in [14, 34, 66, 86] {
@@ -391,10 +435,16 @@ extension Scenes {
             c.rect(sg.x - 11 * s, sg.y - 10 * s, 22 * s, 19 * s, C(0x1A100A)); c.rect(sg.x - 11 * s, sg.y - 10 * s, 22 * s, s, C(0x3A281A))
             huntP2Neon(c, sg.kind, sg.x, sg.y, s, glow: 0)
         }
-        // The dartboard on its dark cabinet: black and cream sectors, the red and green rings, three knives stuck in it.
-        let d = f.dart, r = 9 * s
-        c.rect(d.x - 13 * s, d.y - 13 * s, 26 * s, 26 * s, C(0x3A2416)); c.rect(d.x - 13 * s, d.y - 13 * s, 26 * s, s, woodL)
-        c.rect(d.x - 13 * s, d.y - 13 * s, s, 26 * s, woodL); c.rect(d.x - 12 * s, d.y - 12 * s, 24 * s, 24 * s, woodD)
+        // The dartboard on its dark cabinet, its doors open either side: black and cream sectors, the red and green
+        // rings, three knives stuck in it.
+        let d = f.dart, r = 12 * s
+        c.rect(d.x - 15 * s, d.y - 15 * s, 30 * s, 30 * s, C(0x3A2416)); c.rect(d.x - 15 * s, d.y - 15 * s, 30 * s, s, woodL)
+        c.rect(d.x - 15 * s, d.y - 15 * s, s, 30 * s, woodL); c.rect(d.x - 14 * s, d.y - 14 * s, 28 * s, 28 * s, woodD)
+        for k in [-1, 1] {   // the open doors, seen edge-on as narrow panels
+            let ox = k < 0 ? d.x - 20 * s : d.x + 15 * s
+            c.rect(ox, d.y - 14 * s, 5 * s, 28 * s, C(0x4A2C18)); c.rect(ox, d.y - 14 * s, 5 * s, s, woodL)
+            c.rect(ox + (k < 0 ? 0 : 4 * s), d.y - 14 * s, s, 28 * s, woodD)
+        }
         for dy in -r...r {
             for dx in -r...r {
                 let rr = Double(dx * dx + dy * dy).squareRoot()
@@ -410,7 +460,7 @@ extension Scenes {
             }
         }
         // Jo's knives, thrown and left there: steel blades into the board, black grips with a lit edge and a guard.
-        for (u, v, ang) in [(-2, -3, 2.4), (3, 1, 0.45), (-1, 4, 3.6)] as [(Int, Int, Double)] {
+        for (u, v, ang) in [(-3, -4, 2.4), (4, 1, 0.45), (-1, 5, 3.6)] as [(Int, Int, Double)] {
             let x0 = Double(d.x + u * s), y0 = Double(d.y + v * s)
             let x1 = x0 + cos(ang) * Double(4 * s), y1 = y0 - sin(ang) * Double(4 * s)
             let x2 = x0 + cos(ang) * Double(10 * s), y2 = y0 - sin(ang) * Double(10 * s)
@@ -615,7 +665,7 @@ extension Scenes {
         }
         // The fan: four wooden blades seen edge-on from below the hub's height, turning about once every two seconds.
         for k in 0..<4 {
-            let a = t * 3.0 + Double(k) * .pi / 2, reach = cos(a) * Double(16 * s)
+            let a = t * 3.0 + Double(k) * .pi / 2, reach = cos(a) * Double(18 * s)
             let front = sin(a) > 0
             let x0 = f.fan.x, x1 = f.fan.x + Int(reach)
             let col = front ? C(0x6A4428) : C(0x3A2416)
@@ -673,18 +723,22 @@ extension Scenes {
                 (x: tvX + 3 * s, y: g - 25 * s), (x: c.w * 89 / 100, w: 22 * s), tall ? g * 9 / 100 : -1)
     }
 
-    /// A motel room somewhere on the interstate, the brothers' usual: loud brown-and-orange wallpaper over a plain
-    /// dark wainscot (busy up high, calm where the crew stands), two beds with rust bedspreads, a lamp between them,
-    /// a print of flying ducks, a boxy TV with rabbit ears on the dresser, the door on the right with a line of salt
-    /// across its sill, and the window on the left, its blinds half up over the VACANCY sign outside. On the screen
-    /// saver the wallpaper climbs to a stained ceiling, more duck prints hanging crooked on the way.
+    /// A motel room somewhere on the interstate, the brothers' usual: loud brown-and-mustard wallpaper up high, over
+    /// a plain band and a dark wainscot (calm where the crew stands), two beds with rust bedspreads, a lamp between
+    /// them, a print of flying ducks, a boxy TV with rabbit ears on the dresser, the door on the right with a line of
+    /// salt across its sill, and the window on the left, its blinds half up over the VACANCY sign outside. On the
+    /// screen saver the medallions climb to a picture rail, an older striped paper above it peels at a seam, and a
+    /// stained ceiling tops it all, more duck prints hanging crooked on the way.
     static func huntMotel(_ c: PixelCanvas, _ g: Int) {
         let s = unit(g), f = huntMotelFrame(c, g), tall = isTall(c)
-        // The wallpaper: big orange medallions on mustard-brown with teal hearts and diamonds between, half-dropped.
-        let base = C(0x5A4430), ring = C(0x80492A), ringL = C(0x925834), teal = C(0x2E5E5C), cream = C(0xC09A58)
+        // The wallpaper: big mustard medallions on brown with teal hearts and diamonds between, half-dropped, a little
+        // faded so it doesn't shout over the crew. It starts above a wide plain band of the paper's ground and a
+        // frieze, so the pattern stays up high, clear of the crew's heads and names.
+        let base = C(0x52402E), ring = C(0x6E5832), ringL = C(0x7C6438), teal = C(0x2E5450), cream = C(0xA8884E)
+        let frieze = f.rail - 17 * s, upper = tall ? g - 132 * s : 0
         c.rect(0, 0, c.w, f.rail, base)
         let tile = 14 * s
-        for (row, cy) in stride(from: f.rail - 12 * s, to: -tile, by: -tile).enumerated() {
+        for (row, cy) in stride(from: frieze - 7 * s, to: upper - tile, by: -tile).enumerated() {
             for cx in stride(from: (row % 2) * tile / 2, to: c.w + tile, by: tile) {
                 c.circle(cx, cy, 5 * s, ring); c.circle(cx - s, cy - s, 4 * s, ringL); c.circle(cx, cy, 3 * s, base)
                 c.circle(cx, cy, 2 * s, teal); c.rect(cx, cy, max(1, s), max(1, s), cream)
@@ -692,8 +746,12 @@ extension Scenes {
                 c.rect(dx - s, dy, 3 * s, s, teal); c.rect(dx, dy - s, s, 3 * s, teal)
             }
         }
-        // A plain border strip of the paper above the rail, so the pattern stops before the crew's heads.
-        c.rect(0, f.rail - 7 * s, c.w, 7 * s, C(0x4A3826)); c.rect(0, f.rail - 7 * s, c.w, s, C(0x6A4A2C))
+        // The plain band above the rail: the paper's ground, a shade darker, and the frieze along its top, a thin rust
+        // stripe between two dark lines with a run of small teal diamonds.
+        c.rect(0, frieze, c.w, f.rail - frieze, C(0x463424))
+        c.rect(0, frieze - 2 * s, c.w, s, C(0x2E2218)); c.rect(0, frieze - s, c.w, s, C(0x6A3E24)); c.rect(0, frieze, c.w, s, C(0x2E2218))
+        for x in stride(from: 3 * s, to: c.w, by: 8 * s) { c.rect(x, frieze - 4 * s, s, s, teal) }
+        if tall { huntMotelUpperWall(c, g, upper) }
         // On the screen saver: the popcorn ceiling with its water stain, the dome light, more duck prints going up.
         if tall {
             let ce = f.ceiling
@@ -790,6 +848,39 @@ extension Scenes {
         }
     }
 
+    /// The screen saver's upper wall, above a picture rail at `top`: an older paper someone never got round to
+    /// stripping, in brown and rust stripes with a chain of small cream diamonds down every other one, faded paler
+    /// round a long-gone picture's square, and peeling at one seam, its corner curling down to show the plaster.
+    private static func huntMotelUpperWall(_ c: PixelCanvas, _ g: Int, _ top: Int) {
+        let s = unit(g), ce = huntMotelFrame(c, g).ceiling
+        let stripe = [C(0x4E3A2A), C(0x5E3A26)], line = C(0x3A2A1E), dot = C(0x9A8254)
+        for (k, x) in stride(from: 0, to: c.w, by: 6 * s).enumerated() {
+            c.rect(x, ce, 6 * s, top - ce, stripe[k % 2]); c.rect(x, ce, max(1, s / 2), top - ce, line)
+            if k % 2 == 1 {
+                for y in stride(from: ce + 4 * s + (k % 4 == 1 ? 0 : 4 * s), to: top - 2 * s, by: 8 * s) {
+                    c.rect(x + 3 * s - s / 2, y - s, max(1, s), 3 * s, dot); c.rect(x + 2 * s, y, 3 * s, max(1, s), dot)
+                }
+            }
+        }
+        // The pale square where a picture hung for years.
+        let px = c.w * 26 / 100, py = top - 60 * s
+        c.rect(px - s, py - s, 32 * s, 24 * s, C(0x241812, 0.25)); c.rect(px, py, 30 * s, 22 * s, C(0x9A8A68, 0.4))
+        c.rect(px + 15 * s, py - 4 * s, max(1, s), 4 * s, C(0x2A1E14)); c.rect(px + 15 * s, py - 5 * s, max(1, s), max(1, s), C(0xB0A080))
+        // A seam peeling: a strip's top corner come away and rolled down the wall, bare grey plaster behind it, the
+        // roll's paler back showing and its shadow on the paper under it.
+        let sx = c.w * 82 / 100, py0 = ce + 3 * s, pw = 12 * s, ph = 20 * s
+        for k in 0..<ph { c.rect(sx, py0 + k, pw - pw * k / ph, 1, k % (3 * s) == 0 ? C(0x7A7262) : C(0x8E8674)) }
+        c.glowLine(Double(sx + pw), Double(py0 + s), Double(sx), Double(py0 + ph + s), core: C(0x1E140E, 0.6), glow: C(0, 0),
+                   coreR: Double(s) * 1.2, glowR: Double(s) * 1.3)
+        c.glowLine(Double(sx + pw), Double(py0 - s), Double(sx), Double(py0 + ph - s), core: C(0xC8B888), glow: C(0, 0),
+                   coreR: Double(s) * 1.5, glowR: Double(s) * 1.6)
+        c.glowLine(Double(sx + pw), Double(py0 - 2 * s), Double(sx), Double(py0 + ph - 2 * s), core: C(0xE0D4A8), glow: C(0, 0),
+                   coreR: Double(s) * 0.5, glowR: Double(s) * 0.6)
+        // The picture rail: a dark moulding lit on top, where the old paper stops and the medallions start.
+        c.rect(0, top - 2 * s, c.w, 3 * s, C(0x4A3020)); c.rect(0, top - 2 * s, c.w, max(1, s / 2), C(0x7A5434))
+        c.rect(0, top + s, c.w, s, C(0x241812))
+    }
+
     /// The room's life: the VACANCY sign outside blinking pink through the window and its glow slipping through the
     /// slats of the blinds, and the TV's blue light flickering with whatever's on.
     static func huntMotelLife(_ c: PixelCanvas, _ g: Int, _ t: Double) {
@@ -823,9 +914,9 @@ extension Scenes {
     }
 
     /// The crossroads at night, where deals are made: a dark denim sky with a moon, flat Kansas fields running off
-    /// to a low line of trees, a dirt road meeting the one across the front, telephone poles along it, a far
-    /// farmhouse with one light, and one dead tree on the left with a crow in it. On the screen saver the moon is
-    /// big and low over the fields, the sky full of stars.
+    /// to a low line of trees, a dirt road with fence posts along it meeting the one across the front, telephone
+    /// poles, a far farmhouse with one light, and one dead tree on the left with a crow in it. On the screen saver
+    /// the moon is big and low over the fields, the sky full of stars.
     static func huntCrossroads(_ c: PixelCanvas, _ g: Int) {
         let s = unit(g), f = huntCrossroadsFrame(c, g), tall = isTall(c), h = f.horizon
         // The sky, stars and moon.
@@ -865,31 +956,52 @@ extension Scenes {
             c.rect(0, y, c.w, band, k % 2 == 0 ? C(0x2A2A24) : C(0x34322A))
             y += band; band += max(1, s / 2) + (k % 3 == 0 ? s : 0); k += 1
         }
-        // The far road, running straight off to the trees, ruts down it, grass on its shoulders.
+        // The far road, running dead straight off to the trees and flat on the fields: the same dust as the road
+        // across the front, darker with distance, a dark verge of grass along both edges, two wheel ruts and a strip
+        // of grass between them all the way down, and its corners rounding out where it meets the front road.
+        let roadX = c.w * 50 / 100
         for yy in h..<g {
             let a = Double(yy - h) / Double(g - h)
-            let cx = Double(f.vanish) + a * Double(c.w * 50 / 100 - f.vanish), half = Double(s) + a * Double(34 * s)
-            let dirt = lerp(C(0x2E2C2A), C(0x54483A), (a * 4).rounded(.down) / 4 + 0.15)
+            let cx = Double(f.vanish) + a * Double(roadX - f.vanish)
+            let flare = max(0, Double(yy - (g - 6 * s)) / Double(6 * s))
+            let half = Double(s) * 0.5 + a * Double(38 * s) + flare * flare * Double(14 * s)
+            let dirt = lerp(C(0x2C2A26), C(0x4A3E30), a * a)
             c.rect(Int(cx - half), yy, Int(half * 2), 1, dirt)
-            if a > 0.2 {
-                let rut = lerp(dirt, C(0x1A1612), 0.25)
-                c.rect(Int(cx - half * 0.55), yy, max(1, Int(half * 0.14)), 1, rut); c.rect(Int(cx + half * 0.4), yy, max(1, Int(half * 0.14)), 1, rut)
-            }
-            if yy % 3 == 0 { c.rect(Int(cx - half) - s, yy, s, 1, C(0x3A3A26)); c.rect(Int(cx + half), yy, s, 1, C(0x3A3A26)) }
+            let verge = C(0x1E2018).alpha(0.4 + 0.5 * (1 - a))
+            let edge = max(1, Int(a * Double(2 * s)))
+            if flare == 0 { c.rect(Int(cx - half) - edge, yy, edge, 1, verge); c.rect(Int(cx + half), yy, edge, 1, verge) }
+            let rut = lerp(dirt, C(0x14100C), 0.35), rw = max(1, Int(Double(s) * (0.5 + a * 1.5)))
+            for side in [-1.0, 1.0] { c.rect(Int(cx + side * (a * Double(14 * s))) - rw / 2, yy, rw, 1, rut) }
         }
-        // Telephone poles marching along a far road across the fields, the wire sagging between them.
-        let poleBase = h + 4 * s, poleH = 16 * s
-        var last: (Int, Int)? = nil
+        // Fence posts along both sides of it, smaller and closer together the further off they are, so the road
+        // reads as lying flat and running away.
+        for a in [0.08, 0.16, 0.27, 0.42, 0.62] {
+            let yy = h + Int(a * Double(g - h)), cx = Double(f.vanish) + a * Double(roadX - f.vanish)
+            let ph = max(s, Int(a * Double(14 * s))), half = Double(s) * 0.5 + a * Double(38 * s) + Double(2 * s) + a * Double(6 * s)
+            for side in [-1.0, 1.0] {
+                let px = Int(cx + side * half)
+                c.rect(px, yy - ph, max(1, Int(a * Double(2 * s))), ph, C(0x1E1A16)); c.rect(px, yy - ph, max(1, Int(a * Double(2 * s))), max(1, s / 2), C(0x5A5048))
+            }
+        }
+        // Telephone poles marching along a far road across the fields, two wires sagging between them in a smooth
+        // curve: worked out column by column, each column's dot shared between the two rows it falls across, so the
+        // sag reads as a curve and not a staircase.
+        let poleBase = h + 4 * s, poleH = 16 * s, wireCol = C(0x161418)
+        var last: Int? = nil
         for x in stride(from: c.w * 6 / 100, to: c.w + 60 * s, by: 54 * s) {
             c.rect(x, poleBase - poleH, max(1, s), poleH, C(0x201A18)); c.rect(x - 3 * s, poleBase - poleH + s, 7 * s, max(1, s), C(0x201A18))
-            if let (lx, ly) = last {
-                func wire(_ a: Double) -> (Double, Double) { (Double(lx) + a * Double(x - lx), Double(ly) + sin(a * .pi) * Double(3 * s)) }
-                for k in 1...5 {
-                    let p0 = wire(Double(k - 1) / 5), p1 = wire(Double(k) / 5)
-                    c.glowLine(p0.0, p0.1, p1.0, p1.1, core: C(0x1A1618), glow: C(0, 0), coreR: Double(s) * 0.5, glowR: Double(s) * 0.55)
+            if let lx = last {
+                for (dx, dip) in [(-3 * s, 2.2), (3 * s, 2.6)] {
+                    let x0 = lx + dx, x1 = x + dx, y0 = Double(poleBase - poleH + s)
+                    for xx in x0...x1 {
+                        let a = Double(xx - x0) / Double(x1 - x0), y = y0 + sin(a * .pi) * dip * Double(s)
+                        if s > 1 { c.rect(xx, Int(y.rounded()), 1, max(1, s / 2), wireCol); continue }
+                        let row = Int(y.rounded(.down)), frac = y - Double(row)
+                        c.px(xx, row, wireCol.alpha(1 - frac * 0.75)); if frac > 0.2 { c.px(xx, row + 1, wireCol.alpha(frac * 0.9)) }
+                    }
                 }
             }
-            last = (x, poleBase - poleH + s)
+            last = x
         }
         // The dead tree on the left: a twisted grey trunk lit on its moon side, bare branches reaching out, one
         // long branch to the right where the crow sits.
@@ -933,17 +1045,22 @@ extension Scenes {
         let phase = t.truncatingRemainder(dividingBy: 8.0)
         let lookBack = phase > 3 && phase < 4.4, flap = phase > 6.2 && phase < 6.9
         let hop = phase > 4.4 && phase < 6.2 ? 2 * s : 0
-        let x = f.perch.x + hop, y = f.perch.y, black = C(0x0E0E14), sheen = C(0x2A2E44)
-        c.rect(x - 3 * s, y - 3 * s, 6 * s, 3 * s, black); c.rect(x - 2 * s, y - 3 * s, 4 * s, s, sheen)
-        c.rect(x - 5 * s, y - 2 * s, 2 * s, s, black)   // the tail
-        c.rect(x - s, y, max(1, s / 2), s, C(0x3A3630)); c.rect(x + s, y, max(1, s / 2), s, C(0x3A3630))
-        let hx = lookBack ? x - 3 * s : x + 2 * s
-        c.rect(hx, y - 5 * s, 2 * s, 2 * s, black)
-        c.rect(lookBack ? hx - s : hx + 2 * s, y - 4 * s, s, max(1, s / 2) + (s > 1 ? s / 2 : 0), C(0x4A4640))
-        c.px(lookBack ? hx : hx + s, y - 5 * s, C(0xC8C0A0))
-        if flap {
-            c.rect(x - 4 * s, y - 6 * s, 3 * s, 3 * s, black); c.rect(x + s, y - 6 * s, 3 * s, 3 * s, black)
-            c.rect(x - 5 * s, y - 7 * s, 2 * s, s, black); c.rect(x + 3 * s, y - 7 * s, 2 * s, s, black)
+        // A big black crow facing right, its tail angled down behind, the moonlight catching its back, head and wing
+        // edge in a cold blue rim so it reads against the night sky.
+        let x = f.perch.x + hop, y = f.perch.y, black = C(0x0C0C12), wing = C(0x1C1E2A), rim = C(0x5A6688)
+        func r(_ u: Int, _ v: Int, _ w: Int, _ h: Int, _ col: Px) { c.rect(x + u * s, y + v * s, w * s, h * s, col) }
+        // The body, round at the breast and tapering back to the tail.
+        for (v, a, b) in [(-7, -2, 3), (-6, -4, 4), (-5, -5, 5), (-4, -5, 5), (-3, -4, 4), (-2, -2, 3)] { r(a, v, b - a, 1, black) }
+        r(-4, -5, 6, 2, wing); r(-2, -7, 4, 1, rim); r(-4, -6, 2, 1, rim)       // the folded wing and lit back
+        r(-7, -5, 2, 1, black); r(-8, -4, 3, 1, black); r(-10, -3, 3, 1, black); r(-7, -5, 2, 1, rim.alpha(0.7))   // the tail
+        r(-1, -1, 1, 1, C(0x3A3630)); r(1, -1, 1, 1, C(0x3A3630))                 // the feet on the branch
+        let back = lookBack ? -1 : 1, hx = lookBack ? -7 : 3
+        r(hx, -10, 4, 4, black); r(hx, -10, 4, 1, rim)                            // the head
+        r(back > 0 ? hx + 4 : hx - 2, -8, 2, 1, C(0x4A4640)); r(back > 0 ? hx + 4 : hx - 2, -9, 1, 1, C(0x5A5650))   // the beak
+        r(back > 0 ? hx + 2 : hx + 1, -9, 1, 1, C(0xD8D0B0))                     // its eye catching the moon
+        if flap {   // both wings up and spread, black with a lit leading edge
+            r(-7, -12, 5, 5, wing); r(-9, -14, 4, 2, wing); r(-9, -14, 4, 1, rim)
+            r(1, -12, 5, 5, wing); r(4, -14, 4, 2, wing); r(4, -14, 4, 1, rim)
         }
     }
 }
