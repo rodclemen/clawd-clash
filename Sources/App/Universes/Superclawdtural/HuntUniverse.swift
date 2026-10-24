@@ -12,7 +12,7 @@ import Foundation
 //   HuntRoster.swift        personas, homes, nemeses, rides, the `Theme`, the place keys.
 //   HuntHem.swift           HEM as a hunter.         HuntIcon.swift   the menu bar icon, a devil's trap.
 //   HuntKit.swift           art helpers the Art files share: blades, flannel, wing shadows.
-//   HuntWipes.swift         the trips between places.
+//   HuntTrips.swift         the trips between places, each drawn in its own Hunt…Trip.swift.
 //   HuntRides.swift         Baby, the Impala.        HuntBackFromHell.swift   the compaction: dragged down, and back.
 //   HuntHabits.swift        Jerk and Bitch, Clawdstiel's personal space.    HuntDrills.swift   the bespoke drills.
 //   Art/                    the characters, 8 to 10 a file.    Places/   the places, a few a file.
@@ -39,7 +39,7 @@ struct HuntUniverse: UniverseModule {
             villains: "huntVillains", [huntVillains1, huntVillains2, huntVillains3, huntVillains4, huntVillains5,
                                               huntVillains6, huntVillains7])
     }
-    /// The trips between places (HuntWipes.swift): `pick` chooses the next, `every` lists one of each kind for
+    /// The trips between places (HuntTrips.swift): `pick` chooses the next, `every` lists one of each kind for
     /// Tools/Transitions. nil would leave plain edge and clock wipes, as only Star Clawds keeps.
     var transitions: TransitionSet? {
         TransitionSet(pick: { last, cast, _, to in HuntTrip.pick(after: (last as? HuntTrip)?.kind, cast: cast, to: to) },

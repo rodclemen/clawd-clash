@@ -68,7 +68,7 @@ let huntShots: [Shot] = [
                  line: "Every subagent gets a place in the meadow.", badgeText: Universe.hunters.title.uppercased())
     },
     // The window comes in on the universe's own trip.
-    Shot(name: "window", start: 16.8, end: 21.6, into: .trip(ComicTransition(HuntTrip(kind: .petals)))) { ctx, local, t in
+    Shot(name: "window", start: 16.8, end: 21.6, into: .trip(ComicTransition(HuntTrip(kind: .headlights)))) { ctx, local, t in
         windowShot(ctx, .hunters, local: local, t: t, rise: true, needsAt: 2.5, at: .huntBunker)
         badge("WINDOW MODE", ctx, alpha: clamp((local - 0.2) / 0.3))
         caption("Prefer a window? Mind the windmill.", ctx, local: local, start: 0.1, y: 955, size: 56)
@@ -122,7 +122,7 @@ let huntBeats: [(key: Double, beat: Beat)] = [
            "DESKTOP MODE", "footsteps, bolts and a crackle of magic")),
     (10.5, ("THE STATUS", "The crew in a line-up, one needing you.", "the universe's name", "pops, a little tune")),
     (14.5, ("THE AGENTS", "HEM keeps watch while the subagents run in.", "“Every subagent gets a place in the meadow.”", "running feet")),
-    (19.0, ("THE WINDOW", "A gust of petals blows the window in: the Sample Meadow, the cards under it.", "WINDOW MODE", "a whoosh, then a ping")),
+    (19.0, ("THE WINDOW", "The Impala's headlights sweep the window in, the cards under it.", "WINDOW MODE", "a whoosh, then a ping")),
     (23.5, ("EVERY AI", "Every AI's sessions, each in its own colour.", "the AIs' names", "pops")),
     (28.0, ("THE END CARD", "The meadow, the crew lined up, the title.", "\(Universe.hunters.title.uppercased()), “Have fun. Keep track.”", "the last chord")),
 ]
