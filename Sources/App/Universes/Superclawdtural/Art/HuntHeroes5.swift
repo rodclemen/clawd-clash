@@ -2,10 +2,10 @@ import Foundation
 
 // Heroes: the Ghostfacers, Frank, Benny and the psychics. Clawd in costume like every other cast, with Clawd's own
 // orange face showing. Ed and Harry wear the same black Ghostfacers jacket with its little ghost logo: Ed is the one
-// with gelled black spikes and the camcorder, Harry the one with a shaggy brown mop and the EMF meter. Frank and Benny
+// with gelled black spikes and the camcorder, Harry the one with a shaggy light-brown mop and the EMF meter. Frank and Benny
 // both wear flat caps: Frank's is a tall, puffy pale grey tweed over a glare and an army jacket, Benny's a small
 // dark leather one pulled low over slicked black hair and a jacket caked in Purgatory dirt. Missouri in purple and
-// beads; Pamela behind her sunglasses in a cloud of dark curls.
+// beads; Pamela behind her sunglasses in long dark curls.
 
 let huntHeroes5: [HuntHero: Persona] = [
     .edZedmore: Persona(name: "Ed Zedmore", headTop: 19, signature: 3.2, callout: "Ghostfacers!", draw: drawEdZedmore),
@@ -13,7 +13,7 @@ let huntHeroes5: [HuntHero: Persona] = [
     .frankDevereaux: Persona(name: "Frank Devereaux", headTop: 20, signature: 3.0, draw: drawFrankDevereaux),
     .bennyLafitte: Persona(name: "Benny Lafitte", weapon: .saber, headTop: 22, signature: 3.0, draw: drawBennyLafitte),
     .missouriMosley: Persona(name: "Missouri Mosley", headTop: 21, signature: 2.8, draw: drawMissouriMosley),
-    .pamelaBarnes: Persona(name: "Pamela Barnes", headTop: 18, signature: 3.6, draw: drawPamelaBarnes),
+    .pamelaBarnes: Persona(name: "Pamela Barnes", headTop: 21, signature: 3.6, draw: drawPamelaBarnes),
 ]
 
 // MARK: - Shared bits
@@ -69,15 +69,16 @@ private func h5GhostfacersJacket(_ c: PixelCanvas) {
 // MARK: - Ed Zedmore
 
 /// Ed Zedmore: one half of the Ghostfacers, black hair gelled up into stiff spikes that lean forward, the black
-/// Ghostfacers jacket zipped to the collar, dark jeans and black sneakers on white soles, and his silver camcorder
-/// always in his hand. He doesn't fight. Signature: he lifts the camcorder up to his eye and points it ahead, its flip
-/// screen swinging open and the red light blinking: they're recording.
+/// Ghostfacers jacket zipped to the collar, dark jeans and black sneakers on white soles, and his camcorder always in
+/// his hand: a big black one with a silver side panel and a fat lens. He doesn't fight. Signature: he lifts the
+/// camcorder up to his eye and points it ahead, its flip screen swinging open and the red light blinking: they're
+/// recording.
 private func drawEdZedmore(_ c: PixelCanvas, _ p: Pose) {
     let hair = C(0x1C181C), hairL = C(0x443C44), hairD = C(0x0C0A0C)
-    let cam = C(0x9A9EA6), camL = C(0xC6CAD2), camD = C(0x666A72), barrel = C(0x1E1E24), glass = C(0x6A9ACC)
     let k = h5Span(p, 0.05, 0.95)
     let up = h5Ease(k, edge: 0.16)
-    let cx = 40 - Int((up * 6).rounded()), cy = 30 - Int((up * 4).rounded())
+    let cx = 40 - Int((up * 6).rounded()), cy = 29 - Int((up * 5).rounded())
+    let handY = cy + 4 + Int((up * 3).rounded())             // round its back end at rest, under it at his eye
 
     drawLegs(c, Look(leg: C(0x30384E)), step: p.step)
     h5LegLight(c, p, C(0x48526C))
@@ -85,7 +86,7 @@ private func drawEdZedmore(_ c: PixelCanvas, _ p: Pose) {
     drawBoots(c, C(0xE2E2DE), step: p.step, rows: 1)
 
     c.oy += p.breathe
-    drawBody(c, Look(arm: C(0x26262C)), armRight: 30 - cy)
+    drawBody(c, Look(arm: C(0x26262C)), armRight: 33 - handY)
     h5GhostfacersJacket(c)
 
     // Black hair gelled up into stiff, uneven spikes leaning forward, lit along their left edges, cut close at the
@@ -102,40 +103,50 @@ private func drawEdZedmore(_ c: PixelCanvas, _ p: Pose) {
     ], ["H": hair, "h": hairD, "l": hairL])
     c.rect(22, 28, 2, 1, hairD); c.rect(32, 28, 2, 1, hairD)
 
-    // The camcorder: a silver body with its carry handle on top, lit along the top edge, the black lens barrel and its
-    // blue glass at the front. At rest he holds it low by its back end; for the signature it's up at his eye.
+    // The camcorder, big and dark so it stands clear of his orange face: a black body lit along the top, its silver
+    // carry handle, a silver panel down the side, and a fat lens barrel at the front with a silver rim and blue glass.
     c.pattern(cx, cy, [
-        "...TTTTT...",
-        "LLLLLLLLLKK",
-        "BBBBBBBBBKG",
-        "BBBBBBBBBKG",
-        "BBBBBBBBBKG",
-        "DDDDDDDDDK.",
-    ], ["T": camD, "L": camL, "B": cam, "D": camD, "K": barrel, "G": glass])
-    c.px(cx + 10, cy + 2, C(0xC8E4FF))                                    // a glint on the glass
+        "..HHHHHH......",
+        "..H....H......",
+        "LLLLLLLLLLRRR.",
+        "BssssssBBBKKKR",
+        "BSSSSSSBBBKGGR",
+        "BSSSSSSBBBKGgR",
+        "BBBBBBBBBBKKKR",
+        "DDDDDDDDDDRRR.",
+    ], ["H": C(0xB8BCC4), "L": C(0x55576A), "B": C(0x2C2C34), "D": C(0x16161A), "S": C(0xA4A8B2),
+        "s": C(0xD4D8E0), "R": C(0x9498A2), "K": C(0x0E0E12), "G": C(0x3E7ED0), "g": C(0xC8E4FF)])
     let rec = k >= 0 && Int(p.t * 3) % 2 == 0
-    c.rect(cx + 8, cy, 2, 1, rec ? C(0xFF3A2A) : C(0x7A3A34))           // the tally light
+    c.rect(cx + 8, cy + 2, 2, 1, rec ? C(0xFF3A2A) : C(0x7A3A34))       // the tally light
     if up > 0.5 {
-        // The flip screen swung open towards us, lit, a ghost blipping across it.
-        c.rect(cx + 2, cy + 1, 6, 5, barrel)
-        c.rect(cx + 3, cy + 2, 4, 3, C(0x8AB4DC))
-        if Int(p.t * 5) % 3 != 0 { c.px(cx + 3 + Int(p.t * 4) % 4, cy + 3, C(0xF4F8FF)) }
+        // The flip screen swung open towards us over the panel, lit pale blue, a ghost blipping across it.
+        c.rect(cx + 1, cy + 3, 6, 4, C(0x16161A))
+        c.rect(cx + 2, cy + 4, 4, 2, C(0x8AB4DC))
+        if Int(p.t * 5) % 3 != 0 { c.px(cx + 2 + Int(p.t * 4) % 4, cy + 4, C(0xF4F8FF)) }
     }
-    c.rect(38, cy + 3, 3, 3, clawdOrange); c.px(40, cy + 5, clawdShade)
+    c.rect(38, handY, 3, 3, clawdOrange); c.px(40, handY + 2, clawdShade)
 }
 
 // MARK: - Harry Spangler
 
-/// Harry Spangler: the other Ghostfacer, a shaggy mop of mid-brown hair falling over his ears and brow, the same black
-/// Ghostfacers jacket, khaki cargo trousers and brown boots, and his EMF meter in hand, a grey paddle with a row of
-/// lights from green to red. He doesn't fight. Signature: he waves the meter about, sweeping it up and down, and its
-/// lights jump up and down the scale, hitting the red.
+/// Harry Spangler: the other Ghostfacer, a shaggy mop of straight light-brown hair, its ragged fringe hanging in
+/// strands over his brow and ears, the same black Ghostfacers jacket, khaki cargo trousers and brown boots, and his EMF
+/// meter in hand, a grey paddle with a row of lights from green to red. He doesn't fight. Signature: he sweeps the meter
+/// up and down, its lights climbing the scale; it hits the red and crackles, and his hair stands on end, eyes wide.
 private func drawHarrySpangler(_ c: PixelCanvas, _ p: Pose) {
-    let hair = C(0x6A4A2E), hairL = C(0x8E6A44), hairD = C(0x46301C)
+    let hair = C(0x86603A), hairL = C(0xB08454), hairD = C(0x56391E)
     let box = C(0x4A4E56), boxL = C(0x7E828C), boxD = C(0x2E3036)
     let k = h5Span(p, 0.05, 0.95)
     let on = h5Ease(k, edge: 0.12)
     let wave = k >= 0 ? Int((on * (3 + 3 * sin(k * .pi * 6))).rounded()) : 0
+    // The lights climb as he sweeps, sit in the red through the middle, then drop back.
+    let level: Int
+    if k < 0 || on < 0.4 { level = 1 }
+    else if k < 0.4 { level = min(4, 1 + Int(k / 0.4 * 3.4 + noise(Int(p.t * 9)) * 1.2)) }
+    else if k < 0.78 { level = 5 }
+    else { level = max(1, 4 - Int((k - 0.78) / 0.2 * 4)) }
+    let spooked = level == 5
+    let jolt = spooked && Int(p.t * 14) % 2 == 0 ? 1 : 0     // a little shiver while it crackles
 
     drawLegs(c, Look(leg: C(0x8A7E5E)), step: p.step)
     if !seatedPose {
@@ -145,26 +156,42 @@ private func drawHarrySpangler(_ c: PixelCanvas, _ p: Pose) {
     drawBoots(c, C(0x5A3E26), step: p.step, rows: 2)
 
     c.oy += p.breathe
+    c.ox += jolt
     drawBody(c, Look(arm: C(0x26262C)), armRight: wave)
     h5GhostfacersJacket(c)
+    if spooked {
+        // Eyes wide: taller, a white glint in each.
+        c.rect(22, 28, 2, 4, ink); c.rect(32, 28, 2, 4, ink)
+        c.px(22, 28, C(0xFFFFFF)); c.px(32, 28, C(0xFFFFFF))
+    }
 
-    // A shaggy brown mop, in strokes, falling over his brow and both ears.
-    c.pattern(16, 19, [
-        "......H.HH..H.HH......",
-        "....HlHHHlHHHlHHHH....",
-        "..HHHHlHHHHlHHHHlHHH..",
-        ".HHlHHHHhHHHHhHHHHlHH.",
-        "HHHHHhHHHHHHHHHHhHHHHH",
-        "HHhHHHHHhHHHHhHHHHHhHH",
-        "HHHH.hHH..hH...hHH.HHH",
-        "HHHh...h.........h.HHh",
-        ".HHh................Hh",
-        ".Hh..................h",
+    // A shaggy mop of straight hair in long strands, a ragged fringe hanging over his brow and ears, lit along the
+    // top. When the meter hits the red it stands on end, a spray of stiff strands.
+    if spooked {
+        c.pattern(16, 15, [
+            "...l.....l....l.....l.",
+            "...H..l..H....Hl...lH.",
+            ".l.Hl.H..lH..lHH..lH..",
+            ".HlHH.HH.lHH.lHHH.HH..",
+            "..HHHHHHHHHHHHHHHHHH..",
+        ], ["H": hair, "l": hairL])
+    }
+    c.pattern(16, 20, [
+        "......HHHHHHHHHH......",
+        "...HHHlHHlHHHlHHlHH...",
+        "..HHlHHlHHlHHlHHlHHH..",
+        ".HHHHHHHHHHHHHHHHHHHH.",
+        "HHlHhHlHhHlHhHlHhHlHhH",
+        "HHHhHHHhHHHhHHHhHHHhHH",
+        "HHHhHH.hH..hH..hHH.hHH",
+        "HHh.h...h...h...h..HHh",
+        ".Hh.................Hh",
+        ".h...................h",
     ], ["H": hair, "h": hairD, "l": hairL])
     c.rect(22, 28, 2, 1, hairD); c.rect(32, 28, 2, 1, hairD)
 
     // The EMF meter: a grey paddle held out flat in front of him, lit along its top, rounded at the end, and five
-    // lights in a row along its face. Idle, one green glows; while he waves it, they jump about and hit the red.
+    // lights in a row along its face. Idle, one green glows; while he sweeps it, they climb and hit the red.
     let y = 32 - wave
     c.pattern(40, y, [
         "LLLLLLLLLL.",
@@ -173,16 +200,25 @@ private func drawHarrySpangler(_ c: PixelCanvas, _ p: Pose) {
         ".DDDDDDDDD.",
     ], ["L": boxL, "B": box, "D": boxD])
     let lights = [C(0x3AE05A), C(0x9AE83A), C(0xF0D23A), C(0xF08A2A), C(0xFF3A2A)]
-    let level = k >= 0 && on > 0.4 ? 1 + Int(noise(Int(p.t * 9)) * 4.99) : 1
+    let blink = !spooked || Int(p.t * 8) % 2 == 0
     for i in 0..<5 {
-        c.px(41 + i * 2, y + 1, i < level ? lights[i] : C(0x2A2C30))
-        c.px(41 + i * 2, y + 2, i < level ? lights[i] : boxD)
+        let lit = i < level && (i < 4 || blink)
+        c.px(41 + i * 2, y + 1, lit ? lights[i] : C(0x2A2C30))
+        c.px(41 + i * 2, y + 2, lit ? lights[i] : boxD)
     }
-    if level == 5 {
+    if spooked {
         c.glowLine(49, Double(y + 1), 49, Double(y + 2), core: C(0xFF3A2A).alpha(0.2), glow: C(0xFF3A2A).alpha(0.15),
                    coreR: 1, glowR: 3)
+        // Crackle: little yellow zigzags of static jumping off the end of the meter.
+        let f = Int(p.t * 10) % 3
+        let zig: [[(Int, Int)]] = [[(52, y - 1), (53, y - 2), (52, y - 3), (53, y - 4)],
+                                   [(52, y + 3), (53, y + 4), (54, y + 3), (55, y + 4)],
+                                   [(51, y - 1), (52, y - 2), (53, y - 2), (54, y - 3)]]
+        for (zx, zy) in zig[f] { c.px(zx, zy, C(0xFFE45A)) }
+        for (zx, zy) in zig[(f + 1) % 3].prefix(2) { c.px(zx, zy, C(0xFFF6B0)) }
     }
     c.rect(38, 33 - wave, 3, 3, clawdOrange); c.px(40, 35 - wave, clawdShade)
+    c.ox -= jolt
 }
 
 // MARK: - Frank Devereaux
@@ -239,17 +275,22 @@ private func drawFrankDevereaux(_ c: PixelCanvas, _ p: Pose) {
     c.rect(22, 20, 4, 1, capL)
     c.px(25, 19, capD)                                       // the button
 
-    // The burner phones, a stack of four in his fist, a rubber band round them; a SIM card pops out of the top one
-    // during the signature and gets snapped.
-    let sy = 28 - raise
-    let phones = [C(0x2A2A30), C(0x9A9EA6), C(0x2A3A5E), C(0x8A2A2A)]
-    for (i, col) in phones.enumerated() {
-        let y = sy + i * 2
-        c.rect(38, y, 6, 2, col); c.px(38, y, i == 1 ? C(0xC4C8D0) : C(0x55555E))
-        c.px(43, y + 1, C(0x101014))
+    // The burner phones, a stack of four cheap bar phones in his fist, each lit along its top edge and dark
+    // underneath, a little screen and a stub of aerial on the top one, a rubber band round them; a SIM card pops out
+    // of the top one during the signature and gets snapped.
+    let sy = 26 - raise
+    let phones: [(Px, Px, Px)] = [(C(0x2E2E36), C(0x55555E), C(0x16161A)), (C(0xA4A8B0), C(0xD2D6DC), C(0x6E7278)),
+                                  (C(0x2E4272), C(0x5070A8), C(0x1A2644)), (C(0x963030), C(0xC4544A), C(0x5E1A1A))]
+    for (i, ph) in phones.enumerated() {
+        let y = sy + i * 3
+        c.rect(40, y, 9, 3, ph.0); c.rect(40, y, 9, 1, ph.1); c.rect(40, y + 2, 9, 1, ph.2)
+        c.px(48, y + 1, ph.2)
     }
-    c.rect(41, sy, 1, 8, C(0xC09A5A))                       // the rubber band
+    c.rect(43, sy + 1, 4, 1, C(0x8ACCA0)); c.px(43, sy + 1, C(0xC8F0D4))   // the top one's little green screen
+    c.rect(47, sy - 2, 1, 2, C(0x1E1E22))                                  // its aerial
+    c.rect(45, sy, 1, 12, C(0xC09A5A)); c.px(45, sy, C(0xE0C080))          // the rubber band
     c.rect(38, 33 - raise, 3, 3, clawdOrange); c.px(40, 35 - raise, clawdShade)
+    c.rect(41, 33 - raise, 1, 3, clawdOrange)   // his fingers round the stack
 
     guard k >= 0 else { return }
     let card = C(0xF0EEE6), cardD = C(0xBEBAB0), gold = C(0xE0B444)
@@ -257,23 +298,23 @@ private func drawFrankDevereaux(_ c: PixelCanvas, _ p: Pose) {
         // Up it comes out of the top phone, held between finger and thumb.
         let rise = min(4, Int(k / 0.25 * 4))
         let y = sy - rise
-        c.rect(39, y, 5, 3, card); c.rect(39, y + 2, 5, 1, cardD); c.rect(40, y + 1, 2, 1, gold)
+        c.rect(42, y, 5, 3, card); c.rect(42, y + 2, 5, 1, cardD); c.rect(43, y + 1, 2, 1, gold)
         if k > 0.4 {   // it bends before it goes
-            c.px(41, y, cardD); c.px(42, y - 1, card)
+            c.px(44, y, cardD); c.px(45, y - 1, card)
         }
     } else {
         // Snap: two halves, tilting apart and tumbling down past his hand to the floor; a little white crack of light.
         let f = (k - 0.55) / 0.45
         if f < 0.15 {
-            c.px(41, sy - 6, C(0xFFFFFF)); c.px(40, sy - 7, C(0xFFFFFF).alpha(0.6)); c.px(43, sy - 7, C(0xFFFFFF).alpha(0.6))
+            c.px(44, sy - 6, C(0xFFFFFF)); c.px(43, sy - 7, C(0xFFFFFF).alpha(0.6)); c.px(46, sy - 7, C(0xFFFFFF).alpha(0.6))
         }
         let fall = min(Double(43 - sy + 4), f * f * 40)
         let y0 = sy - 4 + Int(fall)
         if y0 < 42 {
             c.rect(37 - Int(f * 3), y0, 2, 3, card); c.px(38 - Int(f * 3), y0 + 1, gold)
-            c.rect(44 + Int(f * 3), y0 + 1, 3, 2, card); c.px(44 + Int(f * 3), y0 + 1, cardD)
+            c.rect(50 + Int(f * 3), y0 + 1, 3, 2, card); c.px(50 + Int(f * 3), y0 + 1, cardD)
         } else {
-            c.rect(36, 42, 2, 1, card); c.rect(47, 42, 3, 1, card)
+            c.rect(36, 42, 2, 1, card); c.rect(53, 42, 3, 1, card)
         }
     }
 }
@@ -321,16 +362,16 @@ private func drawBennyLafitte(_ c: PixelCanvas, _ p: Pose) {
         }
     }
 
-    // Slicked black hair, long at the nape, with long sideburns.
-    c.pattern(16, 24, [
-        "..HH....................",
-        ".HlH....................",
-        "HHHH................H...",
-        "HHHh................H...",
-        ".HHh................h...",
-        "..h.....................",
-    ], ["H": hair, "l": hairL, "h": C(0x0A0806)])
-    c.rect(19, 27, 1, 4, hair)
+    // Slicked black hair: combed flat and straight back under the cap, lit in a long streak, ending in a short
+    // ducktail at the nape; long thin sideburns down the front of his face.
+    c.pattern(17, 26, [
+        "lHH.................",
+        "HlHH................",
+        ".HH.................",
+        ".H..................",
+    ], ["H": hair, "l": hairL])
+    c.rect(19, 26, 1, 5, hair); c.px(19, 26, hairL)                          // the near sideburn
+    c.rect(36, 26, 1, 4, hair)                                               // the far one
     c.rect(22, 28, 2, 1, hair); c.rect(32, 28, 2, 1, hair)
     // The cap: small and dark, worn low and tight, with a short brim pulled down at the front.
     c.pattern(17, 22, [
@@ -367,7 +408,8 @@ private func drawBennyLafitte(_ c: PixelCanvas, _ p: Pose) {
 /// Missouri Mosley: the psychic of Lawrence, Kansas, who reads you before you knock, in a purple silk blouse with a
 /// ruffled neckline and full sleeves, strings of wooden and turquoise beads round her neck, gold hoop earrings, short
 /// tight curls in black going grey, a long charcoal skirt with her stockinged legs and shoes below. She doesn't fight.
-/// Signature: she draws her hand back and swats someone with the back of it, whap, then smooths her blouse.
+/// Signature: a little ghost pops up in front of her and sticks its tongue out; she draws her hand back and swats it
+/// with the back of her hand, whap, and it goes flying off and pops; then she smooths her blouse.
 private func drawMissouriMosley(_ c: PixelCanvas, _ p: Pose) {
     let silk = C(0x6E3A8E), silkD = C(0x4A2266), silkL = C(0x9A5EBC)
     let hair = C(0x1E1A1C), hairL = C(0x4A4448), streak = C(0x9A969A)
@@ -387,8 +429,8 @@ private func drawMissouriMosley(_ c: PixelCanvas, _ p: Pose) {
         for x in [21, 25, 29, 33] { c.rect(x, 38, 1, 2, skirtD) }
     }
 
-    // The swat: back goes the hand, up by her ear; then it flicks forward, a smear behind it and a burst of stars
-    // where it lands; then back to her side.
+    // The swat: back goes the hand, up by her ear; then it flicks forward with a smear behind it, into the ghost;
+    // then back to her side.
     var hand: (x: Int, y: Int)? = nil
     var raise = 0
     if k >= 0 {
@@ -438,24 +480,67 @@ private func drawMissouriMosley(_ c: PixelCanvas, _ p: Pose) {
                            glow: C(0xF0E8FF).alpha(0.15), coreR: 0.4, glowR: 1.2)
             }
         }
-        // Whap: little stars burst where it lands.
-        let star = C(0xFFE27A)
-        let r = 2 + Int(f * 3)
-        let sx = h.x + 5, sy = h.y + 1
-        c.px(sx + r, sy, star); c.px(sx, sy - r, star); c.px(sx, sy + r, star)
-        c.px(sx + r - 1, sy - r + 1, star); c.px(sx + r - 1, sy + r - 1, star)
-        c.px(sx, sy, C(0xFFFFFF))
+    }
+    if k >= 0 { h5SwattedGhost(c, p, k) }
+}
+
+/// Missouri's target: a little pale ghost that pops up in front of her and sticks its tongue out, gets the back of her
+/// hand (whap: stars where it lands), goes flying off to the right, tumbling, and pops in a ring of sparkles. Pale
+/// blue-white with dark eyes, so it reads on a dark desktop and a bright place alike.
+private func h5SwattedGhost(_ c: PixelCanvas, _ p: Pose, _ k: Double) {
+    let g = C(0xDCE8F4), gL = C(0xFFFFFF), gD = C(0xA4B8D2), eye = C(0x2A3448)
+    let bob = Int(p.t * 4) % 2
+    let star = C(0xFFE27A)
+    if k < 0.08 {
+        // It fades up out of nowhere: faint, so it gets no outline yet.
+        c.pattern(46, 25, [".ggg.", "ggggg", "ggggg", "ggggg", "g.g.g"], ["g": g.alpha(0.2)])
+    } else if k < 0.36 {
+        // Hovering there, tongue out at her.
+        c.pattern(46, 24 + bob, [
+            "..GGG..",
+            ".LGGGGG",
+            "LGkGkGG",
+            "LGGGGGd",
+            "GGtGGGd",
+            "GGGGGGd",
+            "GdGdGdG",
+            "G.G.G.d",
+        ], ["G": g, "L": gL, "d": gD, "k": eye, "t": C(0xE06A8A)])
+    } else if k < 0.56 {
+        // Whap: knocked flying off to the right, squashed and tumbling, its eyes crossed.
+        let f = (k - 0.36) / 0.2
+        let x = 48 + Int(f * 14), y = 25 - Int(sin(f * .pi) * 6)
+        if Int(f * 6) % 2 == 0 {
+            c.pattern(x, y, [".GGGGG.", "GkGGGkG", "LGGkGGd", "GdGdGdG"], ["G": g, "L": gL, "d": gD, "k": eye])
+        } else {
+            c.pattern(x, y - 1, ["GGG.", "GkGd", "GGGG", "GkGd", "GGGG", "dGd."], ["G": g, "d": gD, "k": eye])
+        }
+        if f < 0.45 {
+            // Stars burst where her hand landed.
+            let r = 2 + Int(f * 6)
+            let sx = 49, sy = 29
+            c.px(sx + r, sy, star); c.px(sx, sy - r, star); c.px(sx, sy + r, star)
+            c.px(sx + r - 1, sy - r + 1, star); c.px(sx + r - 1, sy + r - 1, star)
+            c.px(sx, sy, C(0xFFFFFF))
+        }
+    } else if k < 0.68 {
+        // Pop: a ring of sparkles where it went.
+        let f = (k - 0.56) / 0.12
+        let r = 1 + Int(f * 3)
+        for (dx, dy) in [(r, 0), (-r, 0), (0, r), (0, -r)] { c.px(63 + dx, 22 + dy, g) }
+        if f < 0.5 { c.px(63, 22, gL) }
     }
 }
 
 // MARK: - Pamela Barnes
 
-/// Pamela Barnes: the psychic who looked on an angel's true face and lost her sight for it: a great cloud of dark
-/// curls to her shoulders, black sunglasses, a fringed brown suede vest over a teal top, a stack of silver bangles,
-/// jeans and black boots. She doesn't fight. Signature: a séance: she spreads her hands, three candles rise out of the
-/// floor round her and their flames flare up tall, then sink and go out, and the candles are gone.
+/// Pamela Barnes: the psychic who looked on an angel's true face and lost her sight for it: long dark curls, close
+/// over her head and tumbling wide past her shoulders, black sunglasses, a fringed brown suede vest over a teal top, a
+/// stack of silver bangles, jeans and black boots. She doesn't fight. Signature: a séance: she spreads her hands, three
+/// candles rise out of the floor round her and their flames flare up tall, then sink and go out, and the candles are
+/// gone.
 private func drawPamelaBarnes(_ c: PixelCanvas, _ p: Pose) {
-    let hair = C(0x241A16), hairL = C(0x46342A), hairD = C(0x120C0A)
+    let hair = C(0x2A1E18), hairL = C(0x5E4636), hairD = C(0x120C0A)
     let vest = C(0x8A5A34), vestD = C(0x5E3A20), vestL = C(0xAC7848)
     let top = C(0x2E5A5E), topD = C(0x1E3E42), topL = C(0x44787C)
     let k = h5Span(p, 0.05, 0.95)
@@ -521,23 +606,24 @@ private func drawPamelaBarnes(_ c: PixelCanvas, _ p: Pose) {
     c.px(22, 29, C(0x8A9AB4)); c.px(32, 29, C(0x8A9AB4))
     if flare > 0.3 { c.px(23, 30, C(0xFFC86A)); c.px(33, 30, C(0xFFC86A)) }   // the candlelight in her lenses
 
-    // The curls: a great dark cloud of them to her shoulders, every curl a little lit loop.
-    c.pattern(14, 18, [
-        "........HHH.HHH.HH.......",
-        ".....HHlHHHlHHHHlHHH.....",
-        "....HHlhHHlhHHHlhHHlH....",
-        "...HHHHHHHHHHHHHHHHHHHH..",
-        "..HlHHHlHHHHlHHHHlHHHlHH.",
-        "..HlhHHlhHHHlhHHHlhHHHHH.",
-        "..HHHHHHHHHHHHHHHHHHHHHHH",
-        ".HHlHHHHhHHHHHhHHHHHhHlHH",
-        ".HlhHH..............HlhH.",
-        "HHHHH...............HHHH.",
-        "HlHHh................HhH.",
-        "HlhHH................HH..",
-        "HHHH.................Hh..",
-        ".HlH.................h...",
-        ".HhH.....................",
-        "..h......................",
+    // The curls: close over the top of her head, then spreading wider as they tumble past her shoulders, the edge
+    // in little scallops, a few locks hanging lower; each curl a lit loop over a dark one.
+    c.pattern(12, 21, [
+        "............HHHHHHHH............",
+        ".........HlhHHHHHlhHHlh.........",
+        ".......HHlhlhHHHHhHHlhlhH.......",
+        ".....HHHHhlhHHHlhHHHhlhHHHl.....",
+        "....HlhHHHhHHHHhlhHHHhHHHHhl....",
+        "....HhHHHHHHHlhHhHHHHHHHlhHh....",
+        "...HHHHHlh............lhhHHHH...",
+        "...HHHHlh..............HHHHHH...",
+        "..HlhHHh................HlhHHH..",
+        "...hlhHH................lhlhH...",
+        "..HlhHHl................hlhHHl..",
+        ".HHhHHHh................HhHHHhH.",
+        "..HHHHlh................HHHHlh..",
+        ".HHHHHhH................HHHHhHH.",
+        "..HhHHhH................HhHHhH..",
+        ".HH.HH.H................H.HH.HH.",
     ], ["H": hair, "l": hairL, "h": hairD])
 }

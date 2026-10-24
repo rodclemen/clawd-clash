@@ -12,7 +12,7 @@ let huntHeroes6: [HuntHero: Persona] = [
                               signature: 3.0, draw: drawVictorHenriksen),
     .mickDavies: Persona(name: "Mick Davies", weapon: .blaster, shot: .bullet, muzzle: (53, 31), headTop: 20,
                          draw: drawMickDavies),
-    .tessa: Persona(name: "Tessa", headTop: 20, signature: 3.2, draw: drawTessa),
+    .tessa: Persona(name: "Tessa", headTop: 22, signature: 3.2, draw: drawTessa),
     .balthaclawds: Persona(name: "Balthaclawds", weapon: .saber, headTop: 21, signature: 3.6, draw: drawBalthaclawds),
     .miracle: Persona(name: "Miracle", headTop: 21, signature: 3.0, draw: drawMiracle),
 ]
@@ -48,14 +48,14 @@ private func h6Trousers(_ c: PixelCanvas, _ p: Pose, _ shade: Px, rows: Int = 4)
 
 // MARK: - Becky Rosen
 
-/// Becky Rosen: the superfan who runs the Supernatural fan site, with honey-brown hair to her shoulders held back by a
-/// pink headband, big plum-pink glasses, a rose-pink cardigan buttoned over a cream blouse with a round collar, a
+/// Becky Rosen: the superfan who runs the Supernatural fan site, with golden hair to her shoulders held back by a pink
+/// headband with a big bow, big plum-pink glasses, a rose-pink cardigan buttoned over a cream blouse with a round collar, a
 /// plum skirt, dark tights and little Mary Janes. She always has one of Carver Edlund's books with her. Signature: she
 /// clutches the book to her chest and squeezes it, eyes shut, hearts floating up.
 private func drawBeckyRosen(_ c: PixelCanvas, _ p: Pose) {
     let cardi = C(0xD8708E), cardiD = C(0xA84E6A), cardiL = C(0xF29AB2)
     let blouse = C(0xF6EEDC), blouseD = C(0xD8CCB4), skirt = C(0x6A3462), skirtD = C(0x4A2244), skirtL = C(0x8A4E80)
-    let hair = C(0xB88A4E), hairD = C(0x8A6232), hairL = C(0xDAB070), band = C(0xF0589C), bandL = C(0xFFA6CC)
+    let hair = C(0xDCA850), hairD = C(0xA8762E), hairL = C(0xF6D282), band = C(0xF0589C), bandL = C(0xFFA6CC)
     let frame = C(0x8A2E6E), frameL = C(0xC458A0)
     let k = h6Span(p, 0.04, 0.96)
     let hug = h6Ease(k, edge: 0.14)              // 0 at her side, 1 clutched to her chest
@@ -97,7 +97,7 @@ private func drawBeckyRosen(_ c: PixelCanvas, _ p: Pose) {
     c.rect(37, 33, 1, 4, cardiD); c.rect(18, 34, 1, 3, cardiL)
     if !hugging { c.rect(15, 35, 3, 1, cardiD) }
 
-    // Hair to her shoulders, parted and held back by the headband, flicking out at the ends.
+    // Golden hair to her shoulders, held back by the headband with its big bow, flicking up and out at the ends.
     c.pattern(16, 20, [
         "......HHHHHHHHHHHH......",
         "....HHHlllllllHHHHHH....",
@@ -112,10 +112,12 @@ private func drawBeckyRosen(_ c: PixelCanvas, _ p: Pose) {
         "HHld...............dlHH.",
         ".Hld...............dlHH.",
         "HHld...............dlHH.",
-        ".HHH................HHH.",
-        "HHd..................dHH",
-        ".d....................d.",
+        ".HHld..............dlHHH",
+        "lHHd................dHHl",
+        "lld..................dll",
     ], ["H": hair, "h": hairD, "l": hairL, "d": hairD, "B": band, "b": bandL])
+    // The bow on her headband, two pink loops either side of a knot.
+    c.pattern(16, 20, ["bB.Bb", "BBkBB", "Bd.dB"], ["B": band, "b": bandL, "k": C(0xC03A78), "d": C(0xC03A78)])
 
     // The glasses: big plum-pink rims all the way round each eye, joined over the nose, a glint on the near rim.
     for x in [21, 31] {
@@ -130,17 +132,20 @@ private func drawBeckyRosen(_ c: PixelCanvas, _ p: Pose) {
         c.px(22, 29, clawdShade); c.px(33, 29, clawdShade)
     }
 
-    // The book: a dark paperback, its title band in gold, a little red flame of a cover picture, the pages' cream edge.
+    // The book: a fat paperback in a dark blue cover, lit along its top, a dark spine with gold bands, the title in a
+    // gold band, a red and orange flame of a cover picture, the author's name in gold under it, the pages' cream edge.
     func book(_ x: Int, _ y: Int) {
-        let cover = C(0x2A3048), coverD = C(0x1A1E30), title = C(0xE0A840), pages = C(0xF2E8D0)
-        c.rect(x, y, 6, 8, cover); c.rect(x, y, 1, 8, coverD)
-        c.rect(x + 1, y + 1, 4, 1, title); c.rect(x + 2, y + 3, 2, 2, C(0xC8402A)); c.px(x + 3, y + 3, C(0xF07A3A))
-        c.rect(x + 1, y + 6, 3, 1, title.alpha(1)); c.px(x + 5, y + 7, coverD)
-        c.rect(x + 5, y + 1, 1, 6, pages)
+        let cover = C(0x2A3460), coverD = C(0x161C36), coverL = C(0x46528A), title = C(0xE8B444), pages = C(0xF2E8D0)
+        c.rect(x, y, 8, 10, cover); c.rect(x, y, 8, 1, coverL); c.rect(x, y, 1, 10, coverD)
+        c.px(x, y + 1, title); c.px(x, y + 8, title)                                     // the spine's bands
+        c.rect(x + 2, y + 2, 4, 1, title)
+        c.pattern(x + 2, y + 4, [".r..", "rOr.", "rYOr"], ["r": C(0xC8402A), "O": C(0xF07A3A), "Y": C(0xFFD25A)])
+        c.rect(x + 2, y + 8, 3, 1, title)
+        c.rect(x + 7, y + 1, 1, 8, pages); c.px(x + 7, y + 9, coverD)
     }
     if hugging {
         // Clutched to her chest, both arms wrapped round it, squeezed now and then.
-        book(25, 30 - squeeze)
+        book(24, 31 - squeeze)
         c.rect(18, 35, 8, 2, cardi); c.rect(18, 36, 8, 1, cardiD); c.rect(26, 35, 2, 2, clawdOrange)
         c.rect(32, 34, 6, 2, cardi); c.rect(32, 35, 6, 1, cardiD); c.rect(30, 34, 2, 2, clawdOrange)
         c.px(31, 35, clawdShade)
@@ -152,11 +157,11 @@ private func drawBeckyRosen(_ c: PixelCanvas, _ p: Pose) {
             c.pattern(hx, hy, ["HH.HH", "HHHHH", ".HHH.", "..H.."], ["H": i == 1 ? C(0xF0507A) : C(0xFF7AA6)])
         }
     } else if hug > 0 {
-        book(37, 28)   // on its way up
+        book(36, 27)   // on its way up
         c.rect(38, 31, 3, 3, clawdOrange)
     } else {
         // Held at her side, her hand round the spine.
-        book(39, 29)
+        book(39, 28)
         c.rect(38, 33, 3, 3, clawdOrange); c.px(40, 35, clawdShade)
     }
 }
@@ -274,8 +279,9 @@ private func drawMickDavies(_ c: PixelCanvas, _ p: Pose) {
     c.px(27, 35, C(0xB8BEC8)); c.px(27, 37, C(0xB8BEC8)); c.px(27, 36, vest)
     c.rect(24, 33, 1, 5, suitL); c.px(23, 34, suitL); c.rect(31, 33, 1, 5, suitD); c.px(32, 34, suitD)
     c.rect(19, 33, 4, 1, suitL); c.rect(33, 33, 3, 1, suitL)
-    c.pattern(20, 34, ["W.W", "WWW"], ["W": white])
-    c.rect(20, 36, 3, 1, suitD); c.rect(33, 36, 3, 1, suitD)
+    // The pocket square: one crisp white point standing out of the breast pocket's dark welt, shaded on its far side.
+    c.px(21, 34, white); c.rect(20, 35, 2, 1, white); c.px(22, 35, C(0xB8BEC8))
+    c.rect(19, 36, 5, 1, suitD); c.rect(33, 36, 3, 1, suitD)
     c.rect(37, 33, 1, 5, suitD); c.rect(18, 37, 20, 1, suitD); c.rect(18, 34, 1, 3, suitL)
     c.rect(15, 35, 3, 1, suitD); c.px(17, 34, shirt)
 
@@ -348,26 +354,27 @@ private func drawTessa(_ c: PixelCanvas, _ p: Pose) {
     c.rect(37, 33, 1, 5, coatD); c.rect(18, 37, 20, 1, coatD)
     c.rect(15, 35, 3, 1, coatD)
 
-    // Long straight hair, parted in the middle, falling past her shoulders in long lit strands.
-    c.pattern(16, 20, [
-        "......HHHHHHHHHHHH......",
-        "....HHHHlllHlllHHHHH....",
-        "...HHlllHHHhHHHlllHHH...",
+    // Long straight hair lying sleek and flat on top, parted in the middle (the parting a pale line), swept back off
+    // her face: tucked behind her ear on the near side, and on the far side falling straight down her back past her
+    // shoulders in long lit strands.
+    c.pattern(16, 22, [
+        ".......HHHHpHHHHH.......",
+        ".....HHlllHpHlllHHHH....",
+        "...HHllHHHHpHHHHlllHH...",
         "..HHHHHHHHhhHHHHHHHHHH..",
-        "..HHHHHHHhhhhHHHHHHHHH..",
-        ".HHHHHHhhHHHHhhHHHHHHH..",
-        ".HHHHh..........hHHHHH..",
-        ".HHHh............hHHHH..",
-        ".HHl..............hlHH..",
-        "HHHl...............lHHH.",
-        "HHHl...............lHH..",
-        "HHlH...............HlH..",
-        "HHlH...............HlH..",
-        "HHlH...............HlH..",
-        "HHlHd..............HlH..",
-        "HHHd...............HHd..",
-        ".Hd................dH...",
-    ], ["H": hair, "h": hairD, "l": hairL, "d": hairD])
+        "..HHHHhH........HHhHHH..",
+        "..HHHh............hHHH..",
+        "..HHl..............hHH..",
+        ".HHlH...............hH..",
+        ".HHlH...................",
+        ".HHlH...................",
+        ".HlHH...................",
+        ".HlHH...................",
+        ".HlHH...................",
+        ".HHlH...................",
+        ".HHlh...................",
+        "..Hh....................",
+    ], ["H": hair, "h": hairD, "l": hairL, "p": C(0x7A6050)])
     c.rect(22, 28, 2, 1, hairD); c.rect(32, 28, 2, 1, hairD)
 
     if out > 0 {
@@ -461,23 +468,38 @@ private func drawBalthaclawds(_ c: PixelCanvas, _ p: Pose) {
         return
     }
 
-    // The wine glass: a clear bowl of red wine on its stem, held by the stem; tipped to his lips for the sip.
-    let glass = C(0xD8E2EA), wine = C(0x7A1230), wineL = C(0xB0304A)
+    // The wine glass: a big clear bowl of red wine on a long stem, held by the stem; tipped to his lips for the sip.
+    // The glass is a pale rim with a bright glint, the wine deep red with a lighter swirl.
+    let glass = C(0xD8E2EA), glassD = C(0x9AA8B6), wine = C(0x7A1230), wineL = C(0xB8364E), wineD = C(0x4E0A1E)
     let hy = 33 - raise
+    let pal: [Character: Px] = ["g": glass, "G": white, "d": glassD, "R": wine, "r": wineL, "D": wineD]
     if sipping {
-        // Tipped towards him, the wine running to the rim at his lips, the stem pointing up and out.
-        c.pattern(37, hy - 5, [
-            "gR....",
-            "gRRg..",
-            ".gRrg.",
-            "..ggg.",
-            "...s..",
-        ], ["g": glass, "R": wine, "r": wineL, "s": glass])
+        // Tipped towards him, the wine running to the rim at his lips, the stem pointing down and out to his hand.
+        c.pattern(35, hy - 7, [
+            "Gd......",
+            "gRd.....",
+            "gRRd....",
+            "grRRd...",
+            ".gRRDd..",
+            "..gDDdd.",
+            "....ddd.",
+            "......d.",
+        ], pal)
     } else {
-        c.pattern(38, hy - 5, ["g...g", "gRRRg", "gRrRg", ".gRg.", "..g.."], ["g": glass, "R": wine, "r": wineL])
-        if lift == 0 { c.px(38, hy - 4, white) }
+        c.pattern(37, hy - 9, [
+            "G.....d",
+            "g.....d",
+            "grRRRRd",
+            "gRrRRDd",
+            ".gRRDd.",
+            "..ddd..",
+            "...d...",
+            "...d...",
+            "...d...",
+        ], pal)
     }
     c.rect(38, hy, 3, 3, clawdOrange); c.px(40, hy + 2, clawdShade)
+    if !sipping { c.rect(38, hy + 3, 5, 1, glassD); c.px(38, hy + 3, glass) }   // the foot, under his fist
 }
 
 // MARK: - Miracle
@@ -489,17 +511,23 @@ private func drawBalthaclawds(_ c: PixelCanvas, _ p: Pose) {
 private func drawMiracle(_ c: PixelCanvas, _ p: Pose) {
     let k = h6Span(p, 0.02, 0.98)
     let chase = k > 0.2 && k < 0.84 ? (k - 0.2) / 0.64 : -1
-    let turn = chase >= 0 ? Int(chase * 8) : 0
-    let flip = chase >= 0 && turn % 2 == 1
     let happy = k >= 0 || p.cheering || p.ready
     let pant = k > 0.84 || p.cheering
 
     // Drawn on its own canvas so the whole dog can be turned round mid-spin.
     let d = PixelCanvas(c.w, c.h)
     h6Dog(d, p, wagSpeed: k >= 0 ? (k < 0.2 ? 16 : 22) : happy ? 11 : 5, pant: pant,
-          hop: chase >= 0 && Int(chase * 16) % 2 == 1 ? -1 : 0)
-    if flip { d.mirror(aboutX: 29) }
-    c.paste(d)
+          hop: chase >= 0 && Int(chase * 16) % 2 == 1 ? -1 : 0, curled: chase >= 0)
+    if chase >= 0 {
+        // Round and round, three and a half turns, curled up with his nose after his tail: he turns on the spot, so
+        // he narrows as he swings round to face us or away, and comes back the other way round. Quick in the middle,
+        // easing in and out.
+        let a = h6Smooth(chase) * 3.5 * 2 * .pi
+        let s = cos(a)
+        h6Turned(d, into: c, about: 29, scale: s < 0 ? min(-0.28, s) : max(0.28, s))
+    } else {
+        c.paste(d)
+    }
 
     // A little dust kicked up off the floor while he spins: faint, so it gets no outline.
     if chase >= 0 && !seatedPose {
@@ -511,8 +539,25 @@ private func drawMiracle(_ c: PixelCanvas, _ p: Pose) {
     }
 }
 
-/// The dog itself, facing right: the shaggy body, four legs, the tail, the bearded head.
-private func h6Dog(_ c: PixelCanvas, _ p: Pose, wagSpeed: Double, pant: Bool, hop: Int) {
+/// `src` drawn into `c` squeezed across about the column `ax`, `scale` wide (negative: turned the other way round), as
+/// if seen turning on the spot.
+private func h6Turned(_ src: PixelCanvas, into c: PixelCanvas, about ax: Double, scale: Double) {
+    for y in 0..<src.h {
+        for x in 0..<src.w {
+            let sx = Int(floor(ax + (Double(x) + 0.5 - ax) / scale))
+            guard sx >= 0, sx < src.w else { continue }
+            let i = (y * src.w + sx) * 4, a = src.buf[i + 3]
+            guard a > 0 else { continue }
+            let m = 255 / Double(a)
+            c.px(x, y, Px(r: UInt8(min(255, Double(src.buf[i]) * m)), g: UInt8(min(255, Double(src.buf[i + 1]) * m)),
+                          b: UInt8(min(255, Double(src.buf[i + 2]) * m)), a: a))
+        }
+    }
+}
+
+/// The dog itself, facing right: the shaggy body, four legs, the tail, the bearded head. `curled`: chasing his tail,
+/// his head turned right round over his back towards it, and the tail curled up and forward, just out of reach.
+private func h6Dog(_ c: PixelCanvas, _ p: Pose, wagSpeed: Double, pant: Bool, hop: Int, curled: Bool = false) {
     let fur = C(0xC8B08A), furD = C(0x9A8264), furL = C(0xE6D4B0), streak = C(0x7A6A58), belly = C(0xD8C8A8)
     let nose = C(0x1A1416), collar = C(0x7A4A26), tag = C(0xE6C050)
     let lying = seatedPose
@@ -535,7 +580,12 @@ private func h6Dog(_ c: PixelCanvas, _ p: Pose, wagSpeed: Double, pant: Bool, ho
     c.oy += p.breathe
 
     // The tail: a shaggy plume off his rump, wagging between two positions, faster when he's excited.
-    if Int(p.t * wagSpeed) % 2 == 0 {
+    if curled {
+        // Curled up over his rump and flicking forward, the tip just out of reach of his nose.
+        let flick = Int(p.t * wagSpeed) % 2
+        c.pattern(12, 20 + flick, ["...lFF", "..FFFl", ".FFFd.", "FFFd..", "FFF...", ".FF...", "..F..."],
+                  ["F": fur, "l": furL, "d": furD])
+    } else if Int(p.t * wagSpeed) % 2 == 0 {
         c.pattern(12, 23, ["..l..", ".FFl.", ".FFF.", "..FFd", "..FFF", "...FF", "...dF", "....F"],
                   ["F": fur, "l": furL, "d": furD])
     } else {
@@ -559,8 +609,11 @@ private func h6Dog(_ c: PixelCanvas, _ p: Pose, wagSpeed: Double, pant: Bool, ho
     ], ["F": fur, "L": furL, "l": furL, "s": streak, "d": furD, "B": belly])
 
     // The head on its neck: a scruffy crown, a long floppy ear, the eye under shaggy brows, the long muzzle with its
-    // wiry beard and black nose; the collar round his neck with the tag hanging.
-    c.pattern(35, 21, [
+    // wiry beard and black nose; the collar round his neck with the tag hanging. Curled, it's drawn on its own and
+    // turned round to face back along his back.
+    let h = curled ? PixelCanvas(c.w, c.h) : c
+    if curled { h.oy = c.oy }
+    h.pattern(35, 21, [
         "....l.l.l.......",
         "...lFLFLFl......",
         "..FFFLLLFFF.....",
@@ -575,9 +628,17 @@ private func h6Dog(_ c: PixelCanvas, _ p: Pose, wagSpeed: Double, pant: Bool, ho
         "..EFFFFFFwFwFw..",
         "..E.FFFFF.w.w...",
     ], ["F": fur, "L": furL, "l": furL, "E": streak, "b": furD, "K": ink, "N": nose, "w": belly])
-    c.px(50, 27, C(0x5A4E50))                                   // the shine on his nose
-    if pant {
-        c.rect(46, 30, 2, 2, C(0xE0607A)); c.px(47, 31, C(0xB8405A))   // tongue out, panting
+    h.px(50, 27, C(0x5A4E50))                                   // the shine on his nose
+    if pant || curled {
+        h.rect(46, 30, 2, 2, C(0xE0607A)); h.px(47, 31, C(0xB8405A))   // tongue out, panting
     }
-    c.rect(37, 31, 7, 1, collar); c.px(38, 31, C(0xA06A3A)); c.px(41, 32, tag)
+    h.rect(37, 31, 7, 1, collar); h.px(38, 31, C(0xA06A3A)); h.px(41, 32, tag)
+    if curled {
+        // Turned right round and moved back over his shoulders, nose towards his tail.
+        h.mirror(aboutX: 43)
+        let oy = c.oy
+        c.oy = 0
+        c.paste(h, x: -9, y: -1)
+        c.oy = oy
+    }
 }
