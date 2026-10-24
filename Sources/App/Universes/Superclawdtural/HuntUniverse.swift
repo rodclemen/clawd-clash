@@ -91,8 +91,17 @@ struct HuntUniverse: UniverseModule {
     /// pairs fighting each other and the odd one cheering, and the social preview's title, line and cast.
     var docs: DocsInfo {
         DocsInfo(lineup: [
-            LineupSlot.pair(.villain(HuntVillain.clawdley), true, "", 60, .hero(HuntHero.deanWinclawdster), true, "", 150),
-        ], social: (title: Universe.hunters.title.uppercased(), subtitle: "Your AI sessions hunting things on your desktop",
-                    cast: [.hero(HuntHero.deanWinclawdster), .villain(HuntVillain.clawdley)]))
+            LineupSlot.pair(.villain(HuntVillain.clawdley), true, "", 30, .hero(HuntHero.deanWinclawdster), true, "", 98),
+            LineupSlot.pair(.hero(HuntHero.samWinclawdster), false, "Check git history", 132,
+                            .villain(HuntVillain.ruby), false, "Write changelog", 182),
+            LineupSlot.pair(.hero(HuntHero.clawdstiel), false, "Plan the refactor", 214,
+                            .villain(HuntVillain.zachariah), false, "Review Overlay.swift", 252),
+            LineupSlot.pair(.hero(HuntHero.bobbyClawdsinger), true, "", 282, .villain(HuntVillain.abaddon), true, "", 352),
+            [LineupSlot(who: .hero(HuntHero.jackKlyne), leader: false, label: "Run the test suite", x: 388, facing: 1,
+                        role: .cheer)],
+        ], social: (title: Universe.hunters.title.uppercased(), subtitle: "Saving people. Hunting bugs. The family business.",
+                    cast: [.hero(HuntHero.deanWinclawdster), .hero(HuntHero.samWinclawdster), .hero(HuntHero.clawdstiel),
+                           .hero(HuntHero.bobbyClawdsinger), .villain(HuntVillain.clawdley), .villain(HuntVillain.lucifer),
+                           .villain(HuntVillain.abaddon), .villain(HuntVillain.azazel)]))
     }
 }
