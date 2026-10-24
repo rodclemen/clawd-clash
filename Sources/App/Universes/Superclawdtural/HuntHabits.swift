@@ -6,7 +6,8 @@ import Foundation
 //    says it, and Sam answers a beat later (`remark`, both off the same clock so the answer always follows);
 //  - personal space: now and then Clawdstiel vanishes with a flutter of wings and a few feathers drifting down where
 //    he stood, and turns up right behind the nearest hero, far too close ("Hello, Dean."). If it's Dean, he turns round
-//    and says so. A few seconds later Clawdstiel flutters back to his spot (`remark` for who he visits and what's said,
+//    and says so. A few seconds later Clawdstiel flutters back to his spot, leaving feathers there too (`remark` for
+//    who he visits and what's said,
 //    `jitter` to put him there, his name tag going with him, `prop` for the feathers; his drawing shows the flutter).
 
 let huntQuirks = StageQuirks(jitter: huntStageJitter, prop: huntFeathers, remark: huntRemark)
@@ -79,11 +80,15 @@ private func huntVisit(_ a: OnStage, others: [OnStage], t: Double) -> (facing: C
     let heroes = others.filter { !$0.cast.isDark && $0.cast.universe == .hunters && !$0.leaving && !$0.walking
                                  && !$0.cast.universe.isHem($0.cast.id) }
     guard let target = heroes.first(where: { $0.cast == dean })
-            ?? heroes.min(by: { abs($0.x - a.x) < abs($1.x - a.x) }) else { huntLastVisit = nil; return nil }
+            ?? heroes.min(by: { abs($0.x - a.x) < abs($1.x - a.x) }) else {
+        huntLastVisit = nil; huntLastSpot = nil   // nobody to visit: no feathers left anywhere
+        return nil
+    }
     let side = huntLastVisit.flatMap { $0.cycle == cycle && $0.target == target.cast ? $0.side : nil } ?? -target.facing
     let spot = target.x + side * 21 * target.scale   // shoulder to shoulder: one step too close
     huntLastVisit = HuntVisit(at: ProcessInfo.processInfo.systemUptime, cycle: cycle, target: target.cast, side: side,
                               dx: spot - a.x, e: e)
+    huntLastSpot = (cycle, spot - a.x)
     let name = target.cast.name.split(separator: " ").first.map(String.init) ?? "friend"
     return (-side, "Hello, \(name).")
 }
@@ -105,14 +110,28 @@ func huntStageJitter(_ a: OnStage, others: [OnStage], place: Location?, t: Doubl
     return (Int((v.dx / max(a.scale, 0.01)).rounded()), 0, nil)
 }
 
-/// The feathers he leaves behind where he stood: a few pale feathers drifting down for a second and a half after he
-/// goes.
+/// Where he stood beside whoever he visited, kept a little past the visit (`huntVisit` forgets the visit itself the
+/// moment he's home): which visit, and how far from his own spot, in screen points.
+private var huntLastSpot: (cycle: Int, dx: CGFloat)?
+
+/// The feathers he leaves behind where he stood, at both ends: a few pale feathers drifting down for a second and a
+/// half at his own spot after he goes, and the same beside whoever he visited once he's fluttered home.
 func huntFeathers(_ a: OnStage, ground y: CGFloat, scale: CGFloat, t: Double) -> StageLayer? {
-    guard a.cast == clawdstiel, let v = huntLiveVisit, v.e < 1.5 else { return nil }
+    guard a.cast == clawdstiel else { return nil }
+    let at: (dx: CGFloat, k: Double)
+    if let v = huntLiveVisit, v.e < 1.5 {
+        at = (0, v.e / 1.5)
+    } else {
+        // Just home again: the same clock as `huntVisit`, the second and a half after the stay.
+        let lt = t / huntVisitPeriod + a.phase
+        let e = frac(lt) * huntVisitPeriod - huntVisitStay
+        guard e >= 0, e < 1.5, !a.leaving, let spot = huntLastSpot, spot.cycle == Int(floor(lt)) else { return nil }
+        at = (spot.dx, e / 1.5)
+    }
     let c = PixelCanvas(30, Sprite.height)
-    huntDrawFeathers(c, k: v.e / 1.5, t: t)
+    huntDrawFeathers(c, k: at.k, t: t)
     guard let img = c.makeImage() else { return nil }
-    return StageLayer(image: img, rect: CGRect(x: (a.x - 15 * scale).rounded(), y: y, width: 30 * scale,
+    return StageLayer(image: img, rect: CGRect(x: (a.x + at.dx - 15 * scale).rounded(), y: y, width: 30 * scale,
                                                height: CGFloat(c.h) * scale))
 }
 

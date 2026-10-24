@@ -80,29 +80,78 @@ private let huntWing = [
     ".......W.....W........",
 ]
 
+/// Where an angel's own figure reaches while his wings show, row by row (`huntWingNear`): the first and last column
+/// of anything solid of any of them (hair, the arms, a hand raised to the face, the coat's skirts) through their
+/// signatures and Clawdstiel's flutter, from row `huntFigureTop` down.
+private let huntFigureTop = 20
+private let huntFigureSpans: [(lo: Int, hi: Int)] = [
+    (23, 32), (20, 34), (19, 38),                                                             // rows 20…22
+    (18, 40), (18, 40), (18, 40), (18, 40), (18, 40), (18, 40), (18, 40), (18, 40), (18, 40), // rows 23…31
+    (15, 40), (15, 40), (15, 40), (15, 40), (18, 37),                                         // rows 32…36
+    (17, 38), (17, 38), (17, 38), (17, 38), (19, 36), (19, 36), (19, 36),                     // rows 37…43
+]
+
+/// How close a pixel is to an angel's figure: 2 a pixel or less from it (the shadow leaves that clear, so the app's
+/// outline goes all the way round him, hair and all), 1 where Balthaclawds' wine glass reaches when he raises it to
+/// his lips (the shadow goes faint there, faint enough for the outline to show over it, so the wings don't look cut
+/// off for everyone else), else 0.
+private func huntWingNear(_ x: Int, _ y: Int) -> Int {
+    for yy in (y - 1)...(y + 1) {
+        let i = yy - huntFigureTop
+        guard i >= 0, i < huntFigureSpans.count else { continue }
+        if x >= huntFigureSpans[i].lo - 1 && x <= huntFigureSpans[i].hi + 1 { return 2 }
+    }
+    return y >= 21 && y <= 32 && x <= 43 && x >= 39 ? 1 : 0
+}
+
 /// An angel's wings, as the show has them: only a shadow thrown on the wall behind, never the wings themselves. Two
 /// great wings rooted at his back, opened `k` (0 folded away, 1 spread wide to either side), drawn from `huntWing`
-/// and its mirror, narrower and lower while they open. They're see-through (a shadow) and faintest where they meet
-/// his silhouette, so they get no outline and leave his own clean. Drawn before the body, so he stands in front.
-func huntWingShadows(_ c: PixelCanvas, _ k: Double, tint: Px = C(0x06080E), strength: Double = 0.45) {
+/// and its mirror, narrower and lower while they open; `tall` stretches them higher above his head (Clawdstiel's,
+/// the grandest). They're see-through (a shadow), so they get no outline, and they keep a pixel clear of him all
+/// round, so his own outline isn't broken where they meet his hair. Where two feathers part, a paler line, and along
+/// the leading edge a pale rim, both see-through too, so the shape reads as wings on a near-black desktop and not as
+/// a smudge on a bright place. Drawn before the body, so he stands in front.
+///
+/// At full `strength` the shadow is someone's stencil (the angels' drill reads its shape for its flare): drawn whole
+/// then, with no gap, so the stencil keeps its shape.
+func huntWingShadows(_ c: PixelCanvas, _ k: Double, tint: Px = C(0x06080E), strength: Double = 0.45,
+                     tall: Double = 1) {
     guard k > 0.04 else { return }
     let rows = huntWing.map { Array($0) }, w = rows[0].count, h = rows.count
-    let rootRow = 6.0, rootY = 27.0                        // the pattern's row that meets his back, and where
-    let sx = 0.25 + 0.75 * k, sy = 0.6 + 0.65 * k         // how far open: across, and up
-    for side in [-1, 1] {
+    let rootRow = 6.0, rootY = 27.0 - (tall - 1) * 3      // the pattern's row that meets his back, and where
+    let sx = 0.25 + 0.75 * k, sy = (0.6 + 0.65 * k) * tall // how far open: across, and up
+    let stencil = strength >= 0.99
+    let pale = lerp(tint, C(0xD4DEF6), 0.85), parting = lerp(tint, C(0xD4DEF6), 0.4)
+    /// The pattern's character at a canvas pixel, if the wing on `side` covers it, and how far out from the root.
+    func cell(_ x: Int, _ y: Int, _ side: Int) -> (ch: Character, out: Double)? {
         let rootX = side < 0 ? 22.0 : 33.0                 // just inside his silhouette, either side
+        let v = (Double(y) - rootY) / sy + rootRow          // which pattern row this canvas row comes from
+        guard v >= 0, v < Double(h) else { return nil }
+        let out = (Double(x) - rootX) * Double(side)        // pixels out from the root, away from him
+        guard out > -2 else { return nil }
+        let u = Double(w - 1) - out / sx                    // pattern column (the root is the last one)
+        guard u >= 0, u < Double(w) else { return nil }
+        let ch = rows[Int(v)][Int(u)]
+        return ch == "." ? nil : (ch, out)
+    }
+    for side in [-1, 1] {
         for y in 1..<44 {
-            let v = (Double(y) - rootY) / sy + rootRow       // which pattern row this canvas row comes from
-            guard v >= 0, v < Double(h) else { continue }
             for x in 1...70 {
-                let out = (Double(x) - rootX) * Double(side)   // pixels out from the root, away from him
-                guard out > -2 else { continue }
-                let u = Double(w - 1) - out / sx               // pattern column (the root is the last one)
-                guard u >= 0, u < Double(w) else { continue }
-                let ch = rows[Int(v)][Int(u)]
-                guard ch != "." else { continue }
-                let fade = min(1, max(0, (out + 1) / 6))       // faint where it meets him
-                c.px(x, y, tint.alpha(strength * (ch == "w" ? 1.35 : 1) * fade * min(1, k * 1.5)))
+                guard let (ch, out) = cell(x, y, side) else { continue }
+                let near = stencil ? 0 : huntWingNear(x, y)
+                if near == 2 { continue }
+                var fade = min(1, max(0, (out + 1) / 6)) * min(1, k * 1.5)   // faint where it meets him
+                if near == 1 { fade = min(fade, 0.18 / strength) }            // under a quarter: the outline shows
+                // The rim: the wing's leading edge along the top and round its outer bend, well out from him (not where
+                // it tucks in behind his back, and not down the hanging feathers, which would turn them to claws).
+                let edge = out > 5 && (cell(x, y - 1, side) == nil || (Double(y) <= rootY && cell(x + side, y, side) == nil))
+                if edge {
+                    c.px(x, y, pale.alpha(min(1, strength * 1.1) * fade))
+                } else if ch == "w" {
+                    c.px(x, y, parting.alpha(min(1, strength * 1.2) * fade))
+                } else {
+                    c.px(x, y, tint.alpha(strength * fade))
+                }
             }
         }
     }

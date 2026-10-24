@@ -21,7 +21,7 @@ let huntHeroes2: [HuntHero: Persona] = [
                                 draw: drawHenryWinclawdster),
     .bobbyClawdsinger: Persona(name: "Bobby Clawdsinger", weapon: .blaster, shot: .bullet, muzzle: (55, 31),
                                headTop: 20, signature: 3.2, callout: "Idjits.", draw: drawBobbyClawdsinger),
-    .ellenHarvell: Persona(name: "Ellen Harvell", weapon: .blaster, shot: .bullet, muzzle: (54, 31), headTop: 20,
+    .ellenHarvell: Persona(name: "Ellen Harvell", weapon: .blaster, shot: .bullet, muzzle: (54, 31), headTop: 22,
                            signature: 2.8, draw: drawEllenHarvell),
 ]
 
@@ -38,7 +38,8 @@ private func span(_ s: Double?, _ a: Double, _ b: Double) -> Double {
 /// boots. His power is a gold force pulsing out in waves, and his eyes light gold while he uses it. Signature: his eyes
 /// glow gold, a halo of it round them; then the glow goes, he grins, and he eats a bar of nougat in three bites.
 private func drawJackKlyne(_ c: PixelCanvas, _ p: Pose) {
-    let jacket = C(0xB8965E), jacketD = C(0x8C6E3E), jacketL = C(0xD6B67E), cord = C(0x5A3E24), cordL = C(0x76563A)
+    let jacket = C(0xB8965E), jacketD = C(0x8C6E3E), jacketL = C(0xD6B67E), cord = C(0x5A3E24), cordL = C(0x86643E)
+    let hem = C(0x7A5E34), brass = C(0xE8C462)
     let tee = C(0x3E4048), teeD = C(0x2C2E34)
     let hair = C(0x8A6844), hairD = C(0x624828), hairL = C(0xAC8A5C)
     let gold = C(0xFFD24A), goldL = C(0xFFF4C0)
@@ -53,27 +54,35 @@ private func drawJackKlyne(_ c: PixelCanvas, _ p: Pose) {
     c.oy += p.breathe
     drawBody(c, Look(arm: jacket), armRight: raise)
 
-    // The jacket, short to the hip and open on the tee: the corduroy collar lying flat round the neck, the chest
-    // pockets with their flaps, the lit front edge, the far side and the hem in shade, cuffs.
+    // The jacket, a canvas work jacket short to the hip and open on the tee: the wide brown corduroy collar lying
+    // flat over the shoulders, its ribs catching the light, its points down the front; the chest pockets with
+    // stitched flaps and a brass snap each; the lit front edge, the far side in shade, brown cuffs to match the
+    // collar, and the hem band a shade darker.
     c.rect(18, 33, 20, 5, jacket)
     c.rect(26, 33, 4, 5, tee); c.rect(26, 33, 4, 1, teeD)
-    c.rect(20, 33, 6, 1, cord); c.rect(30, 33, 6, 1, cord); c.rect(24, 34, 2, 1, cord); c.rect(30, 34, 2, 1, cord)
-    c.rect(21, 33, 2, 1, cordL)
-    c.rect(25, 35, 1, 3, jacketL); c.rect(30, 35, 1, 3, jacketD)
-    c.rect(20, 35, 3, 1, jacketD); c.rect(20, 36, 3, 1, jacketL); c.rect(33, 35, 3, 1, jacketD)
-    c.rect(19, 34, 1, 3, jacketL); c.rect(37, 33, 1, 5, jacketD); c.rect(18, 37, 20, 1, jacketD)
-    c.rect(15, 35, 3, 1, jacketD)
-    if raise == 0 { c.rect(38, 35, 3, 1, jacketD) }
+    c.rect(18, 33, 8, 1, cord); c.rect(30, 33, 8, 1, cord)
+    for x in [19, 21, 23] { c.px(x, 33, cordL) }
+    c.rect(24, 34, 2, 2, cord); c.px(24, 34, cordL); c.rect(30, 34, 2, 2, cord)
+    c.rect(25, 36, 1, 2, jacketL); c.rect(30, 36, 1, 2, jacketD)
+    c.rect(19, 35, 4, 1, jacketD); c.px(21, 35, brass); c.rect(19, 36, 4, 1, jacketL)
+    c.rect(32, 35, 4, 1, jacketD); c.px(34, 35, brass)
+    c.px(18, 34, jacketL); c.px(18, 35, jacketL); c.px(36, 34, jacketD); c.rect(37, 33, 1, 5, jacketD)
+    c.rect(18, 37, 20, 1, hem)
+    c.rect(15, 35, 3, 1, cord)
+    if raise == 0 { c.rect(38, 35, 3, 1, cord) }
 
-    // Short, tidy hair, lit on top, the fringe swept across his brow towards where he faces.
+    // Short, tidy hair, flat on top and lifting a little at the front, lit in slanting strokes that run the way it's
+    // combed, the fringe swept down across his brow towards where he faces, its edge a slant over his face rather
+    // than a straight line.
     c.pattern(17, 21, [
-        "......HHHHHHHHH.......",
-        "...HHHlllHHHHlllHH....",
-        "..HHlllHHHHlllHHHHH...",
-        ".HHHHHHHhHHHHHHhHHHHH.",
-        ".HHHHHhHHHHHhHHHHHhHH.",
-        ".HHh.....hHHHHhHHHH...",
-        ".Hh................h..",
+        "..............HHlH....",
+        "...HHHlHHHHlHHHHlHHH..",
+        "..HHHHHlHHHHlHHHHlHHH.",
+        ".HHHHHHHhHHHHhHHHHhHHH",
+        ".HHhHHHHHhHHHHhHHHHhHH",
+        ".HHh.HHHHHhHHHHhHHHh..",
+        ".Hh.....hHHHHHhHHh....",
+        "............hHHHh.....",
     ], ["H": hair, "h": hairD, "l": hairL])
     c.rect(22, 28, 2, 1, hairD); c.rect(32, 28, 2, 1, hairD)
 
@@ -146,24 +155,25 @@ private func drawMaryWinclawdster(_ c: PixelCanvas, _ p: Pose) {
     c.rect(37, 33, 1, 5, jacketD); c.rect(18, 37, 20, 1, jacketD); c.rect(19, 34, 1, 3, jacketL)
     c.rect(15, 35, 3, 1, jacketD)
 
-    // Blonde hair, lit on top, swept across her brow and falling in waves to her shoulders. As she pushes it back, the
-    // fringe lifts off her face.
+    // Blonde hair, parted on the right and swept across from the parting in lit strokes, the fringe a paler lock
+    // sweeping across her brow with a shadow above it; then in waves to her shoulders, in at the cheek, out again,
+    // the ends flicking out. As she pushes it back, the fringe lifts off her face.
     let lifted = push > 0.3 && push < 0.85
-    c.pattern(17, 20, [
-        "......HHHHHHHHHH......",
-        "....HHlllHHHHHHHHH....",
-        "..HHHlllHHHHHlllHHHH..",
-        ".HHHllHHHHHHHHllHHHHH.",
-        ".HHlHHHHHHHHHHHHHHHHd.",
-        "HHHHHHHHHHHHHHHHHHHHHd",
-        lifted ? "HHHHH...........HHHHHd" : "HHHHHHHHHHh.....HHHHHd",
-        lifted ? "HHH..............HHHd." : "HHHHHh...........HHHd.",
-        "HHH...............HHd.",
-        "HlH...............HHd.",
-        "HHd...............dHH.",
-        "HlH...............HdH.",
-        "HHd...............dHd.",
-        "Hd.................d..",
+    c.pattern(16, 20, [
+        "........HHHHHHHH........",
+        ".....HHlllHHHHHdHHH.....",
+        "...HHlllHHHHHHdHHlHH....",
+        "..HHllHHHHHHHdHHHHlHH...",
+        "..HlHHHddHHHHHHdHHHHHd..",
+        ".HHHddllllllllHHdHHHHHd.",
+        lifted ? ".HHHHHH...........HHHHd." : ".HHdllllllllld.....HHHHd",
+        lifted ? ".HHHH..............HHHd." : ".HHHd.............HHHd..",
+        "..HHH..............HHd..",
+        "..HlH...............HHd.",
+        ".HHd................dHH.",
+        ".HlHd..............HdHd.",
+        "HHd.................dHHd",
+        "Hd...................d.d",
     ], ["H": hair, "d": hairD, "l": hairL])
     c.rect(22, 28, 2, 1, hairD); c.rect(32, 28, 2, 1, hairD)
 
@@ -177,8 +187,8 @@ private func drawMaryWinclawdster(_ c: PixelCanvas, _ p: Pose) {
     c.oy += p.gunY
     var drop = 0
     if check >= 0 {
-        c.oy -= 3
-        drop = check < 0.2 ? Int(check / 0.2 * 5) : check < 0.6 ? 5 : check < 0.72 ? Int((0.72 - check) / 0.12 * 5) : 0
+        c.oy -= 4
+        drop = check < 0.2 ? Int(check / 0.2 * 6) : check < 0.6 ? 6 : check < 0.72 ? Int((0.72 - check) / 0.12 * 6) : 0
     }
     c.pattern(38, 30, [
         "..GGGGGGGGl",
@@ -188,12 +198,21 @@ private func drawMaryWinclawdster(_ c: PixelCanvas, _ p: Pose) {
         ".OK........",
     ], ["G": C(0x5A5E66), "l": C(0x9AA0AA), "K": C(0x202024), "k": C(0x141416), "O": clawdOrange])
     if drop > 0 {
-        // The clip below her fist: dark steel, a brass round showing at its lips, a lit edge.
-        c.rect(39, 34 + drop - 2, 2, 4, C(0x4A4E58)); c.rect(39, 34 + drop - 2, 1, 4, C(0x8A8F9C))
-        c.rect(39, 34 + drop - 2, 2, 1, C(0xD8B048))
+        // The clip below her fist: a long dark steel box lit down its near side, the brass rounds stacked at its
+        // lips, a black base plate at the bottom.
+        let top = 33 + drop
+        c.pattern(38, top, [
+            ".bB.",
+            ".LS.",
+            ".LS.",
+            ".LS.",
+            ".LS.",
+            "kkkk",
+        ], ["b": C(0xF0D070), "B": C(0xC09030), "L": C(0x9AA0AE), "S": C(0x4A4E58), "k": C(0x1E2026)])
     }
     if check > 0.72 && check < 0.8 {
-        c.px(42, 32, C(0xFFFFFF, 0.8)); c.px(43, 33, C(0xFFFFFF, 0.5))   // the slap
+        // The slap home: a white flick of motion off the grip.
+        c.px(42, 33, C(0xFFFFFF, 0.9)); c.px(43, 34, C(0xFFFFFF, 0.6)); c.px(42, 35, C(0xFFFFFF, 0.5))
     }
 }
 
@@ -303,7 +322,7 @@ private func drawJohnWinclawdster(_ c: PixelCanvas, _ p: Pose) {
 /// his front, trousers to match and polished black shoes. He doesn't fight. Signature: he tips his fedora, then holds
 /// up the Men of Letters key, its bow set with their symbol, and it glints.
 private func drawHenryWinclawdster(_ c: PixelCanvas, _ p: Pose) {
-    let suit = C(0x6C6456), suitD = C(0x4C463C), suitL = C(0x8C8474)
+    let suit = C(0x6C6456), suitD = C(0x4C463C), suitL = C(0x8C8474), suitN = C(0x3C372F)
     let shirt = C(0xEEECE6), tie = C(0x6A1E26), tieD = C(0x4A1218), brass = C(0xD8A840), brassD = C(0x8E6620)
     let felt = C(0x5E5650), feltD = C(0x423C36), feltL = C(0x7E766C), band = C(0x18161A)
     let hair = C(0x2E241C), hairD = C(0x1A140E)
@@ -327,8 +346,14 @@ private func drawHenryWinclawdster(_ c: PixelCanvas, _ p: Pose) {
     // pocket square, the key's chain hanging across his front, two buttons, the far side and the hem in shade.
     c.rect(18, 33, 20, 5, suit)
     c.rect(26, 33, 4, 2, shirt); c.rect(27, 33, 2, 4, tie); c.px(28, 34, tieD); c.rect(27, 35, 2, 1, brass)
-    c.rect(24, 33, 2, 3, suitL); c.px(23, 33, suitL); c.rect(30, 33, 2, 3, suitD); c.px(32, 33, suitD)
-    c.rect(25, 36, 1, 2, suitD); c.px(26, 37, C(0x2A2622)); c.px(26, 36, C(0x2A2622))
+    // Each lapel a narrow slanting band from the shoulder to the button, its edge lit on the near side and shaded on
+    // the far one, the notch a dark nick at the top.
+    c.pattern(22, 33, [
+        ".nLL....Dln",
+        "..nL....Dn.",
+        "...L....D..",
+    ], ["L": suitL, "l": suit, "D": suitD, "n": suitN])
+    c.px(26, 36, C(0x2A2622)); c.px(26, 37, C(0x2A2622))
     c.rect(33, 34, 2, 1, shirt)                                                   // the pocket square
     c.rect(19, 33, 3, 1, suitL); c.rect(19, 34, 1, 3, suitL)
     c.pattern(30, 36, ["k...k", ".kkk."], ["k": brassD])                           // the key's chain
@@ -437,29 +462,52 @@ private func drawBobbyClawdsinger(_ c: PixelCanvas, _ p: Pose) {
     c.rect(22, 28, 2, 1, beardD); c.rect(32, 28, 2, 1, beardD)
 
     if swig >= 0 {
-        // The flask in his fist, up to his mouth, tipped back for the swig.
+        // The flask in his fist, up to his mouth, tipped back for the swig: a flat silver hip flask, its shoulders
+        // curved in to a short neck and a black screw cap, a bright shine slanting across it and a brown leather band
+        // round its middle.
         let hy = 33 - raise
-        c.rect(38, hy, 3, 3, clawdOrange); c.px(40, hy + 1, clawdShade)
-        let pal: [Character: Px] = ["S": C(0xB4BAC4), "L": C(0xF0F2F6), "D": C(0x7E848E), "c": C(0x4A4E56)]
+        let pal: [Character: Px] = ["S": C(0xB4BAC4), "L": C(0xF4F6FA), "D": C(0x7E848E), "c": C(0x26282E),
+                                    "B": C(0x6A4428), "b": C(0x8E5E36)]
         if tipped {
-            c.pattern(33, hy - 4, ["....SSSL", "...SLSSD", "..SLSSD.", ".SSSSD..", "cSD....."], pal)
+            // Tipped back, the cap to his lips.
+            c.pattern(32, hy - 6, [
+                ".......SSS",
+                "......SLSSD",
+                ".....SLSSDD",
+                "....bBBBBD.",
+                "...SSSLSD..",
+                "..SSSLSD...",
+                ".cSSSDD....",
+                "cc.........",
+            ], pal)
         } else {
-            c.pattern(38, hy - 5, [".cc.", "SLSS", "SLSD", "SSSD", "SSDD"], pal)
+            c.pattern(38, hy - 7, [
+                "..cc..",
+                ".SSSS.",
+                "SLSSSD",
+                "SSLSSD",
+                "bBBBBB",
+                "SSSLSD",
+                "SSSSDD",
+                ".SDDD.",
+            ], pal)
         }
+        c.rect(38, hy, 3, 3, clawdOrange); c.px(40, hy + 1, clawdShade)   // his fist round it
         return   // the shotgun leaning out of sight while he drinks
     }
 
-    // The shotgun: two long barrels lit along the top, the rib between them, the action and trigger guard, the walnut
-    // stock tucked under his arm.
+    // The shotgun: two long barrels lit along the top, the rib between them, the action and trigger guard, and the
+    // walnut stock running back from his fist under his arm, lit along its top, to the black butt plate.
     c.oy += p.gunY
-    c.pattern(36, 30, [
-        "......BBBBBBBBBBBBBl",
-        ".....KbbbbbbbbbbbbbK",
-        "WWOOOKKk............",
-        "WWOOOW..............",
-        "..WOW...............",
-    ], ["B": C(0x6A707C), "l": C(0xB0B6C2), "b": C(0x3A3E46), "K": C(0x2A2C32), "k": C(0x2A2C32),
-        "W": C(0x7A4A2A), "O": clawdOrange])
+    c.pattern(31, 30, [
+        "...........BBBBBBBBBBBBBl",
+        "..........KbbbbbbbbbbbbbK",
+        ".....LLOOOKKk............",
+        "...LLWWOOOW..............",
+        ".kWWWWwWOW...............",
+        "kkwwww...................",
+    ], ["B": C(0x6A707C), "l": C(0xB0B6C2), "b": C(0x3A3E46), "K": C(0x2A2C32), "k": C(0x1A1A1E),
+        "W": C(0x8A5430), "w": C(0x5E3418), "L": C(0xB07040), "O": clawdOrange])
 }
 
 // MARK: - Ellen Harvell
@@ -497,38 +545,42 @@ private func drawEllenHarvell(_ c: PixelCanvas, _ p: Pose) {
     c.rect(28, 35, 4, 1, apronD)                                                         // the pocket's edge
     c.rect(29, 36, 2, 3, C(0xF4F4EE)); c.px(29, 37, C(0xB8302A)); c.px(30, 37, C(0xB8302A))   // the bar towel
 
-    // Dark hair, straight, parted in the middle and falling to her shoulders, lit on top.
-    c.pattern(16, 20, [
-        "........HHHHHHHH........",
-        "......HHHHlHHlHHHH......",
-        "....HHHHlHHHhlHHHHHH....",
-        "...HHHlHHHHhHHHHlHHHH...",
-        "..HHHHHHHHhHhHHHHHHHHH..",
+    // Dark hair, straight, lying flat on top with the centre parting running down to her brow, combed away from it
+    // either side in lit strokes, and hanging straight to her shoulders, the ends flicking out.
+    c.pattern(16, 22, [
+        "......HHHHHdHHHHHH......",
+        "...HHHlHHHHdHHHHlHHH....",
+        "..HHlHHHHHhdhHHHHHlHHH..",
         "..HHHHHHHhhdhhHHHHHHHd..",
-        "..HHHHH.........HHHHHd..",
-        "..HHH..............HHd..",
+        "..HHHHHh.........hHHHHd.",
+        "..HHHH............HHHd..",
         "..HHH..............HHd..",
         "..HlH..............dHd..",
         "..HHd..............dHH..",
         "..HHd..............dHd..",
-        "..Hd................d...",
+        ".HHd................dHH.",
+        ".Hd..................dd.",
     ], ["H": hair, "d": hairD, "h": hairD, "l": hairL])
     c.rect(22, 28, 2, 1, hairD); c.rect(32, 28, 2, 1, hairD)
 
-    // The pump shotgun at her hip: the dark receiver, the barrel and the magazine tube under it, the wooden pump and
-    // stock. Racking it, she lifts it a little and the pump slides back and forward again.
+    // The pump shotgun at her hip: the dark receiver, the barrel and the magazine tube under it, the wooden pump, and
+    // the stock running back from her fist under her arm, lit along its top, to the black butt plate. Racking it, she
+    // lifts it a little and the pump slides back and forward again.
     c.oy += p.gunY
     var back = 0
     if k >= 0 {
         c.oy -= 2
         back = k > 0.2 && k < 0.36 ? 3 : k >= 0.36 && k < 0.44 ? 1 : 0
     }
-    c.pattern(35, 30, [
-        ".....KKKGGGGGGGGGGGl",
-        "WW..KKKKK.....TTTTT.",
-        "WWWWW.KK............",
-        "..WWW...............",
-    ], ["K": C(0x26262C), "G": C(0x4A4E58), "l": C(0x8A8F9C), "T": C(0x363A42), "W": C(0x6A4226)])
+    c.pattern(31, 30, [
+        ".........KKKGGGGGGGGGGGl",
+        "........KKKKK.....TTTTT.",
+        "....LLLWW.KK............",
+        "..LLWWWWWW..............",
+        ".kWWWWww................",
+        "kkwwww..................",
+    ], ["K": C(0x26262C), "G": C(0x4A4E58), "l": C(0x8A8F9C), "T": C(0x363A42), "W": C(0x8A5430),
+        "w": C(0x5E3418), "L": C(0xB07040), "k": C(0x1A1A1E)])
     c.rect(46 - back, 31, 5, 1, C(0x7A4A2A)); c.px(46 - back, 31, C(0xA06A3C))
     c.rect(38, 32, 3, 3, clawdOrange)
     if k > 0.22 && k < 0.62 {

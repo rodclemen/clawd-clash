@@ -23,7 +23,7 @@ private func drawDeanWinclawdster(_ c: PixelCanvas, _ p: Pose) {
     let jacket = C(0x5E3C22), jacketD = C(0x3E2614), jacketL = C(0x7E5636)
     let flannel = C(0x7A2A26), flannelD = C(0x4A1A18), flannelL = C(0xA4483C), tee = C(0x2E2E34)
     let hair = C(0x7A5632), hairD = C(0x56391E), hairL = C(0x9A7444)
-    let gold = C(0xE0B040), goldD = C(0x9A7420), cord = C(0x2A1A10)
+    let gold = C(0xE0B040), goldD = C(0x9A7420), goldL = C(0xFFE488), cord = C(0x2A1A10)
     // The signature: the pie comes out and up to his mouth, three bites, then it's gone (eaten) and the arm comes down.
     let pie = p.signature.map { $0 > 0.06 && $0 < 0.94 ? ($0 - 0.06) / 0.88 : -1 } ?? -1
     let raise = pie < 0 ? 0 : pie < 0.15 ? Int(pie / 0.15 * 5) : pie > 0.88 ? Int((1 - pie) / 0.12 * 5) : 5
@@ -46,8 +46,14 @@ private func drawDeanWinclawdster(_ c: PixelCanvas, _ p: Pose) {
     huntPlaid(c, 24, 33, 2, 5, base: flannel, dark: flannelD, light: flannelL)
     huntPlaid(c, 30, 33, 2, 5, base: flannel, dark: flannelD, light: flannelL)
     c.rect(26, 33, 4, 5, tee)
-    c.px(26, 33, cord); c.px(29, 33, cord)
-    c.rect(27, 34, 2, 2, gold); c.px(28, 35, goldD); c.px(26, 34, goldD); c.px(29, 34, goldD)   // its little horns
+    // The amulet: a little horned gold head, lit on the left, its horns curling up either side, hanging on its cord.
+    c.pattern(26, 33, [
+        "g..g",
+        "GLGG",
+        "GLgG",
+        ".Gg.",
+    ], ["G": gold, "L": goldL, "g": goldD])
+    c.px(27, 33, cord); c.px(28, 33, cord)
     // The leather: a turned-out collar lit on top, the far side and the hem in shade, a seam and a pocket flap, cuffs.
     c.rect(20, 33, 4, 1, jacketL); c.rect(32, 33, 3, 1, jacketL); c.px(18, 33, jacketL)
     c.rect(23, 33, 1, 5, jacketD); c.rect(32, 34, 1, 4, jacketD)
@@ -56,15 +62,16 @@ private func drawDeanWinclawdster(_ c: PixelCanvas, _ p: Pose) {
     c.rect(15, 35, 3, 1, jacketD)
     if raise == 0 { c.rect(38, 35, 3, 1, jacketD) }
 
-    // Short hair, spiked up at the front (on the right, the way he faces), cut close round the ears.
+    // Short hair in spiky tufts, standing up tallest at the front (on the right, the way he faces) and cropped low at
+    // the back, the dark between the tufts showing; a few points falling on his brow, cut close round the ears.
     c.pattern(17, 21, [
-        "................H.H...",
-        "....H.HH.HH.HHH.HHH...",
-        "..HHHlHHHlHHHHlHHHHH..",
-        ".HHHHHHHHHHHHHHHHHHHH.",
-        ".HhHHHhHHHHhHHHHhHHhH.",
-        ".HH................HH.",
-        ".Hh................h..",
+        "............l..l.l.l..",
+        "........l.HlH.HlHlHH..",
+        "....l.HlHhHHhHHhHHhHH.",
+        "..HlHhHHhHHHhHHhHHHhHH",
+        ".HHhHHHhHHHhHHHhHHHhHH",
+        ".HHh.h..h..H...hH...H.",
+        ".Hh.................h.",
     ], ["H": hair, "h": hairD, "l": hairL])
     c.rect(22, 28, 2, 1, hairD); c.rect(32, 28, 2, 1, hairD)   // his brows
 
@@ -211,12 +218,13 @@ private func drawClawdstiel(_ c: PixelCanvas, _ p: Pose) {
     let flutter = huntClawdstielFlutter
     let wings = max(p.signature.map { $0 > 0.06 && $0 < 0.94 ? sin(($0 - 0.06) / 0.88 * .pi) : 0 } ?? 0, flutter)
 
-    // Behind everything: the flash, faint and see-through, and the wings' shadow on the wall.
+    // Behind everything: the flash, faint and see-through, and the wings' shadow on the wall, the grandest of any
+    // angel's: taller, rising well above his head.
     if flutter > 0 {
         c.ellipse(28, 31, Int(10 + 14 * flutter), Int(8 + 9 * flutter), C(0xF4F6FF, 0.22 * flutter))
         c.ellipse(28, 31, Int(6 + 8 * flutter), Int(5 + 5 * flutter), C(0xFFFFFF, 0.2 * flutter))
     }
-    huntWingShadows(c, min(1, wings * 1.3))
+    huntWingShadows(c, min(1, wings * 1.3), strength: 0.55, tall: 1.5)
 
     // Navy suit trousers and black shoes under the coat.
     drawLegs(c, Look(leg: C(0x2A2E3E)), step: p.step)

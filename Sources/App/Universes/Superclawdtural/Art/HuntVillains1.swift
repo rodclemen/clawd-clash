@@ -22,7 +22,7 @@ let huntVillains1: [HuntVillain: Persona] = [
 private func drawClawdley(_ c: PixelCanvas, _ p: Pose) {
     let coat = C(0x1E1E26), coatD = C(0x0E0E12), coatL = C(0x4A4A56)
     let suit = C(0x34343E), shirt = C(0xEAE8E4), tie = C(0x101014), tieL = C(0x3A3A44)
-    let hair = C(0x2A2220), hairL = C(0x4E423C), beard = C(0x2E2420)
+    let hair = C(0x2A2220), hairL = C(0x4E423C), beard = C(0x4A3A30), beardL = C(0x7A6A5E), stubble = C(0xA85A42)
     let s = p.signature ?? -1
     // The snap: his hand up by a tenth of the way in, the flash at a fifth; then Juliet, fading in, sitting, fading out.
     let snap = s > 0.04 && s < 0.36 ? (s - 0.04) / 0.32 : -1
@@ -76,7 +76,7 @@ private func drawClawdley(_ c: PixelCanvas, _ p: Pose) {
     c.rect(37, 33, 1, 5, coatD); c.rect(18, 37, 20, 1, coatD)
     c.rect(15, 35, 3, 1, coatD); c.px(15, 34, C(0xEAE8E4))   // a cuff of white shirt at his far wrist
 
-    // Short dark hair combed back from a high brow, a gleam along it; the goatee trimmed close round his mouth.
+    // Short dark hair combed back from a high brow, a gleam along it.
     c.pattern(17, 21, [
         "......HHHHHHHHH.......",
         "...HHHHHHHHHHHHHHH....",
@@ -87,7 +87,13 @@ private func drawClawdley(_ c: PixelCanvas, _ p: Pose) {
         ".H..................H.",
     ], ["H": hair, "l": hairL, "h": C(0x1A1412)])
     c.rect(22, 28, 2, 1, hair); c.rect(32, 28, 2, 1, hair)
-    c.rect(26, 31, 4, 1, beard); c.rect(27, 32, 2, 1, beard)
+    // His beard, trimmed short: a shadow of stubble along the jaw from ear to ear, and in it the goatee, a greying
+    // brown in short downward strokes rather than a dark bar, so it reads as a beard and not as a mouth.
+    c.pattern(18, 30, [
+        "s..................s",
+        "ss......BbBb......ss",
+        ".sssssssbBbBsssssss.",
+    ], ["s": stubble, "b": beard, "B": beardL])
 
     guard snap >= 0 else { return }
     // His hand up beside his face, the fingers snapping: a red flash bursting from them at the snap.
