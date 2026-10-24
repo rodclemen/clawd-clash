@@ -106,12 +106,10 @@ let huntTheme = Theme(
                  : .huntHome(of: HuntHero(rawValue: c.index) ?? .deanWinclawdster)
     },
     nemeses: huntNemeses.map { (.hero($0.0), .villain($0.1)) },
-    // Who gets picked up when their agent is done, and by what: nil walks off on foot, as everyone does here. A ride is
-    // a `Ride` of this universe's own (`static let` in an extension of `Ride`, listed in the module's `rides`), drawn
-    // nose to the right; see Slayer/SlayerUniverse.swift and SlayerRides.swift for a bus and two cars that drive in.
+    // Everyone rides in Baby, the Impala (HuntRides.swift): whoever's leaving gets in and she drives off.
     ride: { c in
         guard c.universe == .hunters else { return nil }
-        return nil
+        return .huntImpala
     },
     menuIcon: huntMenuIcon,
     // Who stands in for a session in Status Symbols: usually the universe's lead hero.

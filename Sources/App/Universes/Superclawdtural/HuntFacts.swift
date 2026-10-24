@@ -65,7 +65,11 @@ enum HuntFacts {
         agentOnly: [HuntVillain.hellhound.rawValue, HuntVillain.leviathanBlob.rawValue, HuntVillain.demonSmoke.rawValue,
                     UniverseFacts.heroBase + HuntHero.miracle.rawValue],
         // Death and Billie never lead two sessions back to back: two Deaths in a row.
-        rivals: [HuntVillain.death.rawValue, HuntVillain.billie.rawValue]
+        rivals: [HuntVillain.death.rawValue, HuntVillain.billie.rawValue],
+        // The Winclawdsters and the ones who keep coming back (Dean, Sam, Clawdstiel, Bobby and Jack): a compaction
+        // drags them down to Hell for a moment, and they punch their way back out of the ground (`HuntBackFromHell`).
+        compaction: .away(who: Set([HuntHero.deanWinclawdster, .samWinclawdster, .clawdstiel, .bobbyClawdsinger, .jackKlyne]
+                                    .map { UniverseFacts.heroBase + $0.rawValue }))
         // Everything below is optional: uncomment what your universe needs. Ids here are local: a villain's is its
         // rawValue, a hero's `UniverseFacts.heroBase + rawValue`.
         //
