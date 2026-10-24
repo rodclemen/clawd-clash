@@ -3,7 +3,7 @@ import Foundation
 // Heroes: the Roadhouse regulars and the friends who stuck. Clawd in costume like every other cast, with Clawd's own
 // orange face showing. Jo in her denim jacket with a knife ready; Charlie in a geeky tee with her LARP sword; Ash with
 // his mullet and his laptop; Kevin in a hoodie with the angel tablet; Gabriel in his brown jacket, a lollipop in his
-// mouth; and Rowena in green velvet under a cloud of red curls. The two redheads are told apart by everything below
+// mouth on its long stick; and Rowena in green velvet under a cloud of red curls. The two redheads are told apart by everything below
 // the hair: Charlie's teal tee and jeans, Rowena's long gown.
 
 let huntHeroes3: [HuntHero: Persona] = [
@@ -44,12 +44,13 @@ private func h3Ease(_ k: Double, edge: Double) -> Double {
 // MARK: - Jo Harvell
 
 /// Jo Harvell: Ellen's daughter, young and keen, with straight blonde hair to her shoulders; a light denim jacket with
-/// its collar up and two stitched chest pockets, open over a plum-red top; dark jeans and brown boots. She fights with
-/// throwing knives, a small all-steel one always ready in her hand. Signature: she cocks her arm, throws, and the
-/// knife spins across and thunks into the bullseye of a dartboard, quivering there.
+/// its collar up and two stitched chest pockets, open over a soft grey top; dark jeans and brown boots. She fights with
+/// throwing knives, a small all-steel one always ready in her hand. Signature: a dartboard hops out from behind her
+/// and rolls to a stop upright ahead of her; she cocks her arm, throws, and the knife spins across and thunks into
+/// the bullseye, quivering there; then the board rolls back and hops away behind her, her knife going round with it.
 private func drawJoHarvell(_ c: PixelCanvas, _ p: Pose) {
     let denim = C(0x6C8EBA), denimD = C(0x4C6A94), denimL = C(0x94B2D6), thread = C(0xD8AC5C)
-    let top = C(0x8A3440), topL = C(0xA84A54)
+    let top = C(0x9A94A2), topL = C(0xB8B2C0), topD = C(0x76707E)
     let jeans = C(0x2E3C5C), jeansL = C(0x46567A)
     let hair = C(0xE4C676), hairL = C(0xF6E4AA), hairD = C(0xBC9A4E)
     let steel = C(0xC4C8D0), steelD = C(0x8A9098), edge = C(0xF2F4F8), wrap = C(0x2A2228)
@@ -66,9 +67,39 @@ private func drawJoHarvell(_ c: PixelCanvas, _ p: Pose) {
     let stuck = k >= 0.42
     let empty = k >= 0.28 && k < 0.74
 
-    // The dartboard on the wall ahead of her, from first wind-up to the end: a black rim, a red and green scoring ring,
-    // cream and black segments, and the bullseye.
-    if k >= 0 { joDartboard(c, cx: 64, cy: 29) }
+    // The dartboard, kept behind her back: she flips it out, and it hops out from behind her, lands on its rim ahead
+    // of her, rolls to a stop, rocks and takes the knife; at the end it rolls back and hops up behind her again, the
+    // knife going round with it. Drawn before her, so she hides it at both ends, and it never leaves the frame.
+    var board: (x: Double, y: Double, spin: Double)? = nil
+    if k >= 0 {
+        let r = 5.5, rest = 62.5, home = (x: 28.0, y: 31.5), ground = 38.5
+        // f: 0 behind her back, 1 at rest on the ground; a little hop on the way.
+        func out(_ f: Double) -> (x: Double, y: Double, spin: Double) {
+            let x = home.x + (rest - home.x) * f
+            let y = home.y + (ground - home.y) * min(1, f * 1.6) - sin(min(1, f * 1.6) * .pi) * 4
+            return (x, y, (x - rest) / r)
+        }
+        if k < 0.16 {
+            board = out(h3Smooth(k / 0.16))
+        } else if k < 0.86 {
+            let rock = k < 0.24 ? sin((k - 0.16) / 0.08 * .pi * 2) * 0.12 * (0.24 - k) / 0.08 : 0
+            board = (rest, ground, rock)
+        } else {
+            board = out(1 - h3Smooth((k - 0.86) / 0.14))
+        }
+    }
+    if let b = board { joDartboard(c, cx: b.x, cy: b.y, spin: b.spin) }
+    if stuck, let b = board {
+        // Stuck in the bullseye, its point buried and the grip sticking out towards her, quivering for a moment after
+        // it hits, then going round with the board as it rolls away. Drawn with the board, so she hides both.
+        let wob = k < 0.52 ? (Int(p.t * 24) % 2 == 0 ? -0.2 : 0.2) : 0
+        let a = .pi + b.spin + wob, h = (x: b.x, y: b.y)
+        let along = { (d: Double) in (Int((h.x + cos(a) * d).rounded(.down)), Int((h.y + sin(a) * d).rounded(.down))) }
+        for d in stride(from: 0.5, through: 9.0, by: 0.5) {
+            let q = along(d)
+            c.px(q.0, q.1, d < 2 ? steelD : d < 5.5 ? (d < 3 ? edge : steel) : wrap)
+        }
+    }
 
     // Dark jeans, faded at the knee, and brown boots.
     drawLegs(c, Look(leg: jeans), step: p.step)
@@ -78,12 +109,13 @@ private func drawJoHarvell(_ c: PixelCanvas, _ p: Pose) {
     c.oy += p.breathe
     drawBody(c, Look(arm: denim), armRight: raise)
 
-    // The denim jacket, open over the dark top with its scoop neck: the collar up and lit, the front edges a shade apart,
-    // a stitched pocket each side, the far side and the waistband in shade, a cuff.
+    // The denim jacket, open over the grey top: the collar up and lit, the front edges a shade apart, a stitched
+    // pocket each side, the far side and the waistband in shade, a cuff. The top is a mid tone, narrow and straight
+    // from collar to hem, so it reads as a strip of top under the jacket and not as a gap under her face.
     c.rect(18, 33, 20, 5, denim)
-    c.rect(25, 33, 6, 5, top); c.rect(25, 34, 1, 3, topL); c.rect(26, 33, 4, 1, clawdOrange)
-    c.pattern(20, 33, ["LLLL.......LLLL", ".LLL.......LLL."], ["L": denimL])
-    c.rect(24, 34, 1, 4, denimL); c.rect(31, 34, 1, 4, denimD)
+    c.rect(26, 33, 4, 5, top); c.rect(26, 33, 1, 4, topL); c.rect(29, 33, 1, 5, topD); c.rect(27, 33, 2, 1, topL)
+    c.pattern(20, 33, ["LLLLL.....LLLLL", ".LLLL.....LLLL."], ["L": denimL])
+    c.rect(25, 34, 1, 4, denimL); c.rect(30, 34, 1, 4, denimD); c.px(24, 36, C(0xC8CCD4))
     c.rect(20, 35, 3, 1, denimD); c.px(21, 36, thread); c.rect(33, 35, 3, 1, denimD); c.px(34, 36, thread)
     c.rect(37, 33, 1, 5, denimD); c.rect(18, 37, 20, 1, denimD); c.px(19, 37, thread); c.px(36, 37, thread)
     c.rect(15, 35, 3, 1, denimD)
@@ -110,21 +142,14 @@ private func drawJoHarvell(_ c: PixelCanvas, _ p: Pose) {
     c.rect(22, 28, 2, 1, hairD); c.rect(32, 28, 2, 1, hairD)   // her brows
 
     if flight >= 0 {
-        // The knife in flight, spinning end over end on its way to the board.
-        let x = 43 + flight * 15, y = 26 + flight * 3 - sin(flight * .pi) * 3
+        // The knife in flight, spinning end over end on its way down to the board.
+        let x = 43 + flight * 19, y = 26 + flight * 12.5 - sin(flight * .pi) * 4
         let a = flight * 4 * .pi
         for d in -3...3 {
             let col = d < -1 ? wrap : d == 3 ? edge : steel
             c.px(Int((x + cos(a) * Double(d) * 0.6).rounded()), Int((y + sin(a) * Double(d) * 0.6).rounded()), col)
         }
     }
-    if stuck {
-        // Stuck in the bullseye, its point buried, quivering for a moment after it hits.
-        let wob = k < 0.52 ? (Int(p.t * 24) % 2 == 0 ? -1 : 1) : 0
-        c.rect(58, 29, 5, 1, steel); c.px(58, 28, edge); c.rect(59, 28, 3, 1, steelD)
-        c.rect(55, 29 + wob, 3, 1, wrap); c.px(54, 29 + wob, steelD); c.px(57, 28, steelD); c.px(57, 30, steelD)
-    }
-
     // The throwing knife in her fist, its point up and forward: lit along the near edge, its wrapped grip in her hand. It rises with the
     // idle gun habits like anyone's weapon.
     c.oy += p.gunY
@@ -136,20 +161,24 @@ private func drawJoHarvell(_ c: PixelCanvas, _ p: Pose) {
     c.rect(38, hy, 3, 2, clawdOrange); c.px(40, hy + 1, clawdShade)
 }
 
-/// A dartboard about 11 pixels across, centred on (cx, cy).
-private func joDartboard(_ c: PixelCanvas, cx: Int, cy: Int) {
+/// A dartboard about 11 pixels across, centred on (cx, cy), its segments turned by `spin` radians as it rolls.
+private func joDartboard(_ c: PixelCanvas, cx: Double, cy: Double, spin: Double) {
     let rim = C(0x1C1A1C), cream = C(0xEADCB4), black = C(0x2A2626), red = C(0xC02A2A), green = C(0x2A8A46)
-    for y in (cy - 6)...(cy + 6) {
-        for x in (cx - 6)...(cx + 6) {
-            let dx = Double(x - cx), dy = Double(y - cy), d = sqrt(dx * dx + dy * dy)
-            guard d <= 5.5 else { continue }
-            let seg = Int(((atan2(dy, dx) + .pi) / (2 * .pi) * 12).rounded()) % 2
+    let x0 = Int(cx.rounded(.down)) - 6, y0 = Int(cy.rounded(.down)) - 6
+    for y in y0...(y0 + 13) {
+        for x in x0...(x0 + 13) {
+            let dx = Double(x) + 0.5 - cx, dy = Double(y) + 0.5 - cy, d = sqrt(dx * dx + dy * dy)
+            guard d <= 5.6 else { continue }
+            let turn = (atan2(dy, dx) - spin + 4 * .pi).truncatingRemainder(dividingBy: 2 * .pi)
+            let seg = Int(turn / (2 * .pi) * 12) % 2
             let col: Px = d < 0.8 ? red : d < 1.7 ? green : d < 3.1 ? (seg == 0 ? cream : black) :
                           d < 4.2 ? (seg == 0 ? red : green) : rim
             c.px(x, y, col)
         }
     }
-    c.px(cx - 3, cy - 5, C(0x46424A)); c.px(cx - 4, cy - 4, C(0x46424A))   // the rim catching the light
+    // The rim catching the light on its top left.
+    let lx = Int(cx.rounded(.down)), ly = Int(cy.rounded(.down))
+    c.px(lx - 3, ly - 4, C(0x5A5660)); c.px(lx - 4, ly - 3, C(0x5A5660)); c.px(lx - 2, ly - 5, C(0x46424A))
 }
 
 // MARK: - Charlie Clawdbury
@@ -174,9 +203,16 @@ private func drawCharlieClawdbury(_ c: PixelCanvas, _ p: Pose) {
     drawBoots(c, C(0x24242A), step: p.step, rows: 2)
     drawBoots(c, C(0xEAE6DE), step: p.step, rows: 1)
 
-    // The messenger bag at her far hip on its strap, her laptop's silver corner poking out of the flap.
+    // The messenger bag at her far hip on its strap, her closed laptop sticking up out of the flap at a slant: silver,
+    // lit along its top edge, the dark seam between lid and base, a pink sticker on the lid.
+    c.pattern(10, 31, [
+        "..lS..",
+        ".lSSS.",
+        "lSSpSs",
+        "kkkkks",
+    ], ["l": C(0xEEF0F4), "S": C(0xC8CCD4), "s": C(0x9AA0AA), "k": C(0x4A4E58), "p": C(0xE85A9A)])
     c.rect(12, 35, 6, 4, bag); c.rect(12, 35, 6, 1, bagL); c.rect(12, 38, 6, 1, bagD); c.rect(17, 36, 1, 3, bagD)
-    c.rect(13, 34, 3, 1, C(0xC8CCD4)); c.px(15, 36, gold)
+    c.px(15, 36, gold)
 
     c.oy += p.breathe
     drawBody(c, Look(arm: tee), armRight: raise)
@@ -253,8 +289,9 @@ private func charlieSword(_ c: PixelCanvas, hand h: (x: Double, y: Double), angl
 /// jeans and scuffed black boots. He doesn't fight. Signature: out comes his laptop, stickers on its bezel; he flips it
 /// open, and its screen of lights blinks and chases while he taps away.
 private func drawAsh(_ c: PixelCanvas, _ p: Pose) {
-    let tee = C(0x2C2A30), teeD = C(0x1A191E), teeL = C(0x46434C), fray = C(0x7A7680)
-    let bolt = C(0xB4483A), boltL = C(0xD8784A)
+    let tee = C(0x36343C), teeD = C(0x1E1D22), teeL = C(0x58555F), fray = C(0xA29EA8)
+    let wash = C(0x403E47), rib = C(0x4E4B56)
+    let bolt = C(0xC8402E), boltL = C(0xF0884A)
     let jeans = C(0x5E769A), jeansD = C(0x44587C), rip = C(0xD2DAE6)
     let hair = C(0xA27E48), hairL = C(0xC8A464), hairD = C(0x6E5230)
     let shell = C(0x2E3036), shellL = C(0x4A4C54), shellD = C(0x1C1D22)
@@ -272,13 +309,17 @@ private func drawAsh(_ c: PixelCanvas, _ p: Pose) {
     c.oy += p.breathe
     drawBody(c, Look(), armRight: k >= 0 ? 1 : 0)   // his arms bare, the sleeves long gone
 
-    // The sleeveless tee: a stretched crew neck, frayed threads where the sleeves were torn off, the bolt on the front,
-    // the far side and the hem in shade.
-    c.rect(18, 33, 20, 5, tee)
-    c.rect(24, 33, 7, 1, teeL); c.rect(37, 33, 1, 5, teeD); c.rect(18, 37, 20, 1, teeD)
-    c.px(18, 33, fray); c.px(18, 35, fray); c.px(19, 34, fray); c.px(37, 33, fray); c.px(36, 34, fray)
-    c.pattern(26, 34, ["..bB", ".bB.", "bBbb"], ["b": bolt, "B": boltL])
-    c.px(21, 36, teeD); c.px(33, 35, teeD)
+    // The sleeveless tee, washed to a faded charcoal: a stretched crew neck scooping under his chin with its rib lit,
+    // pale frayed threads down both armholes where the sleeves were torn off, the near shoulder lit, a faded patch and a
+    // fold across the front, the big red bolt, the far side and the hem in shade.
+    c.pattern(18, 33, [
+        "FLLLLTnoooooonLTTTDF",
+        "FFLTWWTnnnnnnTTTTTDF",
+        "FLTWWTTTTTTTTTTTTWDF",
+        "LTTWTTTTTTTTTTTWWTDD",
+        "DDDDDDDDDDDDDDDDDDDD",
+    ], ["T": tee, "D": teeD, "L": teeL, "W": wash, "n": rib, "o": clawdOrange, "F": fray])
+    c.pattern(26, 34, ["...bB", "..bB.", ".bBBb", "bB..."], ["b": bolt, "B": boltL])
 
     // The mullet: short and spiky on top, combed up in strokes, cut close over the ears, and long down the back of his
     // neck to his shoulders.
@@ -359,10 +400,15 @@ private func drawKevinTran(_ c: PixelCanvas, _ p: Pose) {
     c.oy += p.breathe
     drawBody(c, Look(arm: hoodie), armRight: 1 + lift)
 
-    // The hoodie: its hood bunched at the back of his neck, the drawstrings hanging, a pouch pocket across the front,
-    // light on the near shoulder, ribbed cuff and hem.
+    // The hoodie: its hood down and bunched round his neck in a thick roll, lit along the top, rising a little behind
+    // his head on the far side; the drawstrings hanging, a pouch pocket across the front, ribbed cuff and hem.
     c.rect(18, 33, 20, 5, hoodie)
-    c.rect(16, 31, 4, 3, hoodieD); c.rect(17, 31, 2, 1, hoodieL); c.px(18, 32, hoodie)
+    c.pattern(18, 30, [
+        "D...................",
+        "HL..................",
+        "HHLLLL........LLLLHD",
+        "DHHHHHd......dHHHHDD",
+    ], ["H": hoodie, "L": hoodieL, "D": hoodieD, "d": C(0x182038)])
     c.rect(24, 33, 8, 1, hoodieD)
     c.rect(26, 34, 1, 2, string); c.rect(29, 34, 1, 2, string)
     c.rect(20, 33, 3, 1, hoodieL); c.rect(19, 34, 1, 2, hoodieL)
@@ -439,15 +485,19 @@ private func drawGabriel(_ c: PixelCanvas, _ p: Pose) {
     c.oy += p.breathe
     drawBody(c, Look(arm: jacket), armRight: raise > 0 ? raise : p.armRaise)
 
-    // The suede jacket, open over the henley: the wide collar lit, the button placket undone at the neck, a flapped
-    // pocket each side, the far side and the hem in shade, a cuff.
-    c.rect(18, 33, 20, 5, jacket)
-    c.rect(25, 33, 6, 5, shirt); c.rect(30, 33, 1, 5, shirtD); c.rect(26, 33, 3, 1, clawdOrange)
-    c.px(27, 34, button); c.px(27, 36, button); c.rect(27, 35, 1, 1, shirtD)
-    c.pattern(20, 33, ["LLLLL.......LLL", "..LL.........L."], ["L": jacketL])
-    c.rect(24, 34, 1, 4, jacketL); c.rect(31, 33, 1, 5, jacketD)
-    c.rect(19, 35, 4, 1, jacketD); c.rect(33, 35, 3, 1, jacketD)
-    c.rect(37, 33, 1, 5, jacketD); c.rect(18, 37, 20, 1, jacketD); c.rect(15, 35, 3, 1, jacketD)
+    // The suede jacket, open over the henley: wide lapels folded back either side, lit on the near one and edged in
+    // shade, the button placket undone at the neck, a flapped pocket each side with a stitched line, soft folds in the
+    // suede, the far side in shade and a waistband at the hem, a cuff.
+    c.pattern(18, 33, [
+        "JLLLLAAsoooosaaJJJJD",
+        "JLJJJeAsSbSsaeJJJJJD",
+        "JJPPPJeAsSSsaeJPPPJD",
+        "JJJfJJJeASbsaJJfJJJD",
+        "WWWWWWWWWsssWWWWWWWD",
+    ], ["J": jacket, "L": jacketL, "D": jacketD, "A": C(0xD0A672), "a": C(0x7E5834), "e": C(0x4E3418),
+        "S": shirt, "s": shirtD, "b": button, "o": clawdOrange, "P": jacketD, "f": C(0x86603A),
+        "W": C(0x7E5A36)])
+    c.rect(15, 35, 3, 1, jacketD)
 
     // Slicked-back hair, combed straight back in long lit strokes, down over his collar at the back.
     c.pattern(15, 21, [
@@ -465,10 +515,15 @@ private func drawGabriel(_ c: PixelCanvas, _ p: Pose) {
     ], ["H": hair, "l": hairL, "h": hairD, "d": hairD])
     c.rect(22, 28, 2, 1, hairD); c.rect(32, 28, 2, 1, hairD)
 
-    // The lollipop: its white stick out of the corner of his mouth, the pink swirl on the end.
-    c.rect(36, 32, 4, 1, C(0xF4F2EC)); c.px(36, 32, C(0xC8C4BA))
-    c.pattern(40, 30, [".pP", "pPp", "Pp."], ["p": pink, "P": pinkL])
-    c.px(40, 30, C(0xC83C78)); c.px(42, 32, C(0xC83C78))
+    // The lollipop: its long white stick out of the corner of his mouth, tilted up, a grey line under it so it shows
+    // against his face, and the pink swirl on the end.
+    c.pattern(34, 29, [
+        ".....ww",
+        "...wwg.",
+        ".wwgg..",
+        "wgg....",
+    ], ["w": C(0xF8F6F0), "g": C(0xA8A49A)])
+    c.pattern(40, 26, [".PpP", "PpPp", "pPpd", "Ppd."], ["p": pink, "P": pinkL, "d": C(0xC83C78)])
 
     let hy = 33 - raise
     if snap >= 0 {
@@ -506,9 +561,9 @@ private func drawGabriel(_ c: PixelCanvas, _ p: Pose) {
 
 /// Rowena MacClawd: the witch, centuries old and very Scottish, with a great cloud of deep red curls; a long gown of
 /// emerald velvet to the floor, its sheen catching the light in the folds, a gold-trimmed neckline and a ruby pendant,
-/// long sleeves with gold cuffs, her shoes peeping out under the hem. Her spells are a ribbon of red sparks. Signature:
-/// she holds up a hex bag, tosses it at the floor ahead of her, and it bursts in a fountain of red sparks before
-/// vanishing in a puff.
+/// long sleeves with gold cuffs, her shoes peeping out under the hem, a hex bag tied at her hip. Her spells are a
+/// ribbon of red sparks. Signature: she unhooks the hex bag and holds it up, tosses it at the floor ahead of her, and
+/// it bursts in a fountain of red sparks before vanishing in a puff.
 private func drawRowenaMacClawd(_ c: PixelCanvas, _ p: Pose) {
     let gown = C(0x1E6A44), gownD = C(0x0F4229), gownL = C(0x3E9668), gold = C(0xD8AE4A), goldD = C(0x9A7428)
     let ruby = C(0xC8202E)
@@ -585,13 +640,29 @@ private func drawRowenaMacClawd(_ c: PixelCanvas, _ p: Pose) {
     c.rect(38, 33 - arm, 3, 3, gown); c.rect(38, 35 - arm, 3, 1, gold)
     if arm > 0 && raise == 0 { c.rect(41, 33 - arm, 2, 3, clawdOrange); c.px(42, 35 - arm, clawdShade) }
 
-    // The hex bag: a little burlap pouch tied with red string.
+    // The hex bag: a little burlap pouch gathered at the neck and tied with red string.
     func hexBag(_ x: Int, _ y: Int) {
-        c.pattern(x, y, [".r.", "BBB", "BbB"], ["r": string, "B": burlap, "b": burlapD])
+        c.pattern(x, y, [".r.", ".B.", "BBB", "BbB"], ["r": string, "B": burlap, "b": burlapD])
     }
-    if raise > 0 && flight < 0 {
-        hexBag(40, 29 - raise)
-        c.rect(41, 33 - raise, 2, 2, clawdOrange)
+    // She keeps one tied at her near hip, on the gown. For the signature she unhooks it and lifts it up in her hand;
+    // once it has gone up in smoke, a new one knots itself on at her hip in a twinkle of red.
+    let hip = (x: 34, y: 36)
+    if k < 0 || k >= 0.9 {
+        hexBag(hip.x, hip.y)
+        if k >= 0.9 && k < 0.98 {
+            let f = (k - 0.9) / 0.08
+            for i in 0..<4 {
+                let a = Double(i) * .pi / 2 + f * 3, r = 3 - f * 2
+                c.px(hip.x + 1 + Int((cos(a) * r).rounded()), hip.y + 2 + Int((sin(a) * r).rounded()),
+                     i % 2 == 0 ? C(0xFF6A4A) : C(0xFFD0A0))
+            }
+        }
+    } else if flight < 0 && k < 0.26 {
+        // Unhooked from her hip and carried up into her raised hand.
+        let f = h3Smooth(k / 0.12)
+        let x = Double(hip.x) + Double(40 - hip.x) * f, y = Double(hip.y) + Double(29 - raise - hip.y) * f
+        hexBag(Int(x.rounded()), Int(y.rounded()))
+        if raise > 0 { c.rect(41, 33 - raise, 2, 2, clawdOrange) }
     } else if flight >= 0 {
         // Tossed in an arc to the floor ahead of her, tumbling.
         let x = 41 + flight * 18, y = 27 + flight * 13 - sin(flight * .pi) * 6

@@ -7,7 +7,7 @@ import Foundation
 // owner first and its shape second: Rufus in a flat cap and green cardigan with a stubby nickel revolver; Garth with
 // his big ears and sweater vest, a pistol with a tan frame; Jody in her tan sheriff's shirt, a light under her barrel;
 // Donna in a navy parka with a fur ruff, red mittens and a box of donuts; Alex in pale blue scrubs and a stethoscope
-// with a little compact; Eileen in an olive field jacket with a suppressor on hers. Claire fights with a machete.
+// with a little stainless compact; Eileen in an olive field jacket with a suppressor on hers. Claire fights with a machete.
 //
 // Guns (`weapon: .blaster`, `shot: .bullet`), held `p.gunY` up or down with each shot; the machete (`.saber`) from
 // `p.melee`, and point down at her side when that's nil.
@@ -16,13 +16,13 @@ let huntHeroes4: [HuntHero: Persona] = [
     .rufusTurner: Persona(name: "Rufus Turner", weapon: .blaster, shot: .bullet, muzzle: (47, 31), headTop: 21,
                           signature: 3.6, draw: drawRufusTurner),
     .garthFitzclawd: Persona(name: "Garth Fitzclawd IV", weapon: .blaster, shot: .bullet, muzzle: (49, 31),
-                             headTop: 22, signature: 3.2, callout: "Mr. Fizzles says hi!", draw: drawGarthFitzclawd),
-    .jodyMills: Persona(name: "Jody Mills", weapon: .blaster, shot: .bullet, muzzle: (49, 31), headTop: 20,
+                             headTop: 23, signature: 3.2, callout: "Mr. Fizzles says hi!", draw: drawGarthFitzclawd),
+    .jodyMills: Persona(name: "Jody Mills", weapon: .blaster, shot: .bullet, muzzle: (49, 31), headTop: 22,
                         signature: 3.0, draw: drawJodyMills),
-    .donnaHanscum: Persona(name: "Donna Hanscum", weapon: .blaster, shot: .bullet, muzzle: (48, 31), headTop: 20,
+    .donnaHanscum: Persona(name: "Donna Hanscum", weapon: .blaster, shot: .bullet, muzzle: (48, 31), headTop: 22,
                            signature: 3.4, callout: "Oh, ya!", draw: drawDonnaHanscum),
-    .claireNovak: Persona(name: "Claire Novak", weapon: .saber, headTop: 20, signature: 2.6, draw: drawClaireNovak),
-    .alexJones: Persona(name: "Alex Jones", weapon: .blaster, shot: .bullet, muzzle: (46, 31), headTop: 21,
+    .claireNovak: Persona(name: "Claire Novak", weapon: .saber, headTop: 21, signature: 2.6, draw: drawClaireNovak),
+    .alexJones: Persona(name: "Alex Jones", weapon: .blaster, shot: .bullet, muzzle: (46, 30), headTop: 21,
                         draw: drawAlexJones),
     .eileenLeahy: Persona(name: "Eileen Leahy", weapon: .blaster, shot: .bullet, muzzle: (53, 31), headTop: 20,
                           signature: 2.8, draw: drawEileenLeahy),
@@ -88,18 +88,17 @@ private func drawRufusTurner(_ c: PixelCanvas, _ p: Pose) {
         "SsS..sSsSSsSs...sSsS",
     ], ["S": stubble, "s": stubbleD])
 
-    // The cardigan: a rolled shawl collar lit along the near side, open on the shirt in a V with its collar points,
-    // leather buttons down the far front, a patch pocket, the far side in shade and the ribbed hem.
-    c.rect(18, 33, 20, 5, knit)
-    c.rect(25, 33, 6, 1, shirt); c.rect(26, 34, 4, 1, shirt); c.rect(27, 35, 2, 1, shirt)
-    c.px(25, 33, shirtD); c.px(30, 33, shirtD); c.px(27, 34, shirtD)
-    c.rect(23, 33, 2, 1, knitL); c.px(24, 34, knitL); c.px(25, 34, knitL); c.px(26, 35, knitL); c.px(27, 36, knitL)
-    c.rect(31, 33, 2, 1, knitD); c.px(30, 34, knitD); c.px(29, 35, knitD); c.px(28, 36, knitD)
-    c.px(30, 35, button); c.px(30, 37, button)
-    c.rect(20, 35, 3, 1, knitD); c.px(20, 36, knitD)
-    c.rect(19, 33, 3, 1, knitL); c.rect(19, 34, 1, 3, knitL)
-    c.rect(37, 33, 1, 5, knitD)
-    for x in stride(from: 18, to: 38, by: 2) { c.px(x, 37, knitD) }
+    // The cardigan, kept plain so it reads as one soft knit: a thick rolled shawl collar meeting low on his chest, lit
+    // on the near side and shaded on the far, with only a narrow sliver of pale blue shirt between at the top; two
+    // leather buttons below, a patch pocket, the far side in shade and a ribbed hem.
+    c.pattern(18, 33, [
+        "KLLKKCCCCSsEEEEKKKKD",
+        "KLKKKKCCCCEEEEKKKKKD",
+        "KLPPPKKCCCEEEKKKKKKD",
+        "KLKKKKKKCbEKKKKKKKKD",
+        "RRRRRRRRRbRRRRRRRRRR",
+    ], ["K": knit, "L": knitL, "D": knitD, "P": knitD, "C": C(0x5A7E64), "E": C(0x2E4636), "S": shirt,
+        "s": shirtD, "b": button, "R": C(0x30483A)])
     c.rect(15, 35, 3, 1, knitD)
     if raise == 0 { c.rect(38, 35, 3, 1, knitD) }   // the ribbed cuff
 
@@ -183,7 +182,7 @@ private func drawRufusTurner(_ c: PixelCanvas, _ p: Pose) {
 private func drawGarthFitzclawd(_ c: PixelCanvas, _ p: Pose) {
     let vest = C(0xC8B48E), vestD = C(0xA08C68), vestL = C(0xDCCCA8), argyle = C(0x8E7454)
     let shirt = C(0xA8C4E0), shirtD = C(0x7E9CC0), tie = C(0x8A2A30), tieD = C(0x5E1A20)
-    let hair = C(0x8A6A44), hairD = C(0x64482A), hairL = C(0xA8875C)
+    let hair = C(0x9A7048), hairD = C(0x7A5636), hairL = C(0xB89068)
     let k = h4Span(p, 0.04, 0.96)
     let up = h4Ease(k, edge: 0.16)
     let raise = Int((up * 4).rounded())
@@ -205,58 +204,63 @@ private func drawGarthFitzclawd(_ c: PixelCanvas, _ p: Pose) {
     c.px(15, 31, clawdShade)
     c.rect(38, 28, 2, 4, clawdOrange); c.px(38, 28, C(0xE88E6E)); c.rect(38, 29, 1, 2, clawdShade); c.px(39, 31, clawdShade)
 
-    // The sweater vest over the shirt: a V neck showing the shirt collar and the skinny tie, a brown argyle of
-    // diamonds either side, the near edge lit, the far side in shade, a ribbed hem; shirt cuffs at the wrists.
-    c.rect(18, 33, 20, 5, vest)
-    c.rect(25, 33, 6, 1, shirt); c.rect(26, 34, 4, 1, shirt); c.rect(27, 35, 2, 1, shirt)
-    c.px(25, 33, shirtD); c.px(30, 33, shirtD)
-    c.rect(27, 33, 2, 1, tie); c.px(27, 34, tie); c.px(28, 34, tieD); c.px(27, 35, tie); c.px(28, 35, tieD)
-    c.pattern(19, 34, [".a.............a..", "a.a...........a.a.", ".a.............a.."], ["a": argyle])
-    c.rect(24, 33, 1, 1, vestL); c.px(25, 34, vestL); c.px(26, 35, vestL); c.px(26, 36, vestD)
-    c.px(31, 33, vestD); c.px(30, 34, vestD); c.px(29, 35, vestD)
-    c.rect(19, 33, 4, 1, vestL); c.rect(18, 34, 1, 3, vestL)
-    c.rect(37, 33, 1, 5, vestD)
-    for x in stride(from: 18, to: 38, by: 2) { c.px(x, 37, vestD) }
+    // The sweater vest, cut narrow over a shirt that hangs loose on him, so he reads as all shirt and no body: the
+    // shirt showing at both sides, a deep V neck with the collar and the long skinny tie down to his belt, one column of
+    // argyle diamonds each side, the near edge lit, the far side in shade; his cords belted high, a brass buckle;
+    // shirt cuffs at the wrists.
+    c.pattern(18, 33, [
+        "SSLLLLLsSTTSsVVVVvSs",
+        "SSLVaVVLsTtsvVaVvvSs",
+        "SsLaVaVVLTtvVaVavvSs",
+        "SsVVaVVVVTtVVVaVvvSs",
+        "BBBBBBBBBbbBBBBBBBBB",
+    ], ["S": shirt, "s": shirtD, "V": vest, "v": vestD, "L": vestL, "a": argyle, "T": tie, "t": tieD,
+        "B": C(0x4A3524), "b": C(0xD0A848)])
     c.rect(15, 35, 3, 1, shirtD)
     if raise == 0 { c.rect(38, 35, 3, 1, shirtD) }
 
-    // Short hair buzzed close, lit along the top in short strokes, a little tuft at the front.
-    c.pattern(18, 22, [
-        ".....HHHHHHHHHH.l...",
-        "...HHlHHHlHHHHlHHH..",
-        ".HHHHHHhHHHHHHHhHHH.",
-        "HHhHHHHHHHHhHHHHHHHH",
-        "Hh................hH",
+    // Short hair buzzed right down to the scalp, so it's a soft brown wash over his head rather than a cap: a
+    // hairline that dips to a little peak at the front and is thin at the temples, a few lit strokes on top, and one
+    // stubborn tuft sticking up.
+    c.pattern(18, 23, [
+        "...........Hl.......",
+        ".....hHHHHHHHHHh....",
+        "..hHHlHHHlHHHlHHHHh.",
+        ".hHHHHhHHHHHHHhHHHHh",
+        ".HH.......hHh.....HH",
     ], ["H": hair, "h": hairD, "l": hairL])
     h4Brows(c, hairD)
 
     if k >= 0 {
-        // Mr. Fizzles on his hand: a fawn sock with a ribbed cuff over the wrist, a tuft of red yarn on top, two big
-        // googly eyes whose pupils roll about, and a red felt mouth that flaps as he talks. He pops up from the hand
-        // at the start and sinks back down at the end.
+        // Mr. Fizzles, worn on his hand: a grey wool sock pulled over his fist and up his wrist, its ribbed cuff where
+        // the hand would be, so the puppet grows straight out of his arm. A tuft of red yarn on top, two big googly
+        // eyes whose pupils roll about, and a red felt mouth across the toe that drops open and shut as he talks. He
+        // rises up off the arm at the start and sinks back down at the end.
         let rise = Int(((1 - up) * 6).rounded())
         let talk = k > 0.18 && k < 0.84 && Int(p.t * 8) % 2 == 0
         let roll = Int(p.t * 3) % 3
-        let sock = C(0xC2B49A), sockD = C(0x988A70), sockL = C(0xDED2BC), cuff = C(0xA89A80)
-        let y0 = 20 + rise
-        c.pattern(39, y0, [
-            "...yYy..",
-            "..SSSSS.",
-            ".SLLSSSS",
-            ".SWWSWWS",
-            ".SWWSWWS",
-            ".SSSSSSS",
-            talk ? ".SSSSMMm" : ".SSSSSMM",
-            talk ? ".SSSSmmm" : ".SSSSSSd",
-            talk ? ".SSSSMM." : "..SSSSd.",
-            "..SSSSd.",
-            "..cccc..",
-        ], ["S": sock, "L": sockL, "d": sockD, "W": C(0xF6F6F2), "M": C(0xC03030), "m": C(0x6A1418),
-            "y": C(0xC8442A), "Y": C(0xE0603A), "c": cuff])
+        let sock = C(0xC4C2C8), sockD = C(0x8E8C96), sockL = C(0xE6E4EA), cuff = C(0xA4A2AC), cuffD = C(0x7C7A84)
+        let y0 = 18 + rise
+        c.pattern(37, y0, [
+            "....yYyy...",
+            "...SSSSSS..",
+            "..SLLSSLLS.",
+            "..SWWSSWWSS",
+            ".SSWWSSWWSS",
+            ".SLSSSSSSSd",
+            talk ? ".SLSSSSmmmm" : ".SLSSSSMMMM",
+            talk ? ".SSSSSmmmm." : ".SSSSSSSSd.",
+            talk ? ".SSSSSMMM.." : ".SSSSSSSd..",
+            "..SSSSSSd..",
+            "..CcCcCc...",
+            "..cCcCcC...",
+        ], ["S": sock, "L": sockL, "d": sockD, "W": C(0xF8F8F4), "M": C(0xC8303A), "m": C(0x5A1218),
+            "y": C(0xC8442A), "Y": C(0xF06A3A), "C": cuff, "c": cuffD])
         // The pupils, rolling round inside the googly eyes.
         let dx = roll == 0 ? 0 : 1, dy = roll == 2 ? 1 : 0
-        c.px(40 + dx, y0 + 3 + dy, C(0x141418)); c.px(43 + dx, y0 + 3 + dy, C(0x141418))
-        if y0 + 10 < 33 - raise { c.rect(41, y0 + 10, 3, 33 - raise - y0 - 10, cuff) }
+        c.px(40 + dx, y0 + 3 + dy, C(0x141418)); c.px(44 + dx, y0 + 3 + dy, C(0x141418))
+        // The sock runs on down his wrist to meet the sleeve.
+        if y0 + 12 < 36 - raise { c.rect(39, y0 + 12, 3, 36 - raise - y0 - 12, cuff) }
         return   // the pistol tucked in his belt while Mr. Fizzles talks
     }
 
@@ -313,20 +317,22 @@ private func drawJodyMills(_ c: PixelCanvas, _ p: Pose) {
     c.rect(15, 35, 3, 1, shirtD)
     if raise == 0 { c.rect(38, 35, 3, 1, shirtD) }
 
-    // Warm brown hair to her shoulders, parted on the far side and swept across her brow, lit in strokes.
-    c.pattern(17, 20, [
-        "......HHHHHHHHHH......",
-        "....HHHlHHHHlllHHH....",
-        "..HHHHlHHHHlllHHHHHH..",
-        ".HHHlHHHHHHlHHHHHHHHH.",
-        ".HHHHHHHHHHhhHHHHHHHd.",
-        "HHHHhHHHhhHHHHHHHHHHHd",
-        "HHHHhh.........dHHHHd.",
-        "HHHH.............HHHd.",
-        "HlHH..............HHd.",
-        "HHH...............HdH.",
+    // Warm brown hair to her shoulders, close to her head on top: a parting on the far side, the hair combed away from
+    // it in lit strokes on both sides, a sweep across her brow that falls lower towards the near side, and the ends
+    // flicking out unevenly at her shoulders.
+    c.pattern(17, 22, [
+        "......HHHHHHHHH.......",
+        "...HHlHhHHlllHHHH.....",
+        "..HlHHHhHHHHlllHHHH...",
+        ".HlHHHhHHHHHHHHlHHHHd.",
+        "HHHHHhHHHHHHHHHHHHHHHd",
+        "HHHH..dhHHHHHHHHHHHHHd",
+        "HHH.........ddHHHHHHd.",
+        "HlH...............HHd.",
+        "HlH...............HHd.",
         "HHd...............dHd.",
-        ".Hd...............dd..",
+        "HHdH..............dHHd",
+        "dH.d.............d.Hd.",
     ], ["H": hair, "h": hairD, "l": hairL, "d": hairD])
     h4Brows(c, hairD)
 
@@ -421,21 +427,25 @@ private func drawDonnaHanscum(_ c: PixelCanvas, _ p: Pose) {
     // Her mittens: red, a lit knuckle; the far one holding the box.
     c.rect(15, 34, 2, 2, mitten); c.px(15, 34, mittenL); c.px(16, 35, mittenD)
 
-    // Pale blonde hair, long and straight, with a fringe cut straight across her brow.
-    c.pattern(16, 20, [
-        ".......HHHHHHHHHH.......",
-        ".....HHHlllHHHHHHHH.....",
-        "...HHHlllHHHHHlllHHHH...",
-        "..HHHlHHHHHHHHHHHHHHHH..",
-        "..HHHHHHHHHHHHHHHHHHHHd.",
-        "..HHHHHlHHHHHlHHHHHlHHd.",
-        "..HHdHHHHdHHHHdHHHHdHHd.",
-        "..HHH...............HHd.",
+    // Pale blonde hair, long and straight, lying flat on her head instead of standing up round it: lit in long
+    // strokes on top, a fringe cut across her brow that splits into strands at its ends, and the lengths falling
+    // straight down past her shoulders onto the ruff, a strand line down each, the ends tapering.
+    c.pattern(16, 22, [
+        "........HHHHHHHH........",
+        "......HHHlllHHHHHH......",
+        "....HHHlHHHHHHHlllHH....",
+        "..HHHlHHHHHHHHHHHHHHHd..",
+        "..HHHHHlHHHHHlHHHHHlHd..",
+        "..HHHdHHHdHHHdHHHdHHHd..",
+        "..HHd.H.d.H.Hd.H.d.HHd..",
         "..HlH...............HHd.",
         "..HlH...............dHd.",
-        "..HHH...............dHH.",
-        "..HHd...............dHd.",
-        "..HHd...............dd..",
+        "..HlHd..............dHd.",
+        "..HHdH..............HdH.",
+        "..HdHd..............HdH.",
+        "..HdH................Hd.",
+        "..dH.................dd.",
+        "...d....................",
     ], ["H": hair, "h": hairD, "l": hairL, "d": hairD])
     h4Brows(c, hairD)
 
@@ -479,7 +489,7 @@ private func drawDonnaHanscum(_ c: PixelCanvas, _ p: Pose) {
 // MARK: - Claire Novak
 
 /// Claire Novak: honey-blonde hair, long and a bit wild, darker at the roots; a black leather jacket with its collar
-/// up, a sheen on the leather, open over a charcoal hoodie whose hood sits out over the collar at the back; ripped
+/// up, a sheen on the leather, open over a charcoal hoodie, its drawstrings hanging down the front; ripped
 /// jeans with pale frays at the knee; black boots. Fights with a machete, a broad steel blade with a black grip.
 /// Signature: she spins the machete round her hand, two turns, and catches it point down.
 private func drawClaireNovak(_ c: PixelCanvas, _ p: Pose) {
@@ -502,13 +512,13 @@ private func drawClaireNovak(_ c: PixelCanvas, _ p: Pose) {
     c.oy += p.breathe
     drawBody(c, Look(arm: leather))
 
-    // The hood out over the back of the collar.
-    c.rect(16, 31, 4, 3, hood); c.rect(16, 31, 3, 1, hoodL); c.px(16, 33, hoodD)
-
     // The jacket: the collar up and lit, open on the hoodie, sheen strokes on the leather, silver zip teeth down one
-    // front edge, the far side and the hem in shade, a cuff.
+    // front edge, the far side and the hem in shade, a cuff. The hoodie shows down the front only: the rolled rim of
+    // its hood round her neck, its two pale drawstrings and a pouch pocket seam, so it reads as a hoodie and not as a
+    // grey block.
     c.rect(18, 33, 20, 5, leather)
-    c.rect(26, 33, 4, 5, hood); c.rect(26, 33, 4, 1, hoodD); c.rect(26, 34, 1, 3, hoodL); c.rect(26, 37, 4, 1, hoodD)
+    c.rect(26, 33, 4, 5, hood); c.rect(26, 33, 4, 1, hoodL); c.rect(26, 34, 4, 1, hoodD); c.rect(26, 37, 4, 1, hoodD)
+    c.rect(27, 35, 1, 2, C(0xE4E2DA)); c.rect(28, 35, 1, 1, C(0xE4E2DA)); c.px(28, 36, hoodD)
     c.rect(19, 32, 5, 1, leatherL); c.rect(32, 32, 4, 1, leather); c.px(35, 32, leatherD)
     c.rect(25, 33, 1, 5, leatherL); c.rect(30, 33, 1, 5, leatherD)
     c.px(25, 34, C(0xB0B4BC)); c.px(25, 36, C(0xB0B4BC))
@@ -517,22 +527,24 @@ private func drawClaireNovak(_ c: PixelCanvas, _ p: Pose) {
     c.rect(15, 35, 3, 1, leatherD)
     c.rect(38, 35, 3, 1, leatherD)
 
-    // Long honey-blonde hair, darker at the roots on top, falling past her shoulders in rough strokes.
-    c.pattern(16, 20, [
-        "......RRRRRRRRRR........",
-        "....RRRRHRRRRRRRRR......",
-        "...HRRHHHlHHHRRHHHH.....",
-        "..HHHlHHHHHlHHHHHlHHH...",
-        ".HHHlHHHHHHHHHHHHHHHHH..",
-        ".HHHHHHHdHHHHHHHdHHHHHd.",
-        "HHHHHd..........dHHHHHd.",
-        "HHHH.............HHHHd..",
+    // Long honey-blonde hair, a bit wild: darker at the roots on top, its outline rough with strands kinking out, a
+    // ragged fringe pushed aside, and the lengths falling past her shoulders in rough strokes to uneven ends.
+    c.pattern(16, 21, [
+        ".....R.RRRRRRR.R........",
+        "....RRRRRHRRRRRRRR......",
+        "..HRRHHHlHHHRRHHHHH.....",
+        "..HHHlHHHHHlHHHHHlHHHH..",
+        ".HHHlHHHdHHHHlHHHHdHHHH.",
+        "HHHHHHHdHHHHHHHdHHHHHHd.",
+        ".HHHHd.dH......dHdHHHHd.",
+        "HHHH.d..........d.HHHd.H",
         "HHlH..............HHHd..",
-        "HHlH...............HHd..",
+        ".HlHH..............HHHd.",
         "HHHH...............dHHd.",
-        "HlHH...............HHd..",
-        "HHHd...............dHHd.",
-        ".Hd.d...............dd..",
+        "HlHd................HHd.",
+        "HHHd...............dHHHd",
+        ".HdH................dHd.",
+        "Hd.d...............d.Hd.",
     ], ["H": hair, "l": hairL, "d": hairD, "R": roots])
     h4Brows(c, roots)
 
@@ -564,7 +576,8 @@ private func drawClaireNovak(_ c: PixelCanvas, _ p: Pose) {
 
 /// Alex Jones: Jody's eldest, a nurse, with dark hair pulled back in a ponytail and a side fringe; pale blue scrubs,
 /// the V-neck top with a chest pocket and pens, a stethoscope round her neck, an ID badge clipped on; scrub trousers
-/// to match and white sneakers. Fights with a small black compact pistol. No signature.
+/// to match and white sneakers. Fights with a small two-tone compact pistol, a stainless slide on a black frame. No
+/// signature.
 private func drawAlexJones(_ c: PixelCanvas, _ p: Pose) {
     let scrubs = C(0x86AED4), scrubsD = C(0x6088B0), scrubsL = C(0xACCCEA)
     let tube = C(0x2A2A30), chrome = C(0xC8CCD4)
@@ -623,15 +636,18 @@ private func drawAlexJones(_ c: PixelCanvas, _ p: Pose) {
     c.px(17, 24, C(0x8A3A5A)); c.px(17, 25, C(0x8A3A5A))   // the hair tie
     h4Brows(c, hairD)
 
-    // The compact pistol: short, a black slide lit along the top, the trigger guard.
+    // The compact pistol, told apart from every other hunter's black one: short and chunky, a bright stainless slide
+    // with grip serrations at the back and a lit top, on a black frame with a fat little trigger guard.
     c.oy += p.gunY
-    c.pattern(38, 30, [
-        "..GGGGGl",
-        "..KKKKK.",
-        "OOOKk...",
-        "OOOK....",
-        ".OK.....",
-    ], ["G": C(0x2E3036), "l": C(0x7A808A), "K": C(0x1A1A1E), "k": C(0x101012), "O": clawdOrange])
+    c.pattern(38, 29, [
+        "..llllll",
+        "..SsSSSS",
+        "..KKKKKd",
+        "OOOKk.K.",
+        "OOOKkk..",
+        ".OKK....",
+    ], ["S": C(0xD4D8DE), "s": C(0x8A9098), "l": C(0xF4F6F8), "K": C(0x1A1A1E), "k": C(0x101012),
+        "d": C(0x3A3C42), "O": clawdOrange])
 }
 
 // MARK: - Eileen Leahy
