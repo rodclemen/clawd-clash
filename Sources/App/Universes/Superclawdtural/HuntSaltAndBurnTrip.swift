@@ -9,8 +9,8 @@ extension HuntTrip {
     /// A frame `k` (0…1) of Salt and Burn, over the whole of `r`. White grains of salt fall across the old place
     /// (0–0.2); fire catches along the bottom and climbs, a ragged line of burning edge with charred brown above it and
     /// tongues of pixel flame licking up off it, the old place glowing warmer as it comes (0.08–0.8); below the edge
-    /// the old place is gone and the new one shows through rolling grey smoke lit orange from underneath, which thins
-    /// and clears (0.5–1); embers drift up the whole way. Pixel art throughout: the flames and smoke are worked out
+    /// the old place is gone and the new one shows through rolling grey smoke, glowing ember orange nearest the fire,
+    /// which breaks up and clears (0.5–1); embers drift up the whole way. Pixel art throughout: the flames and smoke are worked out
     /// pixel by pixel from a drifting value noise and stepped into flat tones.
     func drawSaltAndBurn(_ ctx: CGContext, old: CGImage, new: CGImage, k: Double, in r: CGRect) {
         if k >= 1 { ctx.drawShot(new, in: r); return }
@@ -45,48 +45,63 @@ extension HuntTrip {
             ctx.restoreGState()
         }
 
-        // The smoke where the fire has been: a dark veil over the new place, and round billows of smoke rising out
-        // of the burnt ground, each a dark rim, a grey body and a lit crown, the young ones just under the edge lit
-        // orange from below. They swell as they rise and older ones sit behind; towards the end the veil lifts and
-        // the billows shrink away to nothing.
+        // The smoke where the fire has been: a dark veil over the new place, and a rolling cloud of smoke rising out
+        // of the burnt ground, its billows shaped by a drifting noise that climbs as it burns, so they bulge and run
+        // into each other like real smoke rather than sitting as round balls. Each billow has a see-through fringe, a
+        // grey body, a crown lit from above and a shaded underside; nearest the fire its underside glows a dull ember orange, going over to grey
+        // through a ragged band further down. Towards the end the veil lifts and the cloud breaks up and thins.
         let veilA = (0.45 * (1 - clear) * 4).rounded() / 4
         if veilA > 0 {
             for y in 0..<h {
                 for x in 0..<w where Double(y) > front[x] + 2 { c.px(x, y, C(0x1A1616, veilA)) }
             }
         }
-        let scale = H / 112
-        var puffs: [(x: Int, y: Int, r: Int, age: Double)] = []
-        for i in 0..<(w * h / 260) {
-            let x0 = Int(noise(i * 11 + 1) * Double(w - 1))
-            let y0 = noise(i * 11 + 2) * (H + 10)
-            let age = (y0 - front[x0]) / H
-            guard age > 0 else { continue }
-            // A billow here and there goes early as the smoke clears; the rest shrink and thin out together.
-            guard clear < 0.35 + noise(i * 11 + 5) * 1.2 else { continue }
-            let rad = (3 + min(1.2, age) * 7 + noise(i * 11 + 3) * 4) * scale * (1 - clear * 0.5)
-            let y = y0 - min(1.2, age) * H * 0.35 - clear * H * 0.25
-            let x = Double(x0) + sin(age * 5 + Double(i)) * 3 * scale
-            puffs.append((Int(x), Int(y), Int(rad), age))
-        }
-        puffs.sort { $0.age > $1.age }
-        let rim = C(0x221C1C), body = C(0x4A4240), crown = C(0x726660), shine = C(0x968A80)
-        let emberRim = C(0x4A1C0C), emberBody = C(0x8A3E1A), emberCrown = C(0xC8682A)
-        // In layers, so the billows run together into one cloud: every rim, then every body, then the light. On a
-        // canvas of their own, so the whole cloud thins at once in flat steps at the end rather than ball by ball.
-        let sc = PixelCanvas(w, h)
+        // The billows' size, in art pixels: bigger in the window's strip, whose pixels are finer, so they don't break
+        // up into crumbs there.
+        let scale = H / 112 * (art.wide ? 1.7 : 1)
         let fadeA = ((1 - Self.span(clear, 0.3, 1)) * 4).rounded() / 4
-        for p in puffs { sc.circle(p.x, p.y, p.r + 1, p.age * H < flameH * 0.9 ? emberRim : rim) }
-        for p in puffs {
-            let young = p.age * H < flameH * 0.9
-            sc.circle(p.x, p.y, p.r, young ? emberBody : body)
-            if young { sc.circle(p.x, p.y + p.r / 3, max(1, p.r / 2), emberCrown) }
+        if fadeA > 0 {
+            // How thick the smoke is at each pixel under the edge (0 where there's none to speak of).
+            var dens = [Double](repeating: 0, count: w * h)
+            for x in 0..<w {
+                let fx = Double(x)
+                for y in min(h, max(0, Int(front[x]) + 1))..<h {
+                    let below = Double(y) - front[x]
+                    let n = saltValueNoise(fx / (15 * scale), Double(y) / (19 * scale) + t * 1.4, 71) * 0.7
+                        + saltValueNoise(fx / (7 * scale), Double(y) / (8 * scale) + t * 2.4, 73) * 0.3
+                    // Thickest just under the fire, thinner further down; as it clears it breaks up from the bottom.
+                    let thin = 0.42 + 0.22 * Self.clamp((below - H * 0.45) / (H * 0.6)) + clear * 0.5
+                    dens[y * w + x] = n - thin
+                }
+            }
+            let shade = C(0x3A3332), body = C(0x4A4240), crown = C(0x675D57), shine = C(0x847A72)
+            let emberShade = C(0x5A2C1C), emberBody = C(0x6E3A22), emberCrown = C(0x9A5630)
+            let warmShade = C(0x463430), warmBody = C(0x56423A), warmCrown = C(0x76604F)
+            // On a canvas of its own, so the whole cloud thins at once in flat steps at the end.
+            let sc = PixelCanvas(w, h)
+            for y in 0..<h {
+                for x in 0..<w {
+                    let v = dens[y * w + x]
+                    guard v > 0 else { continue }
+                    let below = Double(y) - front[x]
+                    // Lit from the fire just above it: ember close under the edge, warm grey a little further down,
+                    // grey below that, the bands ragged where the billows cross them.
+                    let heat = below / flameH - v * 1.5
+                    let set = heat < 0.3 ? (emberShade, emberBody, emberCrown)
+                        : heat < 0.7 ? (warmShade, warmBody, warmCrown) : (shade, body, crown)
+                    if v < 0.04 { sc.px(x, y, set.1.alpha(0.5)); continue }     // a thin, see-through fringe
+                    // Lit from above: brighter where the smoke a few pixels up and to the left is thinner, shaded
+                    // where the smoke below it is thinner, so each billow has a lit crown and a dark underside.
+                    let up = max(2, Int(3 * scale)), side = max(1, Int(2 * scale))
+                    let above = y >= up && x >= side ? dens[(y - up) * w + x - side] : 0
+                    let under = y + up < h ? dens[(y + up) * w + min(w - 1, x + side)] : 0
+                    let col = v - above > 0.12 && heat >= 0.7 ? shine : v - above > 0.05 ? set.2
+                        : v - under > 0.06 ? set.0 : set.1
+                    sc.px(x, y, col)
+                }
+            }
+            c.paste(sc, alpha: fadeA * 0.875)
         }
-        for p in puffs where p.age * H >= flameH * 0.9 {
-            sc.circle(p.x - p.r / 4, p.y - p.r / 3, max(1, p.r * 3 / 5), crown)
-            if p.r >= 5 { sc.circle(p.x - p.r / 3, p.y - p.r / 2, max(1, p.r / 4), shine) }
-        }
-        if fadeA > 0 { c.paste(sc, alpha: fadeA) }
 
         // The edge itself: a burning line, then charred black-brown, then the old place browned above it.
         let ember = C(0xFFC04A), hotRed = C(0xE0501A), char = C(0x24120A), brown = C(0x5A2A12)

@@ -3,16 +3,17 @@ import Foundation
 
 // Smoke Out (`HuntWipe.smokeOut`): a demon leaving its host and taking another. A column of black smoke bursts up out
 // of the old place, roaring and twisting, fills the picture and thrashes about, then funnels down in one tight stream
-// and pours into the new place, which clears as the last wisp goes in. A red flash at the end, like the eyes flicking on.
+// and pours into the new place, which clears as the last wisp goes in. A flash at the end, and red eyes flicking on.
 
 extension HuntTrip {
     /// A frame `k` (0…1) of Smoke Out, over the whole of `r`. The old place shudders red and a column of smoke bursts
     /// up from where the crew stands, twisting as it climbs to the top (0.04–0.3); it mushrooms out along the top and
     /// rolls down until it fills the picture, churning, the old place going dark behind it (0.22–0.5); it thrashes,
     /// and behind it the new place takes over (0.5–0.56); it draws in to a twisting funnel, then one tight stream
-    /// pouring down into a spot where the crew will stand, its tail going in last (0.55–0.92); a red flash (0.92–0.98).
-    /// The smoke is near-black, a purple-black in three tones, but every edge of it is lit a dusty mauve or a red, and
-    /// red sparks flicker inside it, so it reads on a dark desktop. Pixel art, worked out pixel by pixel.
+    /// pouring down into a spot where the crew will stand, its tail going in last (0.55–0.92); a white-hot then red
+    /// flash, and red eyes open over the spot and blink shut (0.88–0.995). The smoke is near-black, a purple-black in
+    /// three tones, but every edge of it is lit a dusty mauve or a red, hellfire glows through it in dull red patches,
+    /// and the funnel has lit bands winding round it, so it reads on a dark desktop. Pixel art, worked out pixel by pixel.
     func drawSmokeOut(_ ctx: CGContext, old: CGImage, new: CGImage, k: Double, in r: CGRect) {
         if k >= 1 { ctx.drawShot(new, in: r); return }
         let art = HuntArt(r)
@@ -64,22 +65,37 @@ extension HuntTrip {
                 }
                 return d + churn
             }
-            // The funnel: wide at the top, narrowing to the pour spot, drawing in to one tight stream, its tail end
-            // sinking down into the spot.
+            // The funnel: hanging from a band of storm cloud along the top, wide where it leaves it and narrowing to
+            // the pour spot, drawing in to one tight stream, its tail end sinking down into the spot as the cloud
+            // goes up after it.
             guard y < pour.y + 2 * s else { return -99 }
+            var d = H * 0.2 * (1 - sink) - y
+            if let f = funnel(y) { d = max(d, min(f.rad - abs(x - f.mid), (y - f.tail) * 0.8)) }
+            return d + churn * (0.4 + 0.6 * (1 - draw)) + lumps * (1 - draw * 0.6)
+        }
+        // The funnel's middle, its half-width and its tail at row `y`: a twister's trumpet, its sides curving in under
+        // the wide top so it narrows to a rope of smoke above the spot, the rope swaying.
+        func funnel(_ y: Double) -> (mid: Double, rad: Double, tail: Double)? {
             let down = max(0, pour.y - y)
             let tail = sink * (pour.y + 6 * s) - 6 * s
-            guard y > tail else { return -99 }
+            guard y > tail else { return nil }
             let u = down / pour.y
-            let wide = W * 1.3 * (1 - draw) + 9 * s * (1 - sink)
-            let rad = (1.5 + 2.5 * (1 - sink)) * s + wide * pow(u, 1.3)
+            // In the window's short strip it draws in to a trumpet a little wider than the strip is tall, not a V
+            // across the whole width.
+            let top = art.wide ? max(H * 0.9 * (1 - draw * 0.5), W * 1.3 * pow(1 - draw, 2.5)) : W * 1.3 * (1 - draw)
+            let wide = top + 14 * s * (1 - sink)
+            let rad = (3 + 3 * (1 - sink)) * s + wide * pow(u, 1.9)
             let sway = sin(down * 0.1 / s - t * 15) * min(1, down / (H * 0.25)) * (3 + 6 * (1 - sink)) * s
-            return min(rad - abs(x - pour.x - sway), (y - tail) * 0.8) + churn * (0.4 + 0.6 * (1 - draw)) + lumps * (1 - draw * 0.6)
+            return (pour.x + sway, rad, tail)
         }
 
         // The smoke: three near-black purple tones in drifting patches, an edge lit mauve or red all round it, and
-        // red sparks flickering inside. Worked out a pixel at a time; an edge pixel is one with no smoke next to it.
+        // hellfire glowing dull red deep inside it in slow patches. Once it's a funnel, lit bands wind round it as it
+        // twists. Worked out a pixel at a time; an edge pixel is one with no smoke next to it.
         let body = [C(0x0A0608), C(0x160C12), C(0x24141E), C(0x3A2436)]
+        let fire = [C(0x16060A), C(0x260810), C(0x3A0C16), C(0x58121C)]
+        let band = C(0x5A3A56), bandLit = C(0x7E5C78)
+        let twisting = k >= 0.55
         let rimMauve = C(0x8A7088), rimRed = C(0xB02828), rimHot = C(0xFF6A3A)
         var d = [Double](repeating: -1, count: w * h)
         for y in 0..<h { for x in 0..<w { d[y * w + x] = inside(Double(x), Double(y)) } }
@@ -97,14 +113,19 @@ extension HuntTrip {
                     continue
                 }
                 if v < 2.6 * s { c.px(x, y, C(0x3A2432)); continue }   // a second, dimmer ring inside the edge
-                // The billows rolling inside it: big soft shapes, their crowns a dim lit purple.
+                // The bands winding round the funnel as it twists: across it, from one side round to the other.
+                if twisting, let f = funnel(fy), f.rad > 2 * s, f.rad < 16 * s {
+                    let across = max(-1, min(1, (fx - f.mid) / f.rad))
+                    let wind = sin(asin(across) * 1.6 + (pour.y - fy) * 0.45 / s - t * 22)
+                    if wind > 0.75 { c.px(x, y, across < -0.2 ? bandLit : band); continue }
+                    if wind > 0.45 { c.px(x, y, body[3]); continue }
+                }
+                // The billows rolling inside it: big soft shapes, their crowns a dim lit purple; in the slow patches
+                // where hellfire shows through, the same shapes in deep reds.
                 let tone = smokeValueNoise(fx / (11 * s) - t * 1.2, fy / (8 * s) - t * 4, 13) * 0.7
                     + smokeValueNoise(fx / (4 * s) - t * 2, fy / (3 * s) - t * 7, 17) * 0.3
-                c.px(x, y, body[min(3, Int(tone * 4.4))])
-                // Red sparks inside, now and then: hellfire glimpsed through the smoke, flickering.
-                let spark = smokeValueNoise(fx / (2.5 * s) + t * 4, fy / (2.5 * s) - t * 14, 33)
-                    * smokeValueNoise(fx / (12 * s), fy / (12 * s) - t * 3, 37)
-                if spark > 0.63 && v > 4 * s { c.px(x, y, spark > 0.7 ? C(0xFF5A2A) : C(0xA01C1C)) }
+                let glow = v > 4 * s ? smokeValueNoise(fx / (16 * s) + t * 0.6, fy / (12 * s) - t * 3, 37) : 0
+                c.px(x, y, (glow > 0.72 ? fire : body)[min(3, Int(tone * 4.4))])
             }
         }
 
@@ -121,15 +142,39 @@ extension HuntTrip {
             }
         }
 
-        // The red flash as the last of it goes in: the whole picture lit red for a moment, stepped down.
-        let flash = Self.span(k, 0.92, 0.98)
+        // The flash as the last of it goes in: a white-hot pop, then the whole picture lit red and stepped down, so it
+        // shows even over Hell.
+        let flash = Self.span(k, 0.9, 0.99)
         if flash > 0 && flash < 1 {
-            c.rect(0, 0, w, h, C(0xE01818, ((1 - flash) * 0.45 * 4).rounded() / 4))
-            if flash < 0.6 {
-                for side in [-1.0, 1.0] { c.rect(Int(pour.x + side * 3 * s) - 1, Int(pour.y - 4 * s), 2, 1, C(0xFF3020)) }
+            c.rect(0, 0, w, h, flash < 0.22 ? C(0xFFE8DC, 0.625) : C(0xF01C14, ((1 - flash) * 0.6 * 8).rounded() / 8))
+        }
+        // The eyes, flicking on red over the spot it went into as it flashes, holding a moment, and blinking shut.
+        let open = Self.span(k, 0.88, 0.9) * (1 - Self.span(k, 0.975, 0.995))
+        if open > 0 { smokeEyes(c, x: pour.x, y: pour.y - H * 0.2, size: H * (art.wide ? 0.11 : 0.08), open: open) }
+        art.show(ctx)
+    }
+}
+
+/// A demon's eyes, red right through, as an almond each side of `x`, `size` art pixels from the middle to the corner
+/// of an eye, `open` (0…1) how far the lids have parted: a dark lid line, the red, a hot slit of light across the
+/// middle, and a smoky dark shadow round them so they read on a bright place, a dark one and Hell's red.
+private func smokeEyes(_ c: PixelCanvas, x cx: Double, y cy: Double, size: Double, open: Double) {
+    let a = max(3, size), b = max(1, a * 0.42 * open)
+    for side in [-1.0, 1.0] {
+        let ex = cx + side * a * 1.35
+        for y in Int(cy - b - 3)...Int(cy + b + 3) {
+            for x in Int(ex - a - 3)...Int(ex + a + 3) {
+                let u = abs(Double(x) + 0.5 - ex) / a, v = abs(Double(y) + 0.5 - cy) / b
+                let f = u + v * v                       // under 1 inside the almond, pointed at the corners
+                if f < 1 {
+                    c.px(x, y, v < 0.34 && u < 0.6 ? C(0xFFB08A) : f > 0.78 ? C(0x9A0C0C) : C(0xF02018))
+                } else if f < 1.35 {
+                    c.px(x, y, C(0x3A0204))
+                } else if f < 2.0 {
+                    c.px(x, y, C(0x0A0204, 0.5))
+                }
             }
         }
-        art.show(ctx)
     }
 }
 

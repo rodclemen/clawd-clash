@@ -9,9 +9,10 @@ import Foundation
 extension HuntTrip {
     /// A frame `k` (0…1) of the Devil's Trap, over the whole of `r`. The old place dims and the trap paints itself on,
     /// a brush going round the outer ring and the inner one, the star's lines drawn point to point, the sigils dabbed in
-    /// (0–0.4); it turns, slowly and then faster, its glow pulsing (0.25–1); the new place opens from its centre in a
-    /// ring of burning paint, the trap growing as it opens, and fills the frame (0.52–1). All of it worked out pixel by
-    /// pixel on the art's grid, so it stays crisp as it turns.
+    /// (0–0.4); it turns, slowly and then faster, its low ember glow pulsing (0.25–1); the new place opens from its
+    /// centre in a ring of burning paint, the trap growing as it opens, and fills the frame (0.52–1). All of it worked
+    /// out pixel by pixel on the art's grid, so it stays crisp as it turns; the sigils ride round upright on a dark
+    /// band, so they read even in the window.
     func drawDevilsTrap(_ ctx: CGContext, old: CGImage, new: CGImage, k: Double, in r: CGRect) {
         guard k < 1 else { ctx.drawShot(new, in: r); return }
         let art = HuntArt(r)
@@ -49,10 +50,13 @@ extension HuntTrip {
         let thin = max(0.9, big * 0.022)                      // half a line's width, in art pixels
         let star = (0..<5).map { i -> (Double, Double) in
             let a = (-90 + Double(i) * 72) * .pi / 180
-            return (cos(a) * 0.76, sin(a) * 0.76)
+            return (cos(a) * 0.71, sin(a) * 0.71)
         }
-        let paint = C(0xC42A26), lit = C(0xF0603C), edge = C(0x4A0808), glow = C(0xFF3A1E)
-        let hot = C(0xFFC890)
+        // Red paint, a wet sheen down the middle of a thick stroke, a dark edge, and a low ember glow round it that
+        // pulses: hot paint, not a neon tube.
+        let paint = C(0xB0241E), lit = C(0xD84A30), dried = C(0x8A1A16), edge = C(0x3A0606), glow = C(0xB0281A)
+        let hot = C(0xFFD0A0)
+        let sigilR = 0.845                                     // the sigils' ring, between the two painted ones
 
         for y in 0..<h {
             for x in 0..<w {
@@ -78,7 +82,7 @@ extension HuntTrip {
                     dist = min(dist, abs(d - mid * big) - half * big)
                 }
                 ring(0.97, 0.03, outerP)
-                ring(0.77, 0.03, innerP)
+                ring(0.72, 0.03, innerP)
                 let lx = cos(th) * u, ly = sin(th) * u
                 for i in 0..<5 where lineP[i] > 0 {
                     let a = star[i], b = star[(i + 2) % 5]
@@ -87,28 +91,46 @@ extension HuntTrip {
                     let ex = a.0 + vx * t - lx, ey = a.1 + vy * t - ly
                     dist = min(dist, (ex * ex + ey * ey).squareRoot() * big - thin)
                 }
-                // The sigils between the rings: each a little 5×5 mark in its own slot.
-                var sigil = false
-                if u > 0.8 && u < 0.94 {
-                    let slot = Int(round * 12) % 12
-                    if sigilP[slot] > 0 {
-                        let along = (round * 12 - Double(slot) - 0.5) * 2 * .pi * 0.87 * big / 12
-                        let size = 0.12 * big
-                        let gx = Int(floor((along / size + 0.5) * 5)), gy = Int(floor((0.5 - (d - 0.87 * big) / size) * 5))
-                        if gx >= 0, gx < 5, gy >= 0, gy < 5 {
-                            let g = huntTrapSigils[slot % huntTrapSigils.count]
-                            let i = g.index(g.startIndex, offsetBy: gy * 5 + gx)
-                            sigil = g[i] == "1"
-                        }
-                    }
+                // A dark band under the sigils once they're dabbed in, so they stand off whatever's behind.
+                if u > 0.76 && u < 0.935 && dist > 1 && sigilP[Int(round * 12) % 12] > 0 {
+                    c.px(x, y, C(0x1A0204, 0.375))
+                    continue
                 }
-                if sigil { c.px(x, y, sigilP[Int(round * 12) % 12] < 1 ? hot : lit); continue }
                 if dist <= 0 {
-                    c.px(x, y, dist < -thin * 0.6 && thin > 1.2 && awake > 0.5 ? lit : paint)
+                    // Dabs of drier paint, fixed to the trap so they turn with it.
+                    let dab = noise((Int(cos(th) * d) &* 7 &+ Int(sin(th) * d) &* 131) & 0xFFFF) > 0.88
+                    c.px(x, y, dist < -thin * 0.6 && thin > 1.2 && awake > 0.5 ? lit : dab ? dried : paint)
                 } else if dist < 1 {
                     c.px(x, y, edge)
                 } else if dist < 3.5 {
-                    c.px(x, y, glow.alpha(((0.08 + (0.14 + 0.12 * pulse) * awake) * (dist < 2.2 ? 1 : 0.5) * 8).rounded() / 8))
+                    c.px(x, y, glow.alpha(((0.08 + (0.14 + 0.12 * pulse) * awake) * (dist < 2.2 ? 1 : 0.4) * 8).rounded() / 8))
+                }
+            }
+        }
+
+        // The sigils, dabbed in one after another round the band between the rings: each a 5×5 mark kept upright
+        // as its slot goes round, at a whole number of pixels a dot so it stays crisp, pale hot paint with a dark edge
+        // round every stroke; bright as it's dabbed, settling to the paint's sheen.
+        let dot = max(1, Int(0.17 * big / 6.2))
+        for slot in 0..<12 where sigilP[slot] > 0 {
+            let a = (Double(slot) + 0.5) / 12 * 2 * .pi - .pi / 2 + spin
+            let gx = Int((cx + cos(a) * sigilR * big).rounded()) - 5 * dot / 2
+            let gy = Int((cy + sin(a) * sigilR * big).rounded()) - 5 * dot / 2
+            let g = Array(huntTrapSigils[slot % huntTrapSigils.count])
+            let ink = sigilP[slot] < 1 ? hot : C(0xF0A070)
+            func put(_ x: Int, _ y: Int, _ col: Px) {
+                if hole > 0.5 {
+                    let dx = Double(x) + 0.5 - cx, dy = Double(y) + 0.5 - cy
+                    if (dx * dx + dy * dy).squareRoot() < hole + 2.6 { return }
+                }
+                c.px(x, y, col)
+            }
+            for pass in 0..<2 {
+                for i in 0..<25 where g[i] == "1" {
+                    let x = gx + (i % 5) * dot, y = gy + (i / 5) * dot
+                    for yy in (pass == 0 ? y - 1 : y)..<(pass == 0 ? y + dot + 1 : y + dot) {
+                        for xx in (pass == 0 ? x - 1 : x)..<(pass == 0 ? x + dot + 1 : x + dot) { put(xx, yy, pass == 0 ? edge : ink) }
+                    }
                 }
             }
         }

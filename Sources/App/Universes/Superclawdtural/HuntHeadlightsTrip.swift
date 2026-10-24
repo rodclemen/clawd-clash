@@ -8,15 +8,16 @@ import Foundation
 extension HuntTrip {
     /// A frame `k` (0…1) of Headlights, over the whole of `r`. The old place darkens to a deep blue night (0–0.22);
     /// the Impala comes in from the left, wheels turning, her headlight lit, and drives across and out (0.1–0.8). Ahead
-    /// of her the beam opens into a wedge of warm light, bright near the lamp and dimmer as it reaches, its edges
-    /// picked out, and inside it is the new place; behind her, and round the beam as far as its light reaches, it's the
-    /// new place too, still in the dark, so the old place goes at a curved front just ahead of the beam. Dust drifts
-    /// in the beam, a puff of exhaust hangs behind her and her tail lights glow red. Then the night lifts off the new
-    /// place (0.8–1). She's drawn as Baby is in HuntRides.swift, at twice the ride's size.
+    /// of her the headlights flick on and off and on, and the beam opens into a wedge of warm light, bright near the
+    /// lamp and falling off smoothly (dithered) as it reaches, its edges picked out, and inside it is the new place lit
+    /// up out of a deep night; behind her, and round the beam as far as its light reaches, it's the new place too,
+    /// still in the dark, so the old place goes at a curved front just ahead of the beam. Dust drifts in the beam, a
+    /// puff of exhaust hangs behind her and her tail lights glow red. Then the night lifts off the new place (0.8–1).
+    /// She's drawn as Baby is in HuntRides.swift, at twice the ride's size.
     func drawHeadlights(_ ctx: CGContext, old: CGImage, new: CGImage, k: Double, in r: CGRect) {
         let art = HuntArt(r)
         let c = art.c, w = art.w, h = art.h
-        let night = 0.75 * Self.ease(Self.span(k, 0, 0.22)) * (1 - Self.ease(Self.span(k, 0.8, 1)))
+        let night = 0.875 * Self.ease(Self.span(k, 0, 0.22)) * (1 - Self.ease(Self.span(k, 0.8, 1)))
         let drive = Self.span(k, 0.1, 0.8)
 
         // Where she is: her nose from just off the left edge to well past the right, so the beam has crossed it all.
@@ -37,6 +38,8 @@ extension HuntTrip {
             return d
         }
         let driving = k >= 0.1 && k < 0.8
+        // Her headlights flick on as she comes in (off, on, off, then on for good), and burn brightest just after.
+        let flick = k < 0.115 || (k >= 0.125 && k < 0.14) ? 0.0 : 1 + 0.35 * (1 - Self.span(k, 0.14, 0.3))
 
         // The old place, going dark.
         ctx.drawShot(old, in: r)
@@ -45,30 +48,26 @@ extension HuntTrip {
             ctx.drawShot(new, in: r)
             Self.wash(ctx, 0x07101E, night, in: r)
         } else if driving {
-            // Behind her and as far as the light reaches, the new place in the dark: its edge a curve round the lamp.
+            // Behind her and as far as the light reaches, the new place: its edge a curve round the lamp. It's dark
+            // but for the beam, where the light falls off smoothly from the lamp, dithered in pixel-art steps (no
+            // rings), warm and bright close to her and fading into the night at its reach.
             let behind = art.runs { x, y in x < lamp.x || far(x, y) <= 1 }
             if !behind.isEmpty {
-                ctx.saveGState(); ctx.clip(to: behind)
-                ctx.drawShot(new, in: r); Self.wash(ctx, 0x07101E, night, in: r)
-                ctx.restoreGState()
+                ctx.saveGState(); ctx.clip(to: behind); ctx.drawShot(new, in: r); ctx.restoreGState()
             }
-            // In the beam, the new place lit: three bands, brightest by the lamp.
-            for band in 0..<3 {
-                let lo = Double(band) / 3, hi = Double(band + 1) / 3
-                let lit = art.runs { x, y in
-                    guard let t = beam(x, y) else { return false }
-                    return t >= lo && t < hi
+            let dark = (night * 8).rounded() / 8
+            for y in 0..<h {
+                for x in 0..<w where x < lamp.x || far(x, y) <= 1 {
+                    guard let t = beam(x, y), flick > 0 else { c.px(x, y, C(0x07101E, dark)); continue }
+                    let fall = (1 - t * t * t) * flick                     // the light here: full most of the way, then fading
+                    let steps = 6.0, level = min(steps, floor(fall * steps + headlightsBayer(x, y))) / steps
+                    if level < 1 { c.px(x, y, C(0x07101E, ((night * (1 - level) * 8).rounded() / 8))) }
+                    if level > 0 { c.px(x, y, C(0xFFE2A0, 0.3 * level)) }
                 }
-                guard !lit.isEmpty else { continue }
-                ctx.saveGState(); ctx.clip(to: lit)
-                ctx.drawShot(new, in: r)
-                Self.wash(ctx, 0x07101E, night * [0.0, 0.25, 0.5][band], in: r)
-                Self.wash(ctx, 0xFFE8B0, [0.25, 0.125, 0.0][band], in: r)
-                ctx.restoreGState()
             }
         }
 
-        if driving {
+        if driving && flick > 0 {
             // The beam's edges, picked out so the wedge reads on any place, and dust drifting in it.
             for x in stride(from: max(0, lamp.x), to: min(w, lamp.x + Int(reach)), by: 1) {
                 let t = Double(x - lamp.x) / reach
@@ -81,6 +80,8 @@ extension HuntTrip {
                 let y = Int(noise(i * 17 + 3) * Double(h)) - drift
                 if let t = beam(x, y) { c.px(x, y, C(0xFFF6DC, 0.7 * (1 - t))) }
             }
+        }
+        if driving {
             // Exhaust puffs hanging behind her, thinning as they go.
             for i in 0..<4 {
                 let age = (k * 9 + Double(i) * 0.25).truncatingRemainder(dividingBy: 1)
@@ -92,13 +93,26 @@ extension HuntTrip {
             let car = PixelCanvas(Ride.width, Ride.height)
             huntDrawImpala(car, ramp: 0, moving: true, t: k * duration)
             blit(car, into: c, x: carX, y: carY, scale: s)
-            // The lamp itself, flaring.
-            c.rect(lamp.x - 3, lamp.y, 7, 1, C(0xFFFBE8, 0.7)); c.rect(lamp.x, lamp.y - 3, 1, 7, C(0xFFFBE8, 0.7))
-            c.circle(lamp.x, lamp.y, 3, C(0xFFF4C8, 0.35))
-            c.rect(lamp.x - 1, lamp.y - 1, 3, 3, C(0xFFFFFF))
+            // The lamp itself, flaring: a long glint across and a short one up, as a lens catches a headlight.
+            if flick > 0 {
+                let glint = Int(6 + 4 * flick)
+                c.rect(lamp.x - glint, lamp.y, 2 * glint + 1, 1, C(0xFFFBE8, 0.5))
+                c.rect(lamp.x - glint / 2, lamp.y, glint + 1, 1, C(0xFFFBE8, 0.8))
+                c.rect(lamp.x, lamp.y - 3, 1, 7, C(0xFFFBE8, 0.7))
+                c.circle(lamp.x, lamp.y, 4, C(0xFFF4C8, 0.35))
+                c.rect(lamp.x - 1, lamp.y - 1, 3, 3, C(0xFFFFFF))
+            } else {
+                c.rect(lamp.x - 1, lamp.y - 1, 3, 3, C(0x8A8470))
+            }
         }
         art.show(ctx)
     }
+}
+
+/// A 4×4 ordered dither, 0…1 at each pixel: steps a smooth fall-off into pixel-art checks instead of hard rings.
+private func headlightsBayer(_ x: Int, _ y: Int) -> Double {
+    let m = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5]
+    return (Double(m[(y & 3) * 4 + (x & 3)]) + 0.5) / 16
 }
 
 /// A ride's canvas onto `c` at `scale`, its top-left at `x`, `y`.

@@ -7,17 +7,18 @@ import Foundation
 
 extension HuntTrip {
     /// A frame `k` (0…1) of the Cold Spot, over the whole of `r`. The lights stutter off and on, the old place taking
-    /// a cold blue cast (0–0.2); two breaths of fog puff out low down and drift (0.15–0.55); frost creeps in from the
-    /// four corners first and then along the edges, a white rim at its front, feathery crystals growing ahead of the
-    /// fill, thin and see-through at first and thick white-blue behind (0.1–0.64); the ice cracks out from the middle
-    /// in dark blue lines (0.6–0.7), and the shards drop away, the middle first, onto the new place (0.68–1).
+    /// a cold blue cast (0–0.2); three long breaths of fog blow out low down and drift (0.13–0.66); frost creeps in from
+    /// the four corners first and then along the edges, a white rim at its front, feathery crystals growing ahead of
+    /// the fill, thin and see-through at first and thick white-blue behind, closing over the middle just in time
+    /// (0.1–0.64); the ice cracks out from the middle in dark blue lines (0.6–0.7), and the shards drop away, the
+    /// middle first, turning over as they fall onto the new place (0.68–1).
     func drawColdSpot(_ ctx: CGContext, old: CGImage, new: CGImage, k: Double, in r: CGRect) {
         if k >= 1 { ctx.drawShot(new, in: r); return }
         let art = HuntArt(r)
         let c = art.c, w = art.w, h = art.h
         let W = Double(w), H = Double(h)
         let creep = Self.span(k, 0.08, 0.63)
-        let reach = 1.75 * creep * (0.5 + 0.5 * creep)   // creeps slowly at first, then closes in
+        let reach = 1.12 * creep * (0.5 + 0.5 * creep)   // creeps slowly at first, then closes in just as it's due to crack
         let iced = k >= 0.64   // the whole picture is under the ice from here: the new place goes in behind it
         let crack = Self.span(k, 0.6, 0.7)
 
@@ -31,17 +32,29 @@ extension HuntTrip {
             if flicker.contains(where: { k >= $0.0 && k < $0.1 }) { Self.wash(ctx, 0x02040A, 0.7, in: r) }
         }
 
-        // Breath: two puffs of fog low down, swelling and drifting off to the right as they fade.
-        for (i, puff) in [(at: 0.15, x: 0.32, y: 0.7), (at: 0.32, x: 0.6, y: 0.66)].enumerated() {
-            let age = (k - puff.at) / 0.24
+        // Breath: three long breaths of fog low down, each a plume of puffs blown out to the right, swelling and
+        // rising as it goes and fading; each puff a pale rim, a white body and a bright top, on a layer of their own
+        // so they read as one cloud.
+        let fog = PixelCanvas(w, h)
+        for (i, puff) in [(at: 0.13, x: 0.26, y: 0.72), (at: 0.27, x: 0.58, y: 0.68), (at: 0.4, x: 0.38, y: 0.74)].enumerated() {
+            let age = (k - puff.at) / 0.26
             guard age > 0, age < 1 else { continue }
-            let a = ((1 - age) * 0.6 * 4).rounded() / 4
+            let a = ((1 - age * age) * 0.875 * 8).rounded() / 8
+            guard a > 0 else { continue }
             let s = H / 112
-            for j in 0..<4 {
-                let px = W * puff.x + (age * 16 + Double(j) * 4) * s
-                let py = H * puff.y - (age * 6 + noise(i * 9 + j) * 3) * s
-                c.circle(Int(px), Int(py), Int((2 + age * 6 + Double(j)) * s), C(0xE6EEF8, a))
+            fog.clear()
+            var blobs: [(x: Int, y: Int, r: Int)] = []
+            for j in 0..<6 {
+                let out = Double(j) / 5                                     // how far along the plume
+                guard age * 1.6 > out else { continue }                     // blown out a puff at a time
+                let px = W * puff.x + (age * 26 + out * 30) * s
+                let py = H * puff.y - (age * 8 + out * 6 + noise(i * 9 + j) * 3) * s
+                blobs.append((Int(px), Int(py), Int((3 + age * 8 + out * 7) * s)))
             }
+            for b in blobs { fog.circle(b.x, b.y, b.r + 1, C(0x86A2C2)) }
+            for b in blobs { fog.circle(b.x, b.y, b.r, C(0xE2ECF6)) }
+            for b in blobs { fog.circle(b.x - b.r / 4, b.y - b.r / 3, max(1, b.r / 2), C(0xFFFFFF)) }
+            c.paste(fog, alpha: a)
         }
 
         // The ice's own look at every pixel: three pale blues in drifting patches, feathery crystals in white, a
@@ -56,8 +69,11 @@ extension HuntTrip {
         }
         // How far in from the edge a pixel is: 0 in a corner, a little more along an edge, 1 in the middle; the
         // frost covers it once `reach` passes that, with a jagged front.
+        // In the window's short strip the top and bottom edges count as further in, so the frost doesn't close the
+        // strip off from above and below long before it reaches the middle from the sides.
         func depth(_ x: Int, _ y: Int) -> Double {
-            let u = min(Double(x), W - 1 - Double(x)) / (W / 2), v = min(Double(y), H - 1 - Double(y)) / (H / 2)
+            let u = min(Double(x), W - 1 - Double(x)) / (W / 2)
+            let v0 = min(Double(y), H - 1 - Double(y)) / (H / 2), v = art.wide ? pow(v0, 0.6) : v0
             let m = 0.55 * min(u, v) + 0.45 * max(u, v)
             return reach - m - (coldSpotValueNoise(Double(x) / 5, Double(y) / 4, 17) - 0.5) * 0.16
         }
@@ -81,7 +97,7 @@ extension HuntTrip {
 
         // The shards: the ice in pieces, cracked from the middle outwards. Each is a cell round a point on a jittered
         // grid; the crack lines show along their borders as they spread from the middle, then each drops away under
-        // gravity, the middle ones first, drifting a little outwards as it goes.
+        // gravity, the middle ones first, drifting a little outwards and tumbling as it goes.
         guard crack > 0 else { art.show(ctx); return }
         let cols = art.wide ? 9 : 5, rows = art.wide ? 3 : 4
         var seeds: [(x: Double, y: Double)] = []
@@ -105,19 +121,50 @@ extension HuntTrip {
                 cell[y * w + x] = best
             }
         }
-        let shifts: [(dx: Int, dy: Int)] = seeds.enumerated().map { i, s in
+        // Each shard's drop: how far it has fallen, and how far it has turned about its own middle as it goes, one
+        // way or the other.
+        let drops: [(dx: Double, dy: Double, turn: Double)] = seeds.enumerated().map { i, s in
             let out = ((s.x - cx) * (s.x - cx) + (s.y - cy) * (s.y - cy)).squareRoot() / far
             let fall = max(0, k - (0.68 + 0.14 * out + noise(i * 5 + 9) * 0.04))
-            return (Int((s.x - cx) / far * fall * W * 0.5), Int(fall * fall * H * 30))
+            let spin = (noise(i * 5 + 11) > 0.5 ? 1.0 : -1.0) * (0.5 + noise(i * 5 + 12) * 0.5)
+            return ((s.x - cx) / far * fall * W * 0.5, fall * fall * H * 30, spin * fall * 4.5)
         }
+        // A shard's own pixel at (x, y): a crack along its border as the cracks spread, and once it's falling a white
+        // lit top edge and a deeper blue underside, so each piece reads as a slab of ice.
+        func shard(_ x: Int, _ y: Int, _ i: Int, falling: Bool) -> Px {
+            let along = ((Double(x) - cx) * (Double(x) - cx) + (Double(y) - cy) * (Double(y) - cy)).squareRoot() / far
+            let border = (x + 1 < w && cell[y * w + x + 1] != i) || (y + 1 < h && cell[(y + 1) * w + x] != i)
+            if border && along < crack * 1.05 { return C(0x2A5A8E) }
+            guard falling else { return ice(x, y) }
+            if y > 0 && cell[(y - 1) * w + x] != i { return C(0xFFFFFF) }
+            if y + 1 < h && cell[(y + 1) * w + x] != i { return C(0x6A94BE) }
+            return ice(x, y)
+        }
+        // The pieces still in place, then the falling ones over them, turning as they drop.
+        var box = [(x0: Int, y0: Int, x1: Int, y1: Int)](repeating: (Int.max, Int.max, Int.min, Int.min), count: seeds.count)
         for y in 0..<h {
             for x in 0..<w {
                 let i = cell[y * w + x]
-                let along = ((Double(x) - cx) * (Double(x) - cx) + (Double(y) - cy) * (Double(y) - cy)).squareRoot() / far
-                let border = (x + 1 < w && cell[y * w + x + 1] != i) || (y + 1 < h && cell[(y + 1) * w + x] != i)
-                let top = y > 0 && cell[(y - 1) * w + x] != i
-                let col: Px = border && along < crack * 1.05 ? C(0x2A5A8E) : top && shifts[i].dy > 0 ? C(0xFFFFFF) : ice(x, y)
-                c.px(x + shifts[i].dx, y + shifts[i].dy, col)
+                if drops[i].dy == 0 && drops[i].dx == 0 { c.px(x, y, shard(x, y, i, falling: false)); continue }
+                box[i] = (min(box[i].x0, x), min(box[i].y0, y), max(box[i].x1, x), max(box[i].y1, y))
+            }
+        }
+        for i in seeds.indices.sorted(by: { drops[$0].dy < drops[$1].dy }) where box[i].x0 <= box[i].x1 {
+            let d = drops[i], p = seeds[i], cs = cos(d.turn), sn = sin(d.turn)
+            // Its box once turned and moved, then each pixel there traced back to the shard's own.
+            let half = Double(max(box[i].x1 - box[i].x0, box[i].y1 - box[i].y0)) * 0.75 + 2
+            let mx = Double(box[i].x0 + box[i].x1) / 2 - p.x, my = Double(box[i].y0 + box[i].y1) / 2 - p.y
+            let tx = p.x + d.dx + mx * cs - my * sn, ty = p.y + d.dy + mx * sn + my * cs
+            let y0 = max(0, Int(ty - half)), y1 = min(h - 1, Int(ty + half))
+            let x0 = max(0, Int(tx - half)), x1 = min(w - 1, Int(tx + half))
+            guard y0 <= y1, x0 <= x1 else { continue }
+            for y in y0...y1 {
+                for x in x0...x1 {
+                    let ux = Double(x) - p.x - d.dx, uy = Double(y) - p.y - d.dy
+                    let sx = Int((p.x + ux * cs + uy * sn).rounded()), sy = Int((p.y - ux * sn + uy * cs).rounded())
+                    guard sx >= 0, sy >= 0, sx < w, sy < h, cell[sy * w + sx] == i else { continue }
+                    c.px(x, y, shard(sx, sy, i, falling: true))
+                }
             }
         }
         // A cold white flash where it gives, just as it cracks.
