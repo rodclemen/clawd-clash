@@ -272,8 +272,8 @@ private func drawArthurKetch(_ c: PixelCanvas, _ p: Pose) {
 /// Gordon Walker, the hunter who hunted Sam: close-cropped black hair, an olive drab field jacket with its collar up,
 /// epaulettes and two flapped chest pockets, open over a black tee, charcoal jeans and heavy brown boots. Fights with a
 /// long, broad machete (his way with vampires); when he swings it his mouth pulls back on two little fangs, since
-/// he became one of them in the end. Signature: he lifts the machete and runs a whetstone down its edge, three long
-/// strokes, sparks flicking off the steel.
+/// he became one of them in the end. Signature: he holds the machete level across his front and draws a whetstone
+/// along its edge, three long strokes, sparks flying off the tip.
 private func drawGordonWalker(_ c: PixelCanvas, _ p: Pose) {
     let jacket = C(0x56593A), jacketD = C(0x3A3D26), jacketL = C(0x767A50)
     let tee = C(0x222226), teeL = C(0x3A3A42)
@@ -325,31 +325,33 @@ private func drawGordonWalker(_ c: PixelCanvas, _ p: Pose) {
         return
     }
     if hone >= 0 {
-        // Up from his side to held out level, the whetstone run down the edge three times, and back down.
-        let lift = min(1, hone / 0.14, (1 - hone) / 0.12)
-        let a = 80 - lift * 140
-        let run = hv6Span(hone, 0.16, 0.86)
-        // Where the stone is: run down the blade from near the guard to the tip, three times, lying on the steel.
-        var stone: (x: Int, y: Int)? = nil
-        var k = 0.0
+        // He brings the machete round in front of himself, lying level across his jacket with its edge down and the
+        // grip in his fist at his side, and draws the whetstone along it from the guard to the tip three times: the
+        // brown stone pressed up under the edge by his other fist, in front of his belly, sliding along, a spray of
+        // sparks off the tip at the end of each stroke, then lifted back for the next. Then the blade goes back down
+        // to his side.
+        let lift = min(1, hone / 0.12, (1 - hone) / 0.1)
+        let a = 90 + lift * 92
+        let h = (x: huntHand.x - 3 * lift, y: huntHand.y + 1 * lift)
+        drawMachete(c, [], angle: a, grip: grip, gripL: gripL, steel: steel, steelD: steelD, edge: edge, hand: h,
+                    edgeDown: true)
+        let run = hv6Span(hone, 0.14, 0.88)
         if run >= 0 {
-            k = (run * 3).truncatingRemainder(dividingBy: 1)
-            let at = huntReach(huntHand, a, 4 + k * 8)
-            stone = (Int(at.x.rounded()) - 1, Int(at.y.rounded()) - 1)
-        }
-        if let st = stone {
-            // His other arm, reaching across from his shoulder behind the blade: the olive sleeve, lit on top.
-            huntLine(c, 35, 32.5, Double(st.x) - 0.5, Double(st.y) + 2, jacket, 1.0)
-            huntLine(c, 35, 31.8, Double(st.x) - 0.5, Double(st.y) + 1.3, jacketL, 0.4)
-        }
-        drawMachete(c, [], angle: a, grip: grip, gripL: gripL, steel: steel, steelD: steelD, edge: edge)
-        if let st = stone {
-            let (sx, sy) = st
-            c.rect(sx, sy, 3, 2, C(0x8A8478)); c.rect(sx, sy, 3, 1, C(0xB6AE9C))      // the stone, on the steel
-            c.rect(sx - 1, sy + 1, 2, 2, clawdOrange); c.px(sx - 1, sy + 2, clawdShade) // the hand holding it
-            if k > 0.25 && k < 0.9 {
-                let f = Int(p.t * 20) % 2
-                c.px(sx + 3 + f, sy - 1, C(0xFFE08A, 0.95)); c.px(sx + 4, sy - 2 - f, C(0xFFC050, 0.7))
+            let k = (run * 3).truncatingRemainder(dividingBy: 1)
+            let slide = k < 0.72 ? k / 0.72 : 1 - (k - 0.72) / 0.28   // along the edge, then back
+            let lifted = k < 0.72 ? 0 : 1                            // pressed to the edge, or lifted clear
+            let at = huntReach(h, a, 4 + slide * 8)
+            let sx = Int(at.x.rounded()) - 2, sy = Int(at.y.rounded()) + 2 + lifted
+            c.rect(sx, sy, 5, 2, C(0x6E5A40)); c.rect(sx, sy, 5, 1, C(0xA88C64))             // the stone, brown
+            c.rect(sx + 1, sy + 2, 3, 2, clawdOrange); c.rect(sx + 1, sy + 3, 3, 1, clawdShade) // his fist under it
+            if k > 0.5 && k < 0.8 {
+                // Sparks off the tip as the stone runs off the end.
+                let tip = huntReach(h, a, 13.5), f = (k - 0.5) / 0.3
+                for (i, d) in [(-1.0, -1.6), (-2.0, -0.4), (-1.4, 1.0)].enumerated() {
+                    let x = Int((tip.x + d.0 * (1 + f * 3)).rounded())
+                    let y = Int((tip.y + d.1 * (1 + f * 2) + Double(i) * f).rounded())
+                    c.px(x, y, i == 1 ? C(0xFFF4C0) : C(0xFFC050, 0.9))
+                }
             }
         }
         return
@@ -364,13 +366,13 @@ private func drawGordonWalker(_ c: PixelCanvas, _ p: Pose) {
 /// Gordon's machete from the hand along `angle`: the black grip with a rivet, a small guard, and the long broad blade,
 /// its spine dark, its edge lit, a smear behind a fast swing.
 private func drawMachete(_ c: PixelCanvas, _ trail: [Double], angle a: Double, grip: Px, gripL: Px, steel: Px,
-                         steelD: Px, edge: Px) {
-    let h = huntHand
+                         steelD: Px, edge: Px, hand h: (x: Double, y: Double) = huntHand, edgeDown: Bool = false) {
     huntSmear(c, h, trail, from: 2, to: 14, C(0xF0F4FF))
     huntBar(c, h, a, from: -2.5, to: 1.5, grip, r: 1)
     let rivet = huntReach(h, a, -1.5)
     c.px(Int(rivet.x.rounded()), Int(rivet.y.rounded()), gripL)
-    let n = (x: -sin(a * .pi / 180), y: cos(a * .pi / 180))
+    let side: Double = edgeDown ? -1 : 1   // which side of the blade the edge is on
+    let n = (x: -sin(a * .pi / 180) * side, y: cos(a * .pi / 180) * side)
     let g = huntReach(h, a, 2)
     huntLine(c, g.x - n.x * 1.5, g.y - n.y * 1.5, g.x + n.x * 1.5, g.y + n.y * 1.5, C(0x3A3632), 0.6)   // the guard
     huntBar(c, h, a, from: 2.5, to: 13, steelD, r: 1.3)
