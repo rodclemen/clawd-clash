@@ -75,10 +75,11 @@ extension Scenes {
 
     /// The house at 1458 Lawrence Street, Lawrence, Kansas, late at night: a two-storey clapboard house under its
     /// front gable, a porch across the front, every window dark but one, upstairs on the left, the nursery, lit amber.
-    /// Dark neighbours either side, the back-yard trees black against a denim sky, a full moon, the old tree on the
-    /// left with autumn in its leaves, a street lamp on the right, and the sidewalk in front. On the screen saver the
-    /// old tree spreads its whole crown with a rope swing under it, power lines cross the sky, and banks of night cloud
-    /// lit silver by the moon drift over the stars, a skein of geese below them.
+    /// Dark neighbours either side, the back-yard trees black against a denim sky, a full moon, mown lawns in the
+    /// moonlight strewn with fallen leaves, the old tree on the left with autumn in its leaves and a raked pile under
+    /// it, a street lamp on the right, and the sidewalk in front. On the screen saver the old tree spreads its whole
+    /// crown with a rope swing under it, power lines cross the sky, and banks of night cloud lit silver by the moon
+    /// drift over the stars, a skein of geese below them.
     static func huntLawrence(_ c: PixelCanvas, _ g: Int) {
         let s = unit(g), f = huntLawrenceFrame(c, g), tall = isTall(c)
         // The sky: near black up high, a dusty denim blue down at the roofs.
@@ -118,10 +119,22 @@ extension Scenes {
         }
         // The lawns: dark grass from the houses down to the sidewalk.
         c.gradient(f.horizon, g, C(0x1E2A22), C(0x24301F), bands: 3)
+        // Mown stripes running back from the sidewalk, faintly paler where the moon catches the cut grass.
+        for x in stride(from: -6 * s, to: c.w, by: 16 * s) {
+            for y in stride(from: f.horizon, to: g, by: max(1, s)) {
+                let lean = (g - y) / 3
+                c.rect(x + lean, y, 7 * s, max(1, s), C(0x3A4C34, 0.32))
+            }
+        }
         for i in 0..<(c.w / (3 * s)) {
             let gx = Int(noise(i * 3 + 1520) * Double(c.w)), gy = f.horizon + Int(noise(i * 3 + 1521) * Double(g - f.horizon))
             c.rect(gx, gy, max(1, s / 2), s, C(0x2E3C28))
         }
+        // The moon's shadows: the houses and the old tree throw soft dark shapes forward across the lawns.
+        for (xp, w) in [(21, 52), (71, 48), (47, 70)] {
+            c.ellipse(c.w * xp / 100 + w * s / 2 - 6 * s, f.horizon + 4 * s, w * s / 2, 3 * s, C(0x0C120E, 0.45))
+        }
+        c.ellipse(f.tree.x + 14 * s, g - 5 * s, 38 * s, 4 * s, C(0x0C120E, 0.4))
         // The neighbours, dark and asleep.
         huntP4Neighbour(c, c.w * 21 / 100, g - 9 * s, 44 * s, s, hipped: true)
         huntP4Neighbour(c, c.w * 71 / 100, g - 9 * s, 40 * s, s, hipped: false)
@@ -159,6 +172,17 @@ extension Scenes {
             for px in stride(from: x0, to: x1, by: 3 * s) { c.rect(px, g - 6 * s, max(1, s), 6 * s, C(0x4E5464)); c.px(px, g - 6 * s, C(0x6A7082)) }
         }
         huntLawrenceTree(c, g)
+        // Fallen leaves: a raked pile under the old tree with the rake left leaning in it, and stray leaves dotted
+        // over the lawns in rust and amber.
+        let pile = f.tree.x + 22 * s
+        c.ellipse(pile, g - s, 9 * s, 3 * s, C(0x5A2E16)); c.ellipse(pile - s, g - 2 * s, 7 * s, 2 * s, C(0x7A3E1C))
+        for k in 0..<9 { c.rect(pile - 7 * s + Int(noise(k + 1580) * Double(14 * s)), g - 4 * s + Int(noise(k + 1590) * Double(3 * s)), 2 * s, max(1, s), [C(0xA85A24), C(0xC8862E), C(0x8A4A22)][k % 3]) }
+        c.glowLine(Double(pile + 6 * s), Double(g - s), Double(pile + 14 * s), Double(g - 17 * s), core: C(0x6A5038), glow: C(0, 0), coreR: Double(s) * 0.6, glowR: Double(s) * 0.7)
+        c.rect(pile + 12 * s, g - 19 * s, 5 * s, max(1, s), C(0x5A5A60)); for k in 0..<3 { c.rect(pile + 12 * s + k * 2 * s, g - 18 * s, max(1, s / 2), s, C(0x5A5A60)) }
+        for i in 0..<(c.w / (9 * s)) {
+            let lx = Int(noise(i * 2 + 1600) * Double(c.w)), ly = f.horizon + 3 * s + Int(noise(i * 2 + 1601) * Double(g - f.horizon - 4 * s))
+            c.rect(lx, ly, max(1, s), max(1, s), [C(0x8A4A22), C(0xA86A2A), C(0x6A3A1E)][i % 3])
+        }
         huntLawrenceLamp(c, g)
         // The sidewalk: dark concrete slabs, plain enough for the crew to stand on.
         c.ground(g, C(0x34363C), edge: C(0x4E5058), speck: C(0x2C2E34), seed: 81)
@@ -417,8 +441,8 @@ extension Scenes {
         }
         huntPurgatoryMist(c, g, 0, 0.10)
         // The middle row: grey-green trunks with a lit left edge, a few bare branches, bark in strokes.
-        let midTop = tall ? g * 24 / 100 : 0, nearTop = tall ? g * 30 / 100 : 0
         for (k, m) in f.mid.enumerated() {
+            let midTop = tall ? huntPurgatoryFork(g, k, near: false) : 0
             c.rect(m.x, midTop, m.w, g - midTop, C(0x22302A)); c.rect(m.x, midTop, s, g - midTop, C(0x34463A))
             c.rect(m.x + m.w - s, midTop, s, g - midTop, C(0x1A2620))
             for y in stride(from: midTop + Int(noise(k + 2150) * 8) * s, to: g, by: 9 * s) { c.rect(m.x + 2 * s, y, max(1, s / 2), 4 * s, C(0x1A2620)) }
@@ -437,6 +461,7 @@ extension Scenes {
         if tall { huntPurgatoryCanopy(c, g, f.mid, near: false) }
         // The near trees: black, gnarled, roots gripping the leaf litter, lit faintly green on the left.
         for (k, n) in f.near.enumerated() {
+            let nearTop = tall ? huntPurgatoryFork(g, k, near: true) : 0
             // The trunk row by row, swaying a little side to side and thickening at the foot, its bark in strokes.
             for y in stride(from: nearTop, to: g, by: max(1, s)) {
                 let sway = Int(sin(Double(y) / Double(s) * 0.045 + Double(k) * 1.7) * 2.5) * s
@@ -462,6 +487,9 @@ extension Scenes {
             c.rect(n.x - 2 * s, g - 3 * s, n.w + 4 * s, 3 * s, C(0x0E1610))
         }
         if tall { huntPurgatoryCanopy(c, g, f.near, near: true) }
+        // The mist pooling at head height and below, thickening towards the ground over the near trees' feet, so the
+        // band behind the crew is a pale grey-green rather than black trunk.
+        for k in 0..<10 { c.rect(0, g - 22 * s + k * 2 * s, c.w, 2 * s, C(0xA8C4AC, 0.02 + Double(k) * 0.012)) }
         // Ferns and brambles at the sides, and a fallen log on the left, moss along its top.
         for (k, fx) in [c.w * 8 / 100, c.w * 13 / 100, c.w * 84 / 100, c.w * 88 / 100, c.w * 98 / 100].enumerated() {
             for a in 0..<5 {
@@ -494,16 +522,29 @@ extension Scenes {
             let u = noise(layer * 97 + k * 3 + 2400)
             let y = g - 6 * s - Int(u * u * Double(span))
             let x = Int(noise(layer * 97 + k * 3 + 2401) * Double(c.w + 40 * s)) - 20 * s
-            let rx = (24 + Int(noise(layer * 97 + k * 3 + 2402) * 40)) * s, ry = (2 + Int(noise(layer * 97 + k + 2403) * 3)) * s
-            c.ellipse(x, y, rx, ry, C(0xB0D0B4, a * (1.2 - u * 0.6)))
-            c.ellipse(x - rx / 4, y - ry / 2, rx / 2, max(s, ry / 2), C(0xB0D0B4, a * 0.6))
+            let rx = (24 + Int(noise(layer * 97 + k * 3 + 2402) * 40)) * s, ry = (3 + Int(noise(layer * 97 + k + 2403) * 4)) * s
+            // A soft, lumpy bank: a faint wide skirt, then a few puffs of different heights along its top, so it
+            // reads as drifting mist rather than a stripe.
+            let alpha = a * (1.2 - u * 0.6)
+            c.ellipse(x, y + ry / 3, rx + 6 * s, ry + ry / 2, C(0xB0D0B4, alpha * 0.35))
+            for p in 0..<4 {
+                let px = x - rx * 3 / 4 + p * rx / 2 + Int((noise(layer * 97 + k * 5 + p + 2450) - 0.5) * Double(8 * s))
+                let pr = max(2 * s, ry * (2 + p % 3) / 3)
+                c.ellipse(px, y - pr / 3, rx / 3 + pr, pr, C(0xB0D0B4, alpha * 0.45))
+            }
         }
+    }
+
+    /// On the screen saver, the row where trunk `k` of the middle or near row forks into its limbs: each its own height,
+    /// so the canopy doesn't break along one line.
+    private static func huntPurgatoryFork(_ g: Int, _ k: Int, near: Bool) -> Int {
+        g * (near ? 30 : 24) / 100 + Int((noise(k * 5 + (near ? 2640 : 2630)) - 0.5) * Double(g) * (near ? 0.16 : 0.14))
     }
 
     /// On the screen saver: the canopy far overhead, a black tangle of branches and hanging moss with a pale green
     /// light seeping through its gaps, faint shafts of it slanting down into the mist.
     private static func huntPurgatoryCanopy(_ c: PixelCanvas, _ g: Int, _ trunks: [(x: Int, w: Int)], near: Bool) {
-        let s = unit(g), fork = g * (near ? 30 : 24) / 100
+        let s = unit(g), fork = g * (near ? 30 : 24) / 100   // the shafts start from the usual height
         let bark = near ? C(0x0E1610) : C(0x1C2822), leaf = near ? C(0x0A120C) : C(0x16221A)
         if !near {
             // Faint shafts of the pale light slanting down through the gaps.
@@ -532,9 +573,10 @@ extension Scenes {
             }
         }
         for (k, t) in trunks.enumerated() {
-            let sway = near ? Int(sin(Double(fork) / Double(s) * 0.045 + Double(k) * 1.7) * 2.5) * s : 0
-            let cx = Double(t.x + sway + t.w / 2), len = Double(g) * (near ? 0.12 : 0.09)
-            limb(cx, Double(fork), (noise(k + 2610) - 0.5) * 0.3, len, Double(t.w) * 0.32, near ? 3 : 2, k + (near ? 50 : 0))
+            let top = huntPurgatoryFork(g, k, near: near)
+            let sway = near ? Int(sin(Double(top) / Double(s) * 0.045 + Double(k) * 1.7) * 2.5) * s : 0
+            let cx = Double(t.x + sway + t.w / 2), len = Double(g) * (near ? 0.12 : 0.09) * (0.8 + noise(k + 2620) * 0.45)
+            limb(cx, Double(top), (noise(k + 2610) - 0.5) * 0.3, len, Double(t.w) * 0.32, near ? 3 : 2, k + (near ? 50 : 0))
         }
     }
 
@@ -576,8 +618,9 @@ extension Scenes {
     /// The Empty: a black nothing, the cosmic dark where angels and demons go when they die and sleep for ever. A ceiling
     /// of black goo sags down in drips and strands, a glossy plain of the same goo stretches away to a horizon you can
     /// barely see, pools and mounds of it glinting with a faint violet sheen, and a violet haze rising off it so the
-    /// crew stays visible. On the screen saver the plain stretches far back, and on it, small and still, lie the
-    /// sleepers: dim curled shapes, here and there the shadow of a folded wing.
+    /// crew stays visible. A few sleepers lie on it even in the window, dim curled shapes, one adrift in the dark
+    /// above. On the screen saver the plain stretches far back, and on it, small and still, lie many more of them,
+    /// here and there the shadow of a folded wing.
     static func huntEmpty(_ c: PixelCanvas, _ g: Int) {
         let s = unit(g), f = huntEmptyFrame(c, g), tall = isTall(c)
         // The void: black, a faint violet glow welling up from the plain.
@@ -617,6 +660,17 @@ extension Scenes {
             c.ellipse(px, py, rw * s + 2 * s, 3 * s, C(0x2E2444)); c.ellipse(px, py, rw * s, 2 * s, C(0x040306))
             c.rect(px - rw * s / 2, py - s, rw * s / 2, max(1, s / 2), C(0x5A4A8A)); c.rect(px + rw * s / 3, py + s, 2 * s, max(1, s / 2), C(0x3A2E54))
         }
+        if !tall {
+            // In the window, a few sleepers too: two lying far off on the plain, one asleep in mid-air in its own
+            // faint glow.
+            for (xp, dy) in [(40, 3), (66, 4)] { huntEmptySleeper(c, c.w * xp / 100, f.horizon + dy * s, 0.65, dir: xp < 50 ? 1 : -1, wing: xp > 50, s: s) }
+            let ax = c.w * 27 / 100, ay = f.horizon - 23 * s
+            for r in stride(from: 16 * s, to: 4 * s, by: -4 * s) { c.ellipse(ax, ay, r * 3 / 2, r / 2, C(0x5A4A8A, 0.05)) }
+            huntEmptySleeper(c, ax, ay, 0.7, dir: -1, wing: true, s: s)
+        }
+        // The violet haze rising off the plain behind the crew, so the band they stand against is a dim violet-grey
+        // rather than black.
+        for k in 0..<9 { c.rect(0, g - 20 * s + k * 2 * s, c.w, 2 * s, C(0x6A5890, 0.03 + Double(k) * 0.018)) }
         huntEmptyCeiling(c, g)
         huntEmptyColumns(c, g)
         // The floor: the goo near us, mid-dark violet-grey and plain so the crew reads on it.
@@ -869,7 +923,7 @@ extension Scenes {
 
     /// Baby, the black 1967 Chevrolet Impala four-door hardtop, seen from behind and a little to the left, parked on
     /// the shoulder: the wide chrome bumper, three tail lights a side, the Kansas plate, her flank running away to the
-    /// right, and the trunk lid up. Inside, lit warm by the trunk light: the false floor propped open on a shotgun, and
+    /// right, and the trunk lid up. Inside, lit warm by the trunk light: the false floor propped open, and
     /// under it the arsenal, shotguns, a rifle, the machete, knives, stakes, salt and holy water, the Colt.
     private static func huntRoadImpala(_ c: PixelCanvas, _ g: Int) {
         let s = unit(g), f = huntRoadFrame(c, g)
@@ -902,36 +956,49 @@ extension Scenes {
         // The bumper, wide and chrome, its guards, a bright line along the top.
         r(-1, -11, 46, 3, chrome); r(-1, -11, 46, 1, chromeL); r(-1, -9, 46, 1, chromeD)
         r(12, -12, 3, 5, chrome); r(29, -12, 3, 5, chrome); r(12, -12, 1, 5, chromeL); r(29, -12, 1, 5, chromeL)
-        // The trunk opening: the lid's lip, the dark lining, and the false floor's tray lit warm.
-        r(1, -27, 42, 9, C(0x5A4430)); r(1, -27, 42, 2, C(0x7A5E3E)); r(1, -19, 42, 1, C(0x2A1E16))
-        r(1, -27, 1, 9, C(0x3A2A1E)); r(42, -27, 1, 9, C(0x2A1E16))
-        // The arsenal in the tray, dark steel and wood on the lit tan lining: a shotgun and a rifle laid side by side
-        // along the front, the machete, a knife, a stake, the Colt, two salt canisters and a flask of holy water.
-        r(3, -21, 15, 1, C(0x1E1E24)); r(3, -21, 15, 1, C(0x1E1E24)); r(4, -22, 12, 1, C(0x6A6E78)); r(17, -22, 5, 2, C(0x8A4E26))
-        r(17, -22, 5, 1, C(0xA86A38))                                                              // the shotgun
-        r(23, -21, 13, 1, C(0x1E1E24)); r(24, -22, 10, 1, C(0x5A5E68)); r(35, -22, 5, 2, C(0x6A3A1E))  // the rifle
-        r(4, -25, 10, 1, C(0xD8DCE4)); r(4, -24, 9, 1, C(0x8A8E98)); r(14, -25, 3, 2, C(0x141214))  // the machete
-        r(18, -25, 4, 1, C(0xC8CCD4)); r(22, -25, 2, 1, C(0x141214))                               // a knife
-        r(25, -26, 6, 1, C(0xC8A060)); r(25, -25, 6, 1, C(0x8A6A40))                               // a stake
-        r(25, -24, 3, 1, C(0x2A2C32)); r(25, -23, 1, 1, C(0x3A2418))                               // the Colt
-        for u in [32, 35] { r(u, -26, 2, 4, C(0x2E5A9A)); r(u, -26, 2, 1, C(0xE8E8E0)); r(u, -24, 2, 1, C(0xE8E8E0)) }  // salt
-        r(38, -25, 2, 3, C(0xA8C8E0)); r(38, -25, 1, 3, C(0xD8ECF8)); r(38, -26, 2, 1, C(0x3A2A1E))  // holy water
-        // The false floor propped open behind the arsenal on a shotgun, its plywood underside lit, a crowbar and a
-        // crossbow strapped to it.
-        r(2, -33, 40, 6, C(0x6A5034)); r(2, -33, 40, 1, C(0x8A6A44)); r(2, -28, 40, 1, C(0x3A2A1E))
-        r(5, -31, 13, 1, C(0x2A2C32)); r(5, -32, 1, 2, C(0x2A2C32)); r(17, -30, 1, 2, C(0x2A2C32))     // the crowbar
-        r(23, -31, 13, 1, C(0x4A2E1A)); r(29, -33, 1, 5, C(0x1E1E24)); r(26, -32, 7, 1, C(0x1E1E24))  // the crossbow
-        for b in [11, 31] { r(b, -33, 1, 6, C(0x2A1C12)) }
-        c.glowLine(Double(x + 41 * s), Double(y - 21 * s), Double(x + 40 * s), Double(y - 28 * s), core: C(0x1E1E24), glow: C(0, 0),
-                   coreR: Double(s) * 0.6, glowR: Double(s) * 0.7)
-        // The trunk lid, swung up high: its underside dark with the inner ribs, lit along its lower edge, the outer
-        // skin's edge catching the sky, the trunk light in its middle, the hinges at the sides.
-        r(2, -35, 40, 2, C(0x1E2834)); r(2, -35, 40, 1, C(0x2E3A4C))   // the back window, glimpsed under the lid
-        r(0, -41, 44, 6, C(0x1C1E22)); r(0, -42, 44, 1, top); r(-1, -41, 1, 6, body); r(44, -41, 1, 6, body)
-        r(3, -40, 38, 1, C(0x2C2E34)); r(3, -38, 15, 1, C(0x2C2E34)); r(26, -38, 15, 1, C(0x2C2E34)); r(0, -36, 44, 1, C(0x8A7250))
-        r(3, -35, 1, 8, C(0x3A3C44)); r(40, -35, 1, 8, C(0x3A3C44))
-        // The rear fenders' tops either side of the opening.
-        r(0, -27, 2, 9, body); r(42, -27, 2, 9, body); r(0, -27, 2, 1, top); r(42, -27, 2, 1, top)
+        // The cabin behind the open trunk: the roof's edge showing over the lid, catching the sky, and the C-pillars
+        // sloping in from the fenders to the roof, so she reads as a car's back and not a box.
+        r(9, -44, 26, 1, top); r(8, -43, 28, 1, body)
+        for v in -35 ... -28 {
+            let inset = (v + 28) * -1 / 3   // 0 at the fender, 2 under the lid
+            r(inset, v, 4, 1, body); r(inset, v, 1, 1, top); r(44 - inset - 4, v, 4, 1, body); r(44 - inset - 1, v, 1, 1, mid)
+        }
+        r(4, -35, 36, 7, C(0x1E2834)); r(4, -35, 36, 1, C(0x2E3A4C))   // the back window, glimpsed under the lid
+        // The rear fenders' tops either side of the opening, their shoulders rounded and lit along the top.
+        r(0, -27, 3, 9, body); r(41, -27, 3, 9, body); r(1, -28, 2, 1, top); r(41, -28, 2, 1, top)
+        r(0, -27, 1, 1, top); r(43, -27, 1, 1, mid)
+        // The trunk well: warm tan lining lit by the trunk light, shadowed down the sides and at the back.
+        r(3, -28, 38, 10, C(0xA07C4E)); r(3, -28, 38, 1, C(0x5A4430)); r(3, -27, 38, 1, C(0xC09A62))
+        r(3, -28, 1, 10, C(0x5A4430)); r(40, -28, 1, 10, C(0x4A3624)); r(3, -19, 38, 1, C(0x4A3624))
+        // The arsenal on the lining, dark steel and wood big enough to read: the machete and a stake, the Colt, salt
+        // and holy water along the back; the pump shotgun and the scoped rifle laid along the front.
+        r(5, -27, 9, 1, C(0xE8ECF2)); r(4, -26, 10, 1, C(0x9AA0AA)); r(14, -27, 4, 2, C(0x141214))     // the machete
+        r(19, -27, 6, 1, C(0xD8B070)); r(19, -26, 6, 1, C(0x9A7444)); r(18, -26, 1, 1, C(0xD8B070))  // a stake
+        r(26, -27, 4, 1, C(0x26282E)); r(29, -26, 2, 1, C(0x4A2A18))                              // the Colt
+        for u in [32, 35] { r(u, -27, 2, 5, C(0x2E5A9A)); r(u, -27, 2, 1, C(0xF0F0E8)); r(u, -24, 2, 1, C(0xF0F0E8)) }  // salt
+        r(38, -26, 2, 4, C(0xA8C8E0)); r(38, -26, 1, 4, C(0xE0F0FA)); r(38, -27, 2, 1, C(0x3A2A1E))  // holy water
+        // The shotgun: a long blued barrel lit along its top, the wooden pump under it, the receiver and the stock.
+        r(4, -24, 12, 2, C(0x22242C)); r(4, -24, 12, 1, C(0x7A808C)); r(7, -22, 5, 1, C(0x5A2C12))
+        r(15, -24, 4, 3, C(0x1A1A20))
+        r(18, -24, 3, 1, C(0x5A2C12)); r(18, -23, 5, 1, C(0x5A2C12)); r(19, -22, 5, 1, C(0x5A2C12)); r(21, -21, 3, 1, C(0x3A1A0A))
+        r(18, -24, 3, 1, C(0x8A4A22))
+        // The rifle: its barrel, the scope over the action with a glint, the stock.
+        r(24, -21, 11, 2, C(0x22242C)); r(24, -21, 11, 1, C(0x6A707C))
+        r(27, -23, 6, 2, C(0x14161A)); r(32, -23, 1, 1, C(0x8AA8C8)); r(28, -22, 1, 1, C(0x14161A))
+        r(35, -21, 5, 2, C(0x5A2C12)); r(35, -21, 5, 1, C(0x5A2C12)); r(38, -20, 2, 1, C(0x5A2E14))
+        // The false floor propped up behind it all, its plywood underside lit, a crowbar and a crossbow strapped on.
+        r(5, -34, 34, 5, C(0x6A5034)); r(6, -34, 32, 1, C(0x8A6A44)); r(5, -30, 34, 1, C(0x3A2A1E))
+        r(8, -32, 11, 1, C(0x2A2C32)); r(8, -33, 1, 2, C(0x2A2C32))                                  // the crowbar
+        r(23, -32, 12, 1, C(0x4A2E1A)); r(28, -34, 1, 4, C(0x1E1E24)); r(25, -33, 7, 1, C(0x1E1E24))   // the crossbow
+        // The trunk lid, swung up high and tipped back so it narrows a little at the top: its underside dark with the
+        // inner ribs, the outer skin's edge catching the sky, lit warm along its lower edge.
+        for k in 0..<7 {
+            let v = -42 + k, inset = (6 - k) / 2
+            r(inset, v, 44 - 2 * inset, 1, C(0x1C1E22)); r(inset, v, 1, 1, top); r(43 - inset, v, 1, 1, mid)
+        }
+        r(3, -42, 38, 1, top)
+        r(5, -40, 34, 1, C(0x2C2E34)); r(5, -38, 14, 1, C(0x2C2E34)); r(25, -38, 14, 1, C(0x2C2E34)); r(21, -41, 2, 5, C(0x2C2E34))
+        r(0, -36, 44, 1, C(0x8A7250))
     }
 
     /// The road's life: now and then a car comes along the far lane, its headlights sweeping ahead of it and its tail
@@ -972,7 +1039,7 @@ extension Scenes {
         let out = ph > 8.2 && ph < 9.0 && Int(t * 12) % 3 != 1
         let b = f.bulb
         if out {
-            c.rect(f.car.x + s, f.car.y - 27 * s, 42 * s, 9 * s, C(0x000000, 0.45))
+            c.rect(f.car.x + 3 * s, f.car.y - 28 * s, 38 * s, 10 * s, C(0x000000, 0.45))
         } else {
             for r in stride(from: 16 * s, to: 2 * s, by: -3 * s) { c.ellipse(b.x + s, b.y + 8 * s, r * 3 / 2, r / 2, C(0xFFD890, 0.04)) }
             c.rect(b.x, b.y, 3 * s, s, C(0xFFF0C0))

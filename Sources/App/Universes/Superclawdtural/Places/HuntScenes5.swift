@@ -307,7 +307,8 @@ extension Scenes {
         }
     }
 
-    /// The screen saver's ceiling, high over the corridor: grey-green plaster in shadow, beams coming towards us,
+    /// The screen saver's ceiling, high over the corridor: grey-green plaster in shadow, heavy beams coming towards us
+    /// over two cross beams,
     /// cracks running across it, water stains, a ragged hole through to the laths with strips hanging from it, and
     /// curls of paint hanging off the cornice.
     private static func huntAsylumCeiling(_ c: PixelCanvas, _ g: Int) {
@@ -341,14 +342,26 @@ extension Scenes {
             c.rect(l, y, max(0, min(at, r) - l), s, C(0x6A5238)); c.rect(at + gap, y, max(0, r - at - gap), s, C(0x5A4630))
             c.rect(l, y + s, max(0, min(at, r) - l), max(1, s / 2), C(0x2A2018))
         }
-        // The beams, spreading out as they come towards us: each lit on its left face, its underside in shadow.
+        // The cross beams first, running across between the main beams, heavy timbers each with its lit lower face and
+        // a dark shadow under it on the plaster.
+        for yp in [16, 72] {
+            let y = top * yp / 100, h = (3 + yp / 30) * s
+            c.rect(0, y + h, c.w, 2 * s, C(0x161810, 0.6))
+            c.rect(0, y, c.w, h, C(0x2A2C20)); c.rect(0, y + h - s, c.w, s, C(0x4E5042)); c.rect(0, y, c.w, max(1, s / 2), C(0x14160E))
+        }
+        // The main beams, spreading out as they come towards us: heavy timbers, each lit on the face turned to the
+        // middle, its far face in shadow, a dark seam down its edge and its shadow cast on the plaster beside it.
         let cx = c.w / 2
         for x0 in stride(from: c.w * 8 / 100, to: c.w, by: max(60 * s, c.w * 21 / 100)) {
             for y in 0..<top {
                 let k = 1 + Double(top - y) / Double(top) * 0.8
-                let bx = cx + Int(Double(x0 - cx) * k), bw = Int(Double(7 * s) * k)
-                c.rect(bx, y, bw, 1, C(0x202218))
-                c.rect(bx, y, max(s, bw * 2 / 5), 1, x0 < cx ? C(0x5A5C4C) : C(0x46483C))
+                let bx = cx + Int(Double(x0 - cx) * k), bw = Int(Double(14 * s) * k)
+                let left = x0 < cx
+                c.rect(left ? bx + bw : bx - 3 * s, y, 3 * s, 1, C(0x161810, 0.55))
+                c.rect(bx, y, bw, 1, C(0x26281C))
+                let face = max(2 * s, bw * 2 / 5)
+                c.rect(left ? bx + bw - face : bx, y, face, 1, left ? C(0x5E604E) : C(0x4E5042))
+                c.rect(left ? bx + bw - face : bx + face, y, max(1, s / 2), 1, C(0x14160E))
             }
         }
         // The cornice, and curls of paint hanging off it.
@@ -652,13 +665,13 @@ extension Scenes {
         // On the counter: the pie case (its plates and dome; the moving layer turns the pies), napkins and sugar, the
         // mug, and the till at the end.
         let pc = f.pie
-        c.rect(pc.x - 9 * s, pc.base - 2 * s, 18 * s, 2 * s, chrome); c.rect(pc.x - 9 * s, pc.base - 2 * s, 18 * s, max(1, s / 2), chromeL)
-        c.rect(pc.x - 8 * s, pc.base - 16 * s, 16 * s, 14 * s, C(0x5A6A6E)); c.rect(pc.x - 8 * s, pc.base - 16 * s, 16 * s, 14 * s, C(0xC8E0E4, 0.18))
-        c.rect(pc.x - 8 * s, pc.base - 16 * s, s, 14 * s, chromeL); c.rect(pc.x + 7 * s, pc.base - 16 * s, s, 14 * s, chromeD)
-        c.rect(pc.x - s / 2, pc.base - 15 * s, max(1, s), 13 * s, chromeD)
-        for y in [pc.base - 4 * s, pc.base - 10 * s] { c.rect(pc.x - 7 * s, y, 14 * s, max(1, s / 2) + s / 2, chrome) }
-        c.ellipse(pc.x, pc.base - 16 * s, 8 * s, 2 * s, chrome); c.ellipse(pc.x - s, pc.base - 17 * s, 5 * s, s, chromeL)
-        c.rect(pc.x - s, pc.base - 19 * s, 2 * s, 2 * s, chromeD)
+        c.rect(pc.x - 14 * s, pc.base - 2 * s, 28 * s, 2 * s, chrome); c.rect(pc.x - 14 * s, pc.base - 2 * s, 28 * s, max(1, s / 2), chromeL)
+        c.rect(pc.x - 13 * s, pc.base - 25 * s, 26 * s, 23 * s, C(0x4A5A5E)); c.rect(pc.x - 13 * s, pc.base - 25 * s, 26 * s, 23 * s, C(0xC8E0E4, 0.18))
+        c.rect(pc.x - 13 * s, pc.base - 25 * s, s, 23 * s, chromeL); c.rect(pc.x + 12 * s, pc.base - 25 * s, s, 23 * s, chromeD)
+        c.rect(pc.x - s / 2, pc.base - 24 * s, max(1, s), 22 * s, chromeD)
+        for y in [pc.base - 4 * s, pc.base - 11 * s, pc.base - 18 * s] { c.rect(pc.x - 12 * s, y, 24 * s, s, chrome) }
+        c.ellipse(pc.x, pc.base - 25 * s, 13 * s, 3 * s, chrome); c.ellipse(pc.x - 2 * s, pc.base - 26 * s, 8 * s, s, chromeL)
+        c.rect(pc.x - s, pc.base - 30 * s, 2 * s, 3 * s, chromeD); c.rect(pc.x - 2 * s, pc.base - 31 * s, 4 * s, s, chromeL)
         for x in [c.w * 54 / 100, c.w * 65 / 100] {
             c.rect(x, k.top - 4 * s, 4 * s, 4 * s, chrome); c.rect(x, k.top - 4 * s, s, 4 * s, chromeL); c.rect(x + s, k.top - 4 * s, 2 * s, s, C(0xE8E4DA))
             c.rect(x + 5 * s, k.top - 3 * s, 2 * s, 3 * s, C(0xB8C8C8)); c.rect(x + 5 * s, k.top - 4 * s, 2 * s, s, chrome)
@@ -674,12 +687,13 @@ extension Scenes {
         c.rect(rgx + 2 * s, k.top - 12 * s, 8 * s, 3 * s, chromeD); c.rect(rgx + 3 * s, k.top - 11 * s, 6 * s, s, C(0xD8CCB0))
         for j in 0..<6 { c.rect(rgx + 2 * s + (j % 3) * 3 * s, k.top - 7 * s + (j / 3) * 2 * s, 2 * s, s, C(0x2A2A2E)) }
         c.rect(rgx, k.top - 2 * s, 12 * s, max(1, s / 2), chromeD)
-        // The stools along the counter: chrome posts, red seats lit on top.
+        // The stools along the counter, in the counter's shadow so they stay quiet behind the crew: dull steel posts,
+        // deep red seats with just a little light on top.
         for x in stride(from: k.x0 + 10 * s, to: k.x1 - 6 * s, by: 22 * s) {
-            c.rect(x - 4 * s, g - 10 * s, 9 * s, 2 * s, red); c.rect(x - 4 * s, g - 10 * s, 9 * s, max(1, s / 2), redL)
-            c.rect(x - 4 * s, g - 8 * s, 9 * s, s, chrome)
-            c.rect(x, g - 7 * s, s, 6 * s, chromeD); c.rect(x, g - 7 * s, max(1, s / 2), 6 * s, chromeL)
-            c.rect(x - 2 * s, g - s, 5 * s, s, chrome)
+            c.rect(x - 4 * s, g - 10 * s, 9 * s, 2 * s, C(0x5E1A1C)); c.rect(x - 4 * s, g - 10 * s, 9 * s, max(1, s / 2), C(0x7E2A2A))
+            c.rect(x - 4 * s, g - 8 * s, 9 * s, s, C(0x4A5056))
+            c.rect(x, g - 7 * s, s, 6 * s, C(0x3A3E44)); c.rect(x, g - 7 * s, max(1, s / 2), 6 * s, C(0x5A6066))
+            c.rect(x - 2 * s, g - s, 5 * s, s, C(0x4A5056))
         }
         // The floor: black and white checker gone to two mid greys, plain enough for the crew.
         c.ground(g, C(0x5E5852), edge: C(0x7A746C), speck: C(0x56504A), seed: 97)
@@ -781,22 +795,25 @@ extension Scenes {
         let s = unit(g), f = huntDinerFrame(c, g)
         // The pies: four a plate, cherry, apple, blueberry and lemon meringue, the far ones dimmer.
         let fills: [(top: UInt32, body: UInt32)] = [(0xA8302C, 0xC08A44), (0xD8A458, 0xC08A44), (0x4A3A7A, 0xC08A44), (0xEAE0C4, 0xE8D070)]
-        for (tier, y) in [f.pie.base - 4 * s, f.pie.base - 10 * s].enumerated() {
+        for (tier, y) in [f.pie.base - 4 * s, f.pie.base - 11 * s, f.pie.base - 18 * s].enumerated() {
             let spin = t * 0.5 + Double(tier) * 0.8
             var pies: [(x: Int, depth: Double, kind: Int)] = []
             for i in 0..<4 {
                 let a = spin + Double(i) * .pi / 2
-                pies.append((x: f.pie.x + Int(cos(a) * Double(4 * s)), depth: sin(a), kind: (i + tier) % 4))
+                pies.append((x: f.pie.x + Int(cos(a) * Double(6 * s)), depth: sin(a), kind: (i + tier) % 4))
             }
             for p in pies.sorted(by: { $0.depth < $1.depth }) {
                 let dim = p.depth < 0 ? 0.35 : 0.0, fl = fills[p.kind]
                 let body = lerp(C(fl.body), C(0x3A4448), dim), top = lerp(C(fl.top), C(0x3A4448), dim)
-                c.rect(p.x - 2 * s, y - s, 5 * s, s, body); c.rect(p.x - 2 * s, y - 2 * s, 5 * s, s, top)
-                if p.kind == 3 { c.rect(p.x - s, y - 3 * s, 3 * s, s, top) }
-                if p.kind == 0 { c.rect(p.x, y - 2 * s, s, s, body) }
+                // A whole pie: the golden crust's side, the filling on top with its crimped rim, a slice cut out.
+                c.rect(p.x - 3 * s, y - 2 * s, 7 * s, 2 * s, body); c.rect(p.x - 3 * s, y - 3 * s, 7 * s, s, top)
+                c.rect(p.x - 3 * s, y - 3 * s, s, s, body); c.rect(p.x + 3 * s, y - 3 * s, s, s, body)
+                if p.kind == 3 { c.rect(p.x - 2 * s, y - 4 * s, 5 * s, s, top) }
+                if p.kind == 0 { c.rect(p.x - s, y - 3 * s, s, s, body); c.rect(p.x + s, y - 3 * s, s, s, body) }
+                if p.depth >= 0 { c.rect(p.x + s, y - 3 * s, 2 * s, 2 * s, lerp(C(fl.top), C(0x000000), 0.35)) }
             }
         }
-        c.rect(f.pie.x - 6 * s, f.pie.base - 15 * s, s, 11 * s, C(0xFFFFFF, 0.3))
+        c.rect(f.pie.x - 10 * s, f.pie.base - 24 * s, s, 20 * s, C(0xFFFFFF, 0.3))
         // Steam off the pots and the mug.
         let sources = [(f.pots[0], f.back - 7 * s), (f.pots[1], f.back - 7 * s), (f.cup, f.counter.top - 4 * s)]
         for (n, src) in sources.enumerated() {
@@ -979,15 +996,26 @@ extension Scenes {
         c.rect(d.x - s, d.top - s, 9 * s, s, chrome)
         huntP5Line(c, d.x + 7 * s, d.top - s, d.x + 4 * s, d.top - 8 * s, chromeL, Double(s) * 0.6)
         c.rect(d.x + 13 * s, d.top - 2 * s, 7 * s, 2 * s, C(0xD8D4C8)); c.rect(d.x + 13 * s, d.top - 2 * s, 7 * s, max(1, s / 2), C(0x8A3A2A))
-        // The goo: a black stain seeping through the soffit, a streak under it, the puddle on the floor.
-        let gx = f.drip.x
-        c.rect(gx - 7 * s, f.soffit - s, 13 * s, s, C(0x060608)); c.rect(gx - 4 * s, f.soffit, 7 * s, s, C(0x060608))
-        c.rect(gx - 6 * s, f.soffit, s, 2 * s, C(0x060608)); c.rect(gx + 4 * s, f.soffit, s, 3 * s, C(0x060608))
-        c.rect(gx - 5 * s, f.soffit - s, 3 * s, max(1, s / 2), C(0x3A4660)); c.px(gx + 4 * s, f.soffit + s, C(0x3A4660))
+        // The goo: a black stain spreading through the soffit's panels, sagging out of it in a fat lip with runs
+        // hanging off it down the glass, each with a cold blue sheen down its edge so it shows against the night.
+        let gx = f.drip.x, goo = C(0x060608), sheen = C(0x5A6E9E), glint = C(0x9AB4E0)
+        c.ellipse(gx, f.soffit - 3 * s, 16 * s, 2 * s, goo); c.ellipse(gx - 3 * s, f.soffit - 4 * s, 9 * s, s, goo)
+        c.rect(gx - 12 * s, f.soffit - 4 * s, 8 * s, max(1, s / 2), sheen.alpha(0.7))
+        c.ellipse(gx, f.soffit, 11 * s, 2 * s, goo); c.rect(gx - 9 * s, f.soffit, 4 * s, max(1, s / 2), sheen)
+        for (u, len, w) in [(-9, 5, 2), (-4, 10, 3), (3, 7, 2), (8, 13, 2)] {
+            let rx = gx + u * s
+            c.rect(rx, f.soffit, w * s, len * s, goo); c.circle(rx + w * s / 2, f.soffit + len * s, w * s / 2 + max(1, s / 2), goo)
+            c.rect(rx, f.soffit + s, max(1, s / 2), len * s - s, sheen)
+            c.px(rx + w * s / 2 - max(1, s / 2), f.soffit + len * s - max(1, s / 2), glint)
+        }
+        c.px(gx - 6 * s, f.soffit - s, glint)
         // The floor: polished dark stone, the glass's mullions faint in its shine.
         c.ground(g, C(0x24262C), edge: C(0x3A3C44), speck: C(0x202228), seed: 103)
         for x in stride(from: f.wall + 30 * s, to: c.w, by: 46 * s) { c.rect(x, g + 1, 2 * s, c.h - g - 1, C(0x2C2E36)) }
-        c.ellipse(gx, g + 3 * s, 7 * s, max(1, s + s / 2), C(0x060608)); c.rect(gx - 4 * s, g + 2 * s, 3 * s, max(1, s / 2), C(0x3A4660))
+        // The puddle the drops land in, spreading on the stone, its rim catching the light, a few splashes round it.
+        c.ellipse(gx, g + 3 * s, 15 * s, 2 * s + s / 2, sheen.alpha(0.55)); c.ellipse(gx, g + 3 * s, 14 * s, 2 * s, goo)
+        c.rect(gx - 9 * s, g + 2 * s, 5 * s, max(1, s / 2), glint.alpha(0.8)); c.rect(gx + 4 * s, g + 4 * s, 3 * s, max(1, s / 2), sheen)
+        for (u, v) in [(-17, 2), (16, 3), (19, 5), (-20, 5)] { c.rect(gx + u * s, g + v * s, s, s, goo); c.px(gx + u * s, g + v * s, sheen) }
     }
 
     /// The screen saver's feature wall, high up: a big black canvas in a thin steel frame with one red slash across it
@@ -1057,18 +1085,21 @@ extension Scenes {
             c.ellipse(tp.x, tp.top - 23 * s, 4 * s, 3 * s, C(0xFF3A2A, 0.2))
         }
         // The drop: swelling at the stain for three seconds, a quick fall, then a ripple on the puddle.
-        let gx = f.drip.x, top = f.soffit + 2 * s, floor = g + 2 * s
+        // It falls from the longest run, on the right of the stain.
+        let gx = f.drip.x + 9 * s, top = f.soffit + 14 * s, floor = g + 2 * s
+        let goo = C(0x060608), sheen = C(0x6A82B4)
         let ph = t.truncatingRemainder(dividingBy: 5.0) / 5.0
         if ph < 0.66 {
-            let r = Int(ph / 0.66 * 1.6 * Double(s))
-            c.rect(gx - s / 2, top - s, max(1, s), s + r, C(0x060608))
-            c.circle(gx, top + r, r, C(0x060608)); c.px(gx - max(0, r - 1), top + r - max(0, r - 1), C(0x4A5A78))
+            let r = Int(ph / 0.66 * 2.5 * Double(s))
+            c.rect(gx - s / 2, top - s, max(1, s), s + r, goo)
+            c.circle(gx, top + r, r, goo); c.px(gx - max(0, r - 1), top + r - max(0, r - 1), sheen)
         } else if ph < 0.88 {
             let q = (ph - 0.66) / 0.22, y = top + Int(q * q * Double(floor - top))
-            c.rect(gx - s / 2, y - s, max(1, s), 3 * s, C(0x060608)); c.px(gx - s / 2, y - s, C(0x4A5A78))
+            c.rect(gx - s, y - s, 2 * s, 4 * s, goo); c.rect(gx - s, y - s, max(1, s / 2), 3 * s, sheen)
         } else {
-            let q = (ph - 0.88) / 0.12, d = Int(q * Double(6 * s))
-            c.rect(gx - d - s, floor, s, max(1, s / 2), C(0x4A5A78, 0.7 * (1 - q))); c.rect(gx + d, floor, s, max(1, s / 2), C(0x4A5A78, 0.7 * (1 - q)))
+            let q = (ph - 0.88) / 0.12, d = Int(q * Double(9 * s))
+            c.ellipse(gx, floor, 2 * s + d, max(1, s / 2) + d / 4, C(0x6A82B4, 0.6 * (1 - q)))
+            c.rect(gx - d - s, floor - d / 3, s, s, goo); c.rect(gx + d, floor - d / 3, s, s, goo)
         }
     }
 }
@@ -1219,24 +1250,43 @@ extension Scenes {
             }
         }
         // Smoke rising off the ruins.
-        let plumes: [(Int, Double)] = [(40, 0.25), (78, 0.35), (12, 0.2)]
+        let plumes: [(Int, Double)] = [(40, 0.25), (88, 0.35), (12, 0.2)]   // clear of the overpass's gap
         for (n, pl) in plumes.enumerated() {
             huntP5Smoke(c, c.w * pl.0 / 100, f.horizon - 10 * s, tall ? f.clouds : -4 * s, s, lean: pl.1, seed: n + 7, col: C(0x2A140E, 0.55))
         }
-        // The snapped overpass on the right: the deck on its piers, the break, the far end sagging to the ground,
-        // rebar hanging from the gap.
-        let ox0 = c.w * 56 / 100, ox1 = c.w, oy = g - 34 * s, brk = c.w * 76 / 100
-        let deck = C(0x3A2420), deckL = C(0x7A4428), deckD = C(0x221410)
-        c.rect(ox0, oy, brk - ox0, 4 * s, deck); c.rect(ox0, oy, brk - ox0, s, deckL); c.rect(ox0, oy + 4 * s, brk - ox0, s, deckD)
-        for k in 0..<(4 * s) {
-            huntP5Line(c, brk + 8 * s, oy + 6 * s + k, ox1, oy + 16 * s + k, k == 0 ? deckL : deck, 0.5)
+        // The snapped overpass on the right: the deck on its piers, then the break, a wide gap of sky between two
+        // jagged ends of pale broken concrete with rebar hanging from both, the fallen span tipped steeply down to a
+        // heap of rubble, and the far end of the road going on level beyond it.
+        let ox0 = c.w * 56 / 100, ox1 = c.w, oy = g - 34 * s, brk = c.w * 69 / 100
+        let deck = C(0x3A2420), deckL = C(0x7A4428), deckD = C(0x221410), broken = C(0xB88A64), rebar = C(0x2A120A)
+        let far0 = brk + 46 * s
+        func span(_ a: Int, _ b: Int) {
+            guard b > a else { return }
+            c.rect(a, oy, b - a, 4 * s, deck); c.rect(a, oy, b - a, s, deckL); c.rect(a, oy + 4 * s, b - a, s, deckD)
+            c.rect(a, oy - 3 * s, b - a, s, deckD)
+            for xx in stride(from: a, to: b, by: 5 * s) { c.rect(xx, oy - 3 * s, max(1, s / 2), 3 * s, deckD) }
+        }
+        span(ox0, brk); span(far0, ox1)
+        // The broken ends, ragged steps of bare concrete lit pale where the deck tore.
+        for (k, h) in [5, 3, 4, 2].enumerated() {
+            c.rect(brk + k * s, oy - (k == 0 ? 3 : 0) * s, s, h * s, broken)
+            c.rect(far0 - (k + 1) * s, oy + (4 - h) * s, s, h * s, broken)
+        }
+        // The fallen span, tipped down from the gap to the ground, its broken top end pale, a heap of rubble at its foot.
+        let fx0 = brk + 12 * s, fy0 = oy + 3 * s, fx1 = brk + 30 * s, fy1 = f.horizon - 2 * s
+        for k in 0..<(4 * s) { huntP5Line(c, fx0 + k, fy0, fx1 + k, fy1, k == 0 ? deckL : deck, 0.5) }
+        c.rect(fx0 - s, fy0 - s, 5 * s, 2 * s, broken)
+        for (u, w, h) in [(24, 8, 3), (31, 6, 4), (36, 5, 2), (20, 4, 2)] {
+            c.rect(brk + u * s, f.horizon - h * s, w * s, h * s, C(0x4A2E22)); c.rect(brk + u * s, f.horizon - h * s, w * s, max(1, s / 2), C(0x9A6A48))
+        }
+        // Rebar hanging from both ends of the gap, rust-dark against the sky.
+        for k in 0..<5 {
+            huntP5Line(c, brk + 4 * s + k * s, oy + 4 * s, brk + 5 * s + k * s + (k % 2) * 2 * s, oy + (9 + k * 3) * s, rebar, 0.45)
+            huntP5Line(c, far0 - 4 * s - k * s, oy + 4 * s, far0 - 6 * s - k * s, oy + (7 + (k * 7) % 9) * s, rebar, 0.45)
         }
         for px in [ox0 + 10 * s, brk - 12 * s, c.w * 92 / 100] {
             c.rect(px, oy + 4 * s, 5 * s, f.horizon - oy, deck); c.rect(px, oy + 4 * s, s, f.horizon - oy, deckL)
         }
-        for k in 0..<5 { huntP5Line(c, brk + k * s, oy + 4 * s, brk + k * s + (k % 2) * s, oy + (8 + k * 2) * s, C(0x1A0E0A), 0.4) }
-        c.rect(ox0 - 2 * s, oy - 3 * s, brk - ox0 + 2 * s, s, deckD)
-        for xx in stride(from: ox0, to: brk, by: 5 * s) { c.rect(xx, oy - 3 * s, max(1, s / 2), 3 * s, deckD) }
         // The nearer shells of buildings on the left and middle.
         let nearBody = C(0x341C16), nearLit = C(0x8A4422), nearHole = C(0x140A08)
         huntP5Ruin(c, c.w * 14 / 100, f.horizon + 2 * s, 30 * s, (tall ? 60 : 34) * s, s, seed: 3301, body: nearBody, lit: nearLit, hole: nearHole, fire: true)

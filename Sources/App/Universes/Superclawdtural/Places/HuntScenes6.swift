@@ -160,7 +160,7 @@ extension Scenes {
             let y = tall ? g * yp / 100 : yp * s
             cloud(c, c.w * xp / 100, y, r * s, seed: 60 + k, top: C(0xFAFCFF), base: C(0xD4E4F0))
         }
-        // On the screen saver: big oaks at either side of the field, their crowns filling the upper corners.
+        // On the screen saver: big oaks standing in from either side of the field, whole crowns over the corners.
         if tall {
             // Far blue-green hills beyond the trees, and a second line of woods on them.
             c.dunes(base: f.horizon - 22 * s, amp: Double(7 * s), freq: 0.012 / Double(s), phase: 0.8, bottom: f.horizon, C(0x7AA4B0))
@@ -171,7 +171,7 @@ extension Scenes {
                 c.rect(bx - 2 * s, by, 2 * s, max(1, s), C(0x3A4A5E)); c.rect(bx + s, by, 2 * s, max(1, s), C(0x3A4A5E))
                 c.rect(bx, by + max(1, s), max(1, s), max(1, s), C(0x3A4A5E))
             }
-            for (k, xp) in [5, 96].enumerated() {
+            for (k, xp) in [14, 86].enumerated() {   // far enough in that the frame cuts neither crown
                 huntMoondoorOak(c, c.w * xp / 100, f.horizon + 2 * s, f.horizon - 90 * s, s, seed: 30 + k)
             }
         }
@@ -413,12 +413,14 @@ private func huntP6AppleTree(_ c: PixelCanvas, _ x: Int, _ base: Int, _ r: Int, 
 
 /// The scarecrow on its crossbar, leaning `lean` pixels at the head (the wind sways it): a burlap sack head with
 /// button eyes and a stitched grin under a battered straw hat, a patched brown coat stretched along the bar, straw
-/// poking out at the cuffs, the collar and the hem, and two sacking trouser legs dangling with straw for feet.
+/// poking out at the cuffs, the collar and the hem, and two sacking trouser legs dangling with straw for feet. It's
+/// drawn on a grid half as big again as the crew's pixels, so it stands a little taller than they do.
 private func huntP6Scarecrow(_ c: PixelCanvas, _ x: Int, _ bar: Int, _ s: Int, lean: Double) {
+    /// `n` grid steps in pixels, half as big again, rounded down so neighbouring parts still meet.
+    func q(_ n: Int) -> Int { Int((Double(n * 3 * s) / 2).rounded(.down)) }
     func r(_ u: Int, _ v: Int, _ w: Int, _ h: Int, _ col: Px) {
-        let y = bar + v * s
         let shift = Int((lean * Double(-v + 6) / 16.0).rounded())
-        c.rect(x + u * s + shift, y, w * s, h * s, col)
+        c.rect(x + q(u) + shift, bar + q(v), q(u + w) - q(u), q(v + h) - q(v), col)
     }
     let sack = C(0xB89462), sackL = C(0xD4B07A), sackD = C(0x8A6A42), straw = C(0xE0C060), strawD = C(0xB0903A)
     let coat = C(0x5A4232), coatL = C(0x7A5A40), coatD = C(0x3A2A20), patch = C(0x7A3A2A), patch2 = C(0x4A5A6A)
@@ -464,7 +466,7 @@ extension Scenes {
     static func huntOrchardFrame(_ c: PixelCanvas, _ g: Int) -> (horizon: Int, sun: Int, post: (x: Int, bar: Int), hives: Int,
                                                                 crows: [(x: Int, y: Int)]) {
         let s = unit(g)
-        let post = (x: c.w * 21 / 100, bar: g - 34 * s)
+        let post = (x: c.w * 21 / 100, bar: g - 36 * s)
         let hives = c.w - 54 * s
         let crows = [(x: c.w * 8 / 100, y: g), (x: c.w * 34 / 100, y: g), (x: hives + 14 * s, y: g - 18 * s)]
         return (g - 20 * s, c.w * 58 / 100, post, hives, crows)
@@ -556,8 +558,8 @@ extension Scenes {
         for (k, (xp, r)) in near.enumerated() { huntP6AppleTree(c, c.w * xp / 100, g, r * s, s, seed: 40 + k, haze: 0) }
         // The scarecrow's post and crossbar (the scarecrow itself hangs in the moving layer).
         let p = f.post
-        c.rect(p.x - s, p.bar - 16 * s, 3 * s, g - p.bar + 16 * s, C(0x4A3426)); c.rect(p.x - s, p.bar - 16 * s, max(1, s), g - p.bar + 16 * s, C(0x7A5A3A))
-        c.rect(p.x - 16 * s, p.bar, 33 * s, 2 * s, C(0x4A3426)); c.rect(p.x - 16 * s, p.bar, 33 * s, max(1, s / 2), C(0x7A5A3A))
+        c.rect(p.x - s, p.bar - 22 * s, 4 * s, g - p.bar + 22 * s, C(0x4A3426)); c.rect(p.x - s, p.bar - 22 * s, max(1, s), g - p.bar + 22 * s, C(0x7A5A3A))
+        c.rect(p.x - 24 * s, p.bar, 49 * s, 2 * s, C(0x4A3426)); c.rect(p.x - 24 * s, p.bar, 49 * s, max(1, s / 2), C(0x7A5A3A))
         c.ellipse(p.x, g, 8 * s, s, C(0x1E1610, 0.5))
         // A crate of picked apples by the post, and a few windfalls in the grass.
         let cx = p.x + 20 * s
@@ -588,12 +590,24 @@ extension Scenes {
             c.rect(hx + 3 * s, g - 6 * s, 7 * s, s, C(0x2A1E16))
             for b in 0..<n { c.rect(hx + 5 * s, top + b * 5 * s + 2 * s, 3 * s, s, whiteD) }   // the hand holds
         }
-        // The stake with the hat and veil.
-        let sx = x0 - 8 * s
-        c.rect(sx, g - 22 * s, 2 * s, 22 * s, C(0x5A4230))
-        c.rect(sx - 5 * s, g - 24 * s, 12 * s, s, C(0xD8CCB4)); c.rect(sx - 2 * s, g - 27 * s, 6 * s, 3 * s, C(0xE8DCC4))
-        c.rect(sx - 5 * s, g - 23 * s, 12 * s, 7 * s, C(0xB8B0A0, 0.5))
-        for x in stride(from: sx - 4 * s, to: sx + 7 * s, by: 2 * s) { c.rect(x, g - 23 * s, max(1, s / 2), 7 * s, C(0x6A6458, 0.6)) }
+        // The stake with his beekeeper's hat hung on it: a round cream helmet with a wide brim, and the veil hanging
+        // from the brim, a fine dark mesh you can see the stake and the sunset through, gathered at the bottom on its
+        // drawstring.
+        let sx = x0 - 8 * s, brim = g - 24 * s
+        c.rect(sx, g - 22 * s, 2 * s, 22 * s, C(0x5A4230)); c.rect(sx, g - 22 * s, max(1, s / 2), 22 * s, C(0x7A5A40))
+        let vx = sx - 5 * s, vw = 12 * s, vTop = brim + s, vBot = g - 11 * s
+        for y in stride(from: vTop, to: vBot, by: max(1, s)) {
+            let pinch = (y - vTop) > (vBot - vTop) * 2 / 3 ? s : 0   // drawn in towards the drawstring
+            for x in stride(from: vx + pinch, to: vx + vw - pinch, by: max(1, s)) where ((x - vx) / max(1, s) + (y - vTop) / max(1, s)) % 2 == 0 {
+                c.rect(x, y, max(1, s), max(1, s), C(0x2A2622, 0.55))
+            }
+            c.rect(vx + pinch, y, max(1, s), max(1, s), C(0x4A443A, 0.85)); c.rect(vx + vw - pinch - s, y, max(1, s), max(1, s), C(0x3A342C, 0.85))
+        }
+        c.rect(vx + s, vBot, vw - 2 * s, s, C(0xD8CCB0)); c.rect(sx + 3 * s, vBot + s, s, 2 * s, C(0xD8CCB0))
+        c.ellipse(sx + s, brim, 8 * s, 2 * s, C(0xB8AC94)); c.ellipse(sx + s, brim - max(1, s / 2), 8 * s, s + s / 2, C(0xEADEC6))
+        c.rect(sx - 6 * s, brim - s, 4 * s, max(1, s / 2), C(0xFFF4DC))
+        c.ellipse(sx + s, brim - 3 * s, 4 * s, 3 * s, C(0xE4D8BE)); c.ellipse(sx, brim - 4 * s, 2 * s, s + s / 2, C(0xFFF6E2))
+        c.rect(sx - 3 * s, brim - 2 * s, 8 * s, max(1, s), C(0x9A8A6A))
     }
 
     /// The orchard's life: the scarecrow swaying slowly on its bar, crows hopping in the grass and one riding the
@@ -604,7 +618,7 @@ extension Scenes {
         huntP6Scarecrow(c, f.post.x, f.post.bar, s, lean: lean)
         // A crow on the scarecrow's right arm, riding its sway.
         let armShift = Int((lean * 7.0 / 16.0).rounded())
-        huntP6Crow(c, f.post.x + 11 * s + armShift, f.post.bar - s, s, right: false)
+        huntP6Crow(c, f.post.x + 17 * s + armShift, f.post.bar - 2 * s, s, right: false)
         // Crows in the grass and on the hive stand, each hopping now and then.
         for (k, cr) in f.crows.enumerated() {
             let phase = (t + Double(k) * 0.9).truncatingRemainder(dividingBy: 2.6)
@@ -642,7 +656,8 @@ extension Scenes {
     /// own book covers framed on the wall over a sagging oxblood armchair, pizza boxes, empty bottles lined along the
     /// skirting, an overflowing wastebasket, his guitar on its stand, and bookcases on the right crammed every which
     /// way, with a run of his own Supernatural paperbacks. On the screen saver the bookcases climb to the ceiling on
-    /// both sides, boxes of manuscripts on top, a crooked print hangs between, and a bare bulb hangs on its flex.
+    /// both sides, boxes of manuscripts on top, a crooked print hangs between, his plot board of cards and red string
+    /// fills the wall beside it over his old typewriter, and a bare bulb hangs on its flex.
     static func huntChucks(_ c: PixelCanvas, _ g: Int) {
         let s = unit(g), f = huntChucksFrame(c, g), tall = isTall(c)
         let paper = C(0x4E5448), stripe = C(0x454C40), paperL = C(0x5E6454)
@@ -834,6 +849,56 @@ extension Scenes {
         for sx in [px - 20 * s, px + 52 * s] {
             c.rect(sx, py + 6 * s, 3 * s, 5 * s, C(0x6A5A3A)); c.rect(sx - s, py + 2 * s, 5 * s, 4 * s, C(0xC8B890))
         }
+        huntChucksPlotBoard(c, g)
+    }
+
+    /// On the screen saver, filling the wall between the tall bookcases: the big plot board where he works out the
+    /// story, cork in a dark frame covered in index cards, notes and snapshots with red string pinned from card to card,
+    /// and under it a little shelf with his old typewriter and a stack of fresh pages.
+    private static func huntChucksPlotBoard(_ c: PixelCanvas, _ g: Int) {
+        let s = unit(g), f = huntChucksFrame(c, g)
+        let x0 = c.w * 60 / 100, x1 = min(f.shelves - 8 * s, x0 + 100 * s), y0 = g * 36 / 100, y1 = y0 + 58 * s
+        guard x1 - x0 > 40 * s else { return }
+        c.rect(x0 - 2 * s, y0 - 2 * s, x1 - x0 + 4 * s, y1 - y0 + 4 * s, C(0x3A2416)); c.rect(x0 - 2 * s, y0 - 2 * s, x1 - x0 + 4 * s, s, C(0x6A4A30))
+        c.rect(x0, y0, x1 - x0, y1 - y0, C(0x9A7A4A))
+        for i in 0..<((x1 - x0) * (y1 - y0) / (40 * s * s)) {
+            c.rect(x0 + Int(noise(i + 1400) * Double(x1 - x0 - s)), y0 + Int(noise(i + 1450) * Double(y1 - y0 - s)), s, s, C(0x86683C))
+        }
+        // The cards, in loose rows; each one's pin is where the string goes.
+        let tones = [C(0xEEE8D8), C(0xE8D888), C(0xC8D8E0), C(0xEEE8D8), C(0xE8B8A8), C(0xEEE8D8)]
+        var pins: [(Int, Int)] = []
+        let cols = max(2, (x1 - x0) / (17 * s)), rows = 3
+        for row in 0..<rows {
+            for col in 0..<cols {
+                let n = row * cols + col
+                guard noise(n + 1500) > 0.18 else { continue }
+                let cx = x0 + 3 * s + col * (x1 - x0 - 6 * s) / cols + Int(noise(n + 1510) * Double(4 * s))
+                let cy = y0 + 3 * s + row * 18 * s + Int(noise(n + 1520) * Double(4 * s))
+                let photo = noise(n + 1530) > 0.78
+                if photo {   // a snapshot: white border, a dark little scene
+                    c.rect(cx, cy, 9 * s, 10 * s, C(0xF0ECE0)); c.rect(cx + s, cy + s, 7 * s, 6 * s, C(0x3A4A5A)); c.rect(cx + s, cy + 5 * s, 7 * s, 2 * s, C(0x2A2A22))
+                } else {
+                    c.rect(cx, cy, 11 * s, 8 * s, tones[n % tones.count])
+                    for l in 0..<3 { c.rect(cx + s, cy + (2 + l * 2) * s, (l == 2 ? 5 : 9) * s, max(1, s / 2), C(0x6A6458)) }
+                }
+                c.rect(cx + 4 * s, cy, s, s, C(0xC03030))
+                pins.append((cx + 4 * s, cy))
+            }
+        }
+        // The red string, from pin to pin, criss-crossing the board.
+        for k in 0..<max(0, pins.count - 1) where noise(k + 1540) > 0.25 {
+            let a = pins[k], b = pins[(k + 1 + Int(noise(k + 1550) * 3)) % pins.count]
+            huntP6Stick(c, a.0, a.1, b.0, b.1, C(0xC8302A), Double(s) * 0.4)
+        }
+        // The typewriter shelf under the board.
+        let ty = y1 + 26 * s, tx = (x0 + x1) / 2
+        c.rect(tx - 24 * s, ty, 48 * s, 2 * s, C(0x5E4028)); c.rect(tx - 24 * s, ty, 48 * s, max(1, s / 2), C(0x8A6440))
+        for bx in [tx - 20 * s, tx + 17 * s] { c.rect(bx, ty + 2 * s, 2 * s, 4 * s, C(0x3A2416)) }
+        c.rect(tx - 10 * s, ty - 6 * s, 20 * s, 6 * s, C(0x2A2C2A)); c.rect(tx - 10 * s, ty - 6 * s, 20 * s, s, C(0x4A4E4A))
+        c.rect(tx - 7 * s, ty - 9 * s, 14 * s, 3 * s, C(0x222422)); c.rect(tx - 12 * s, ty - 9 * s, 24 * s, s, C(0x1A1A1A))
+        c.rect(tx - 5 * s, ty - 14 * s, 10 * s, 5 * s, C(0xEEE8D8)); c.rect(tx - 4 * s, ty - 12 * s, 7 * s, max(1, s / 2), C(0x6A6458))
+        for k in 0..<4 { c.rect(tx - 8 * s + k * 4 * s, ty - 3 * s, 3 * s, s, C(0xC8C4B8)) }
+        for j in 0..<5 { c.rect(tx + 14 * s, ty - (j + 1) * s, 8 * s, s, j % 2 == 0 ? C(0xE8E2D0) : C(0xCCC4B0)) }
     }
 
     /// An empty bottle standing on row `base`: whisky brown, beer green or clear, lit on its left.
@@ -1057,9 +1122,30 @@ extension Scenes {
         let cx0 = fx + 24 * s, cx1 = f.hall - 4 * s
         c.rect(cx0, f.counter, cx1 - cx0, 2 * s, C(0x9A7A50)); c.rect(cx0, f.counter, cx1 - cx0, max(1, s / 2), C(0xBA9A6A))
         c.rect(cx0, f.counter + 2 * s, cx1 - cx0, g - f.counter - 2 * s, sageD)
-        for x in stride(from: cx0 + s, to: cx1 - 12 * s, by: 15 * s) {
-            c.rect(x, f.counter + 3 * s, 13 * s, g - f.counter - 5 * s, sage); c.rect(x, f.counter + 3 * s, 13 * s, max(1, s / 2), sageL)
-            c.rect(x + 6 * s, f.counter + 5 * s, s, s, C(0xC8A048))
+        // The cupboards under it, not all alike: pairs of doors, a stack of drawers, a single door with a tea towel
+        // over its knob, raised panels on some; all in the same quiet sage so the run stays calm behind the crew.
+        let ch = g - f.counter - 5 * s, cy = f.counter + 3 * s, knob = C(0xC8A048)
+        for (k, x) in stride(from: cx0 + s, to: cx1 - 12 * s, by: 15 * s).enumerated() {
+            switch k % 4 {
+            case 1:   // three drawers, each with a brass pull
+                for d in 0..<3 {
+                    let dy = cy + d * ch / 3
+                    c.rect(x, dy, 13 * s, ch / 3 - max(1, s / 2), sage); c.rect(x, dy, 13 * s, max(1, s / 2), sageL)
+                    c.rect(x + 4 * s, dy + s, 5 * s, max(1, s / 2), knob)
+                }
+            case 2:   // one door, the tea towel hanging off its knob in red gingham
+                c.rect(x, cy, 13 * s, ch, sage); c.rect(x, cy, 13 * s, max(1, s / 2), sageL); c.rect(x, cy, max(1, s / 2), ch, sageL)
+                c.rect(x + 2 * s, cy + 2 * s, 9 * s, ch - 4 * s, sageD); c.rect(x + 3 * s, cy + 3 * s, 7 * s, ch - 6 * s, sage)
+                c.rect(x + 10 * s, cy + 2 * s, s, s, knob)
+                for ty in 0..<4 { for tx in 0..<2 { c.rect(x + (9 + tx * 2) * s, cy + (3 + ty * 2) * s, 2 * s, 2 * s, (tx + ty) % 2 == 0 ? C(0xA83A30) : C(0xE8DCCC)) } }
+            default:  // a pair of doors meeting in the middle, raised panels on every other pair
+                for d in 0..<2 {
+                    let dx = x + d * 7 * s
+                    c.rect(dx, cy, 6 * s, ch, sage); c.rect(dx, cy, 6 * s, max(1, s / 2), sageL); c.rect(dx, cy, max(1, s / 2), ch, sageL)
+                    if k % 4 == 3 { c.rect(dx + s, cy + 2 * s, 4 * s, ch - 4 * s, sageD); c.rect(dx + 2 * s, cy + 3 * s, 3 * s, ch - 6 * s, sage) }
+                    c.rect(d == 0 ? dx + 5 * s : dx, cy + 2 * s, s, s, knob)
+                }
+            }
         }
         c.rect(cx0, g - 2 * s, cx1 - cx0, 2 * s, C(0x3A4430))
         // The sink under the window and its tap; a dish rack beside it.
@@ -1257,14 +1343,28 @@ extension Scenes {
         huntSiouxFallsAttic(c, g)
     }
 
-    /// The attic under the gable: bare rafters sloping up to the ridge, the dark of the roof beyond them, a round
-    /// window with the afternoon sky in it, cardboard boxes, an old steamer trunk and a rocking chair under a sheet.
+    /// The attic under the gable: bare rafters sloping up to the ridge, the dark of the roof beyond them, a gable wall
+    /// of odd old boards, a round window with the afternoon sky in it, snowshoes, Christmas lights, a lantern, an old
+    /// coat and a toboggan, cardboard boxes, an old steamer trunk and a rocking chair under a sheet.
     private static func huntSiouxFallsAttic(_ c: PixelCanvas, _ g: Int) {
         let s = unit(g), f = huntSiouxFallsFrame(c, g)
         let base = f.attic - 4 * s, mx = c.w / 2, peak = 2 * s
         let wood = C(0x8A6A44), woodD = C(0x5A4028), woodL = C(0xA88A5A)
-        c.rect(0, 0, c.w, base, C(0x9A8462))
-        for x in stride(from: 0, to: c.w, by: 8 * s) { c.rect(x, 0, max(1, s / 2), base, C(0x8A7656)) }
+        // The gable wall: rough boards, each its own shade of old pine, butt joints staggered, knots and nail heads,
+        // darker up towards the ridge where the light doesn't reach.
+        let boards = [C(0x9A8462), C(0x8E7858), C(0xA48C68), C(0x86704E), C(0x96805C)]
+        for (k, x) in stride(from: 0, to: c.w, by: 8 * s).enumerated() {
+            c.rect(x, 0, 8 * s, base, boards[Int(noise(k + 1700) * 5) % 5])
+            c.rect(x, 0, max(1, s / 2), base, C(0x6A5A40))
+            let joint = Int(noise(k + 1710) * Double(base))
+            c.rect(x, joint, 8 * s, max(1, s / 2), C(0x6A5A40))
+            if noise(k + 1720) > 0.55 {
+                let ky = Int(noise(k + 1730) * Double(base))
+                c.ellipse(x + 4 * s, ky, 2 * s, s, C(0x6A5034)); c.px(x + 4 * s, ky, C(0x4A3624))
+            }
+            for ny in stride(from: base - 3 * s, to: 0, by: -40 * s) { c.rect(x + 2 * s, ny, max(1, s / 2), max(1, s / 2), C(0x3A3028)) }
+        }
+        c.gradient(0, base, C(0x1E140C, 0.4), C(0x1E140C, 0), bands: 6)
         for y in 0..<base {   // the roof's underside beyond the slopes
             let half = y <= peak ? 0 : (c.w / 2 + 8 * s) * (y - peak) / max(1, base - peak)
             c.rect(0, y, max(0, mx - half), 1, C(0x3A2C22)); c.rect(mx + half, y, max(0, c.w - mx - half), 1, C(0x3A2C22))
@@ -1276,6 +1376,34 @@ extension Scenes {
         c.rect(mx - 3 * s, peak, 6 * s, base - peak, wood); c.rect(mx - 3 * s, peak, s, base - peak, woodL)
         let tie = peak + (base - peak) * 55 / 100
         c.rect(0, tie, c.w, 4 * s, wood); c.rect(0, tie, c.w, s, woodL); c.rect(0, tie + 3 * s, c.w, s, woodD)
+        // On the boards: a pair of old snowshoes crossed on a nail, a string of Christmas lights looped along the tie
+        // beam (unlit), a storm lantern hanging from it, an old army coat on a hook, and a wooden sled leaning on the wall.
+        let shoe = (x: mx - 66 * s, y: tie + 26 * s)
+        for k in [-1, 1] {
+            c.ellipse(shoe.x + k * 4 * s, shoe.y, 4 * s, 9 * s, C(0x5A3A22)); c.ellipse(shoe.x + k * 4 * s, shoe.y, 3 * s, 8 * s, C(0x9A8462))
+            for l in stride(from: -6, to: 7, by: 3) { c.rect(shoe.x + k * 4 * s - 3 * s, shoe.y + l * s, 6 * s, max(1, s / 2), C(0x6A5034)) }
+        }
+        c.rect(shoe.x - s, shoe.y - 10 * s, 2 * s, 2 * s, C(0x3A3028))
+        for (k, x) in stride(from: mx - 120 * s, to: mx + 120 * s, by: 6 * s).enumerated() {
+            let sag = Int(sin(Double(k % 5) / 4 * .pi) * Double(3 * s))
+            c.rect(x, tie + 4 * s + sag, 6 * s, max(1, s / 2), C(0x2A3A22))
+            c.rect(x + 3 * s, tie + 5 * s + sag, s, 2 * s, [C(0xA83A30), C(0x3A7A3A), C(0xC8A040), C(0x3A5A9A)][k % 4])
+        }
+        let ln = (x: mx + 34 * s, y: tie + 4 * s)
+        c.rect(ln.x, ln.y, max(1, s / 2), 6 * s, C(0x2A2420)); c.rect(ln.x - 3 * s, ln.y + 6 * s, 7 * s, s, C(0x6A2A1E))
+        c.rect(ln.x - 2 * s, ln.y + 7 * s, 5 * s, 6 * s, C(0xC8BC90, 0.8)); c.rect(ln.x - 2 * s, ln.y + 7 * s, max(1, s / 2), 6 * s, C(0x6A2A1E))
+        c.rect(ln.x + 2 * s, ln.y + 7 * s, max(1, s / 2), 6 * s, C(0x6A2A1E)); c.rect(ln.x - 3 * s, ln.y + 13 * s, 7 * s, s, C(0x6A2A1E))
+        let coat = (x: mx + 60 * s, y: tie + 10 * s)
+        c.rect(coat.x, coat.y - 2 * s, s, 2 * s, C(0x3A3028))
+        c.rect(coat.x - 6 * s, coat.y, 13 * s, 18 * s, C(0x4E5236)); c.rect(coat.x - 6 * s, coat.y, 2 * s, 18 * s, C(0x62664A))
+        c.rect(coat.x - 8 * s, coat.y + s, 3 * s, 14 * s, C(0x44482E)); c.rect(coat.x + 6 * s, coat.y + s, 3 * s, 14 * s, C(0x3A3E28))
+        c.rect(coat.x, coat.y + 2 * s, max(1, s / 2), 16 * s, C(0x34381F)); c.rect(coat.x - 4 * s, coat.y + 8 * s, 3 * s, 2 * s, C(0x3A3E28))
+        let sled = mx + 142 * s
+        // (the sled: an old wooden toboggan stood on its end, its slats running up it, the curl at the top, a red tow rope)
+        for k in 0..<4 { huntP6Stick(c, sled + k * 2 * s, base - s, sled + 6 * s + k * 2 * s, base - 28 * s, k % 2 == 0 ? C(0xA86A38) : C(0x8A5430), Double(s) * 0.8) }
+        for k in 1..<4 { huntP6Stick(c, sled + k * 3 * s / 2, base - k * 7 * s, sled + 8 * s + k * 3 * s / 2, base - k * 7 * s, C(0x5A3A22), Double(s) * 0.4) }
+        c.circle(sled + 10 * s, base - 30 * s, 4 * s, C(0x8A5430)); c.circle(sled + 10 * s, base - 30 * s, 2 * s, C(0x9A8462))
+        huntP6Stick(c, sled + 13 * s, base - 30 * s, sled + 16 * s, base - 6 * s, C(0xA83A30), Double(s) * 0.5)
         // The round window, sky and a cloud in it, a cross of glazing bars.
         let wx = mx, wy = peak + (base - peak) * 30 / 100, wr = 10 * s
         c.circle(wx, wy, wr + 2 * s, C(0xF0EADA)); c.circle(wx, wy, wr, C(0x8ABCE0)); c.ellipse(wx - 3 * s, wy + 2 * s, 5 * s, 2 * s, C(0xF4F8FC))
