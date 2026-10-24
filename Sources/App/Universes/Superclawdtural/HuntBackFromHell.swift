@@ -7,12 +7,13 @@ import Foundation
 // `missingTimeLength`), as The Clawd Files' missing time and Stranger Clawds' Upside Down do.
 //
 // Moment by moment: they shiver as three sets of glowing red claw marks rake across the ground round their feet, one
-// after another (hellhounds nobody can see). A red pit opens under them, a hot rim with a dark heart and a soft red
-// glow standing over it, embers rising, and they're yanked down into it in four jerks, the ground cutting them off at
-// the feet, until even the top of the head is gone. The pit closes to a smouldering crack and goes dark. A plain
-// wooden cross is planted, a mound of earth heaves up in front of it, and a Clawd-orange fist punches up through the
-// mound in a spray of clods. They climb out in two heaves, specks of dirt on them, the cross tips over behind, the
-// mound flattens, and they shake themselves off in a puff of dust while BACK FROM HELL types itself out over the head.
+// after another (hellhounds nobody can see). A red pit opens under them, a hot rim with a dark heart and a flickering
+// red glow standing over it, lighting their legs, embers rising, and they're yanked down into it in four jerks, the
+// ground cutting them off at the feet, until even the top of the head is gone. The pit closes to a smouldering crack
+// and goes dark. A plain wooden cross is planted, a mound of earth heaves up in front of it, and a Clawd-orange fist
+// on an arm in their own sleeve punches up through the mound in a spray of clods. They climb out in two heaves, lumps
+// of dirt on them, the cross tips over behind and fades where it lands, the mound flattens, and they shake themselves
+// off in a puff of dust while BACK FROM HELL types itself out over the head.
 //
 // The sprite isn't clipped at the ground by the engine, so the sinking is done in `touch`: their picture is shifted
 // down and everything under the ground row cut away, and the mound is drawn on their own picture, in front, so it
@@ -47,13 +48,15 @@ struct HuntBackFromHell: CompactionLook {
     /// Shivering, struggling or shaking the dirt off: a pixel side to side.
     let jitter: Bool
     /// The grave: the cross (shown, and how far it's tipped over, degrees), the mound (0…1 of its height), the fist
-    /// (0…1 up through the mound) and how long since it punched through (seconds), for the clods.
+    /// (0…1 up through the mound) and how long since it punched through (seconds), for the clods. Once it's down, the
+    /// cross fades where it lies (`crossFade` 1…0).
     let cross: Bool
     let tip: Double
+    let crossFade: Double
     let mound: Double
     let fist: Double
     let punched: Double?
-    /// Specks of dirt on them (0…1, dropping off as they shake), and the puff of dust (0…1 through it).
+    /// Lumps of dirt on them (0…1, dropping off as they shake), and the puff of dust (0…1 through it).
     let specks: Double
     let puff: Double
     let caption: String?
@@ -79,8 +82,10 @@ struct HuntBackFromHell: CompactionLook {
         let shake = k > 0.84 && k < 0.9
         jitter = shiver || shake
         // The grave: the cross planted, the earth heaving up, the punch, the cross tipping over once they're out.
-        cross = k > 0.46 && k < 0.9
-        tip = ease(ramp(k, 0.8, 0.84)) * 80
+        cross = k > 0.46 && k < 0.93
+        let fall = ramp(k, 0.8, 0.83)
+        tip = fall * fall * 90                         // slow to start, then it drops flat
+        crossFade = 1 - ramp(k, 0.86, 0.93)
         mound = ease(ramp(k, 0.48, 0.56)) * (1 - ease(ramp(k, 0.82, 0.9)))
         fist = k < 0.665 ? ease(ramp(k, 0.58, 0.6)) : 0
         punched = k >= 0.58 && k < 0.7 ? (k - 0.58) * missingTimeLength : nil
@@ -121,25 +126,32 @@ func huntDrawBackFromHell(_ c: PixelCanvas, _ s: HuntBackFromHell, t: Double) {
             let len = 6.0 * r
             for j in 0..<3 {
                 let ax = Double(x0 + j * 3), ay = Double(ground)
-                let bx = ax + len * 0.8, by = ay + len * 0.55
+                let bx = ax + len * 0.85, by = ay + len * 0.35     // flat along the ground, 2 rows deep at most
                 c.glowLine(ax, ay, bx, by, core: rakeRed, glow: rakeGlow, coreR: 0.5, glowR: 1.4, strength: s.rakeGlow)
                 if r < 1 { c.px(Int(bx.rounded()), Int(by.rounded()), rakeHot) }
             }
         }
     }
 
-    // The pit: a soft red glow standing over it, then the hole itself, a hot rim round a dark red heart, embers
-    // floating up out of it.
+    // The pit: a red glow standing over it like heat, brightest and hottest just over the hole and flickering, then
+    // the hole itself, a hot rim round a dark red heart, flat on the ground (no more than 2 rows under the feet),
+    // embers floating up out of it.
     if s.pit > 0 {
-        let rx = 13.0 * s.pit, ry = 3.0 * s.pit
-        let cy = Double(ground) + 0.5
+        let rx = 13.0 * s.pit, ry = 2.6 * s.pit
+        let cy = Double(ground)
+        let flicker = 0.85 + 0.15 * sin(t * 23) * sin(t * 7.3)
         for row in 0..<30 {
-            let yy = ground - 1 - row
-            let half = Int((rx * (1 - Double(row) / 40)).rounded())
-            guard half > 0 else { continue }
-            c.rect(mid - half, yy, half * 2, 1, C(0xFF3A20, (row < 14 ? 0.18 : 0.09) * s.pit))
+            let yy = ground - 1 - row, up = Double(row) / 30
+            let half = rx * (1 - up * 0.55)
+            guard half > 0.5 else { continue }
+            for xx in (mid - Int(half))...(mid + Int(half)) {
+                let across = abs(Double(xx - mid)) / half
+                let a = 0.8 * pow(1 - up, 1.5) * (1 - across * across) * s.pit * flicker
+                guard a > 0.02 else { continue }
+                c.px(xx, yy, (row < 3 ? C(0xFF8A3A) : row < 9 ? C(0xFF4A22) : C(0xE02A18)).alpha(a))
+            }
         }
-        for yy in Int(cy - ry - 1)...Int(cy + ry + 1) {
+        for yy in Int(cy - ry - 1)...min(ground + 2, Int(cy + ry + 1)) {
             for xx in (mid - Int(rx) - 1)...(mid + Int(rx) + 1) {
                 let u = (Double(xx) - Double(mid)) / max(rx, 0.5), v = (Double(yy) - cy) / max(ry, 0.5)
                 let d = u * u + v * v
@@ -166,20 +178,23 @@ func huntDrawBackFromHell(_ c: PixelCanvas, _ s: HuntBackFromHell, t: Double) {
         }
     }
 
-    // The cross over the grave, two plain planks behind the mound and to its left, lit down their left edges; it tips
-    // over backwards once they're out.
-    if s.cross {
+    // The cross over the grave, two plain planks behind the mound and to its left, lit down their left edges. Once
+    // they're out it tips over backwards, slowly and then all at once, the crossbar turning away from us as it goes
+    // (so it never reads as an X), lands flat on the ground and fades there.
+    if s.cross, s.crossFade > 0.02 {
         let base = (x: Double(mid - 9), y: Double(ground + 1))
         let a = (-90 - s.tip) * .pi / 180
         func at(_ d: Double, _ side: Double) -> (Double, Double) {
             (base.x + cos(a) * d - sin(a) * side, base.y + sin(a) * d + cos(a) * side)
         }
         func plank(_ p0: (Double, Double), _ p1: (Double, Double)) {
-            c.glowLine(p0.0, p0.1, p1.0, p1.1, core: wood, glow: C(0, 0), coreR: 0.9, glowR: 1)
-            c.glowLine(p0.0 - 0.6, p0.1 - 0.4, p1.0 - 0.6, p1.1 - 0.4, core: woodLit, glow: C(0, 0), coreR: 0.35, glowR: 0.4)
+            c.glowLine(p0.0, p0.1, p1.0, p1.1, core: wood.alpha(s.crossFade), glow: C(0, 0), coreR: 0.9, glowR: 1)
+            c.glowLine(p0.0 - 0.6, p0.1 - 0.4, p1.0 - 0.6, p1.1 - 0.4, core: woodLit.alpha(s.crossFade), glow: C(0, 0),
+                       coreR: 0.35, glowR: 0.4)
         }
+        let arm = 4 * max(0.15, pow(cos(s.tip * .pi / 180), 3))
         plank(at(0, 0), at(15, 0))
-        plank(at(11, -4), at(11, 4))
+        plank(at(11, -arm), at(11, arm))
     }
 
     // Clods thrown up by the fist, falling back to the ground.
@@ -220,7 +235,7 @@ func huntDrawBackFromHell(_ c: PixelCanvas, _ s: HuntBackFromHell, t: Double) {
 }
 
 /// Their own picture: shaking, sunk into the ground (cut off at the ground row), red light from the pit on their legs;
-/// on the way back, the fist, specks of dirt, and the mound in front of them. Drawn on the sprite before the app adds
+/// on the way back, the fist, lumps of dirt, and the mound in front of them. Drawn on the sprite before the app adds
 /// its outline, so the mound and the fist get outlined too.
 func huntBackFromHellTouch(_ c: PixelCanvas, _ s: HuntBackFromHell, t: Double) {
     let saved = (c.ox, c.oy, c.baseY)
@@ -228,6 +243,24 @@ func huntBackFromHellTouch(_ c: PixelCanvas, _ s: HuntBackFromHell, t: Double) {
     defer { c.ox = saved.0; c.oy = saved.1; c.baseY = saved.2 }
     let g = ground + (c.h - Sprite.height)
     func solid(_ x: Int, _ y: Int) -> Bool { x >= 0 && y >= 0 && x < c.w && y < c.h && c.buf[(y * c.w + x) * 4 + 3] == 255 }
+
+    // Their sleeve, for the arm that punches up: the commonest colour on the arm at their back (x 14…17) that isn't
+    // Clawd's own orange (the engine doesn't tell `touch` who it is, so it's read off their picture before it sinks).
+    var sleeve = clawdOrange
+    if s.fist > 0 {
+        var counts: [UInt32: Int] = [:]
+        for y in 31...36 {
+            for x in 14...17 where solid(x, y) {
+                let i = (y * c.w + x) * 4
+                let hex = UInt32(c.buf[i]) << 16 | UInt32(c.buf[i + 1]) << 8 | UInt32(c.buf[i + 2])
+                if hex == 0xD97757 || hex == 0xB85F40 || hex == 0xEC9474 { continue }   // Clawd's orange, shade, lit
+                counts[hex, default: 0] += 1
+            }
+        }
+        if let best = counts.max(by: { $0.value < $1.value || ($0.value == $1.value && $0.key < $1.key) }) {
+            sleeve = C(best.key)
+        }
+    }
 
     if s.jitter { c.shift(dx: Int(t * 24) % 2 == 0 ? 1 : -1, dy: 0) }
     // Down into the ground: moved down, and everything that's gone under the ground row cut away (shifted off the
@@ -242,33 +275,44 @@ func huntBackFromHellTouch(_ c: PixelCanvas, _ s: HuntBackFromHell, t: Double) {
         c.shift(dx: 0, dy: d)
     }
 
-    // The pit's red light on whatever's still above it, strongest just over the ground.
+    // The pit's red light on whatever's still above it, strongest just over the ground, flickering with the glow.
     if s.pit > 0.05 {
-        for y in max(0, g - 7)..<g {
-            let a = 0.45 * s.pit * Double(y - (g - 8)) / 8
-            for x in 0..<c.w where solid(x, y) { c.px(x, y, C(0xFF3A20, a)) }
+        let flicker = 0.85 + 0.15 * sin(t * 23) * sin(t * 7.3)
+        for y in max(0, g - 10)..<g {
+            let a = 0.6 * s.pit * flicker * Double(y - (g - 11)) / 11
+            for x in 0..<c.w where solid(x, y) { c.px(x, y, (y >= g - 2 ? C(0xFF6A30) : C(0xFF3A20)).alpha(a)) }
         }
     }
 
-    // Specks of dirt caught on them, along the tops of things and here and there, dropping off as they shake.
+    // Clods of dirt caught on them: little lumps (a lit top over a darker underside) along the tops of things and a
+    // few smears lower down, dropping off as they shake.
     if s.specks > 0 {
-        for x in 0..<c.w {
+        var x = 0
+        while x < c.w {
+            defer { x += 1 }
             guard let top = (0..<g).first(where: { solid(x, $0) }) else { continue }
-            if noise(x * 19 + 3) < 0.3 * s.specks { c.px(x, top, dirtLit) }
-            guard top + 2 < g else { continue }
-            for y in (top + 2)..<g where solid(x, y) && noise(x * 7 + y * 31) < 0.035 * s.specks {
-                c.px(x, y, dirt)
+            if noise(x * 19 + 3) < 0.22 * s.specks, solid(x + 1, top), top > 0 {
+                c.rect(x, top - 1, 2, 1, dirtLit); c.rect(x, top, 2, 1, dirt)
+                x += 2
+                continue
+            }
+            guard top + 3 < g else { continue }
+            for y in (top + 3)..<(g - 1) where solid(x, y) && solid(x + 1, y) && noise(x * 7 + y * 31) < 0.02 * s.specks {
+                c.rect(x, y, 2, 1, dirt); c.px(x, y + 1, dirtDark)
             }
         }
     }
 
-    // The fist, punched up through the mound: a Clawd-orange forearm and a blocky fist, lit on its left, a dark
-    // line between the knuckles; it wiggles a little once it's out.
+    // The fist, punched up through the mound: a blocky Clawd-orange fist, lit on its left, a dark line between the
+    // knuckles, on a forearm in their own sleeve with a cuff at the wrist; it wiggles a little once it's out.
     if s.fist > 0 {
         let wig = s.fist >= 1 && Int(t * 8) % 2 == 0 ? 1 : 0
         let top = g - 1 - Int((s.fist * 11).rounded()) - wig
-        c.rect(fistX - 1, top + 4, 3, g + 2 - (top + 4), clawdOrange)
-        c.rect(fistX + 1, top + 4, 1, g + 2 - (top + 4), clawdShade)
+        let cuff = lerp(sleeve, C(0xFFFFFF), 0.3), sleeveShade = lerp(sleeve, C(0x000000), 0.35)
+        c.rect(fistX - 2, top + 4, 4, g + 2 - (top + 4), sleeve)
+        c.rect(fistX - 2, top + 5, 1, g + 2 - (top + 5), lerp(sleeve, C(0xFFFFFF), 0.15))
+        c.rect(fistX + 1, top + 4, 1, g + 2 - (top + 4), sleeveShade)
+        c.rect(fistX - 2, top + 4, 4, 1, cuff)
         c.rect(fistX - 2, top, 5, 4, clawdOrange)
         c.rect(fistX - 2, top, 1, 4, fistLit)
         c.rect(fistX + 2, top + 1, 1, 3, clawdShade)
