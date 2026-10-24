@@ -9,7 +9,7 @@ import Foundation
 extension HuntTrip {
     /// A frame `k` (0…1) of Ghostfacers Cam, over the whole of `r`. The viewfinder clicks on and the picture turns
     /// night-shot green, with scan lines and video grain (0–0.1); the picture starts slipping in torn bands (0.12–0.34)
-    /// and goes to snow (0.28–0.4); the ghost flickers past, pale and glowing, its eyes and mouth dark hollows, the
+    /// and goes to snow (0.28–0.4); the ghost flickers past, pale and glowing, her face still and blank, the
     /// battery running down and LOW BATTERY blinking (0.38–0.66); the snow thins on the new place, still torn (0.48–0.74),
     /// the green goes off it (0.76–0.9) and the viewfinder blinks off (0.9–0.97). Everything over the picture is white
     /// with a black edge, so it reads on any place.
@@ -23,25 +23,28 @@ extension HuntTrip {
         let snow = k < 0.45 ? Self.ease(Self.span(k, 0.28, 0.4)) : 1 - Self.ease(Self.span(k, 0.48, 0.7))
         let ghostAt = Self.span(k, 0.38, 0.66)
 
-        // The picture, torn into bands that slip sideways as the signal goes: the old place, then the new one.
-        let picture = k < 0.44 ? old : new
+        // The picture, torn into bands that slip sideways as the signal goes: the old place, then the new one. Night
+        // shot turns it green and lifts its darks; that's worked out on the picture itself, not over the whole frame,
+        // and where a band slips off the edge the gap shows the bare green.
+        let night: [(CGBlendMode, UInt32, Double)] = [(.color, 0x4CE878, 0.85 * green), (.screen, 0x0E3A16, green)]
+        let picture = green > 0 ? tinted(k < 0.44 ? old : new, art, like: ctx, night) : (k < 0.44 ? old : new)
+        let gap = green > 0 ? bare(like: ctx, night) : nil
         let wobble = (x: Int(sin(k * 9) * 1.5), y: Int(cos(k * 7) * 1.0))     // a handheld camera's sway
         let band = max(3, h / 12)
         for b in 0...(h / band) {
             let big = rnd(b, frame / 2 + 40) > 0.6
             let slip = tear * (rnd(b, frame) - 0.5) * Double(w) * (big ? 0.18 : 0.04)
-            let rows = art.frame(0, b * band, w, band)
-            ctx.saveGState(); ctx.clip(to: rows)
+            let rows = art.frame(0, b * band, w, band).intersection(r)
+            guard !rows.isEmpty else { continue }
             let dx = CGFloat((slip.rounded() + Double(wobble.x)) * Double(onAt ? 1 : 0)) * art.px
             let dy = CGFloat(onAt ? -wobble.y : 0) * art.px
-            ctx.drawShot(picture, in: r.offsetBy(dx: dx, dy: dy).insetBy(dx: onAt ? -2 * art.px : 0, dy: onAt ? -2 * art.px : 0))
-            ctx.restoreGState()
-        }
-        // Night shot: the picture turned green, its darks lifted.
-        if green > 0 {
-            ctx.saveGState()
-            ctx.setBlendMode(.color); ctx.setFillColor(huntTripRGB(0x4CE878, CGFloat(0.85 * green))); ctx.fill(r)
-            ctx.setBlendMode(.screen); ctx.setFillColor(huntTripRGB(0x0E3A16, CGFloat(green))); ctx.fill(r)
+            let shot = r.offsetBy(dx: dx, dy: dy).insetBy(dx: onAt ? -2 * art.px : 0, dy: onAt ? -2 * art.px : 0)
+            ctx.saveGState(); ctx.clip(to: rows)
+            ctx.drawShot(picture, in: shot)
+            if let gap {
+                ctx.setFillColor(gap)
+                for bit in uncovered(rows, by: shot) { ctx.fill(bit) }
+            }
             ctx.restoreGState()
         }
 
@@ -100,7 +103,8 @@ extension HuntTrip {
             c.px(tx + 2, ty + 3, C(0xFF9A88))
         }
         huntTripText(c, tx + 10, ty, "REC", ink, p, shadow: C(0x000000))
-        if nightShot { huntTripText(c, tx, ty + 7 * p, "NIGHT SHOT", C(0xC8FFD0), 1, shadow: C(0x000000)) }
+        let small = w > h * 12 / 5 ? 2 : 1                                   // the window's strip: as big as REC
+        if nightShot { huntTripText(c, tx, ty + 7 * p, "NIGHT SHOT", C(0xC8FFD0), small, shadow: C(0x000000)) }
         // The battery: an outline with a nub, and its bars.
         let bw = 9 * p, bh = 4 * p, bx = w - m - 4 - bw - p, by = ty + 1
         c.rect(bx - 1, by - 1, bw + 2, bh + 2, edge); c.rect(bx + bw + 1, by + p - 1, p + 1, bh - 2 * p + 2, edge)
@@ -110,7 +114,7 @@ extension HuntTrip {
         for i in 0..<bars { c.rect(bx + 2 + i * bar, by + 2, bar - 1, bh - 4, bars == 1 ? C(0xFF4A2A) : ink) }
         if bars == 0 && frame / 4 % 2 == 0 {
             let s = "LOW BATTERY"
-            huntTripText(c, w - m - 4 - huntTripTextWidth(s, 1), by + bh + 3, s, C(0xFF5A3A), 1, shadow: C(0x000000))
+            huntTripText(c, w - m - 4 - huntTripTextWidth(s, small), by + bh + 3, s, C(0xFF5A3A), small, shadow: C(0x000000))
         }
         // The timecode, counting in frames.
         let f = 13 * 60 * 30 + 7 * 30 + frame
@@ -122,7 +126,8 @@ extension HuntTrip {
 
     /// A ghost going past right up against the lens, `at` 0…1 from off the left to off the right: a pale woman in a
     /// long white gown flaring out and trailing off behind her in ragged wisps, leaning into her way, an arm reaching
-    /// ahead, her long hair streaming back; her eyes and mouth dark hollows. A bright rim and a blue glow round her so
+    /// ahead, her long hair streaming back in locks; her face still and blank under a
+    /// curtain of hair. A bright rim and a blue glow round her so
     /// she shows on the snow and on any place. She flickers, missing frames and slipping sideways in bands like a bad
     /// signal.
     private func ghost(_ c: PixelCanvas, _ w: Int, _ h: Int, at: Double, frame: Int) {
@@ -154,12 +159,23 @@ extension HuntTrip {
             let ex = ax0 + (ax1 - ax0) * t - x, ey = ay0 + (ay1 - ay0) * t - y
             return ex * ex + ey * ey <= pow(R * (0.15 - 0.06 * t), 2)
         }
-        func hair(_ x: Double, _ y: Double) -> Bool {                     // streaming back off her head, down her back
+        // Her hair, streaming back off her head and down her back in long locks, light and dark, that wave as she
+        // goes, each ending at its own length so the ends hang in ragged points.
+        func hair(_ x: Double, _ y: Double) -> Px? {
             let v = (y - (head.y - R * 0.62)) / (R * 1.9)
-            guard v >= 0, v <= 1 else { return false }
+            guard v >= 0, v <= 1 else { return nil }
             let front = head.x + R * 0.36 * (1 - v * 1.4), back = head.x - R * (0.55 + 0.7 * v)
             let ragged = sin(y * 0.5 + at * 30) * R * 0.08 * v
-            return x <= front && x >= back + ragged
+            guard x <= front, x >= back + ragged else { return nil }
+            let f = (x - back) / max(1, front - back) * 10 + sin(v * 4 + at * 12) * 0.8
+            let lock = Int(f.rounded(.down))
+            if v > 0.55 + 0.45 * rnd(lock + 20, 31) { return nil }
+            if f - f.rounded(.down) < 0.2 { return C(0x48627C, 0.55) }        // the dark between two locks
+            switch (lock % 3 + 3) % 3 {
+            case 0: return C(0xB8D2E6, 0.6)
+            case 1: return C(0x7894B0, 0.55)
+            default: return C(0x92AEC6, 0.55)
+            }
         }
         let x0 = max(0, Int(cx - R * 2.4)), x1 = min(w - 1, Int(cx + R * 2))
         guard x0 <= x1 else { return }
@@ -171,24 +187,37 @@ extension HuntTrip {
                 if inside(gx, gy) {
                     let rim = !inside(gx - 1.5, gy) || !inside(gx + 1.5, gy) || !inside(gx, gy - 1.5) || !inside(gx, gy + 1.5)
                     c.px(x, y, rim ? C(0xFFFFFF, 0.85) : C(0xD6ECFF, 0.62))
-                } else if hair(gx, gy) {
-                    c.px(x, y, C(0x8AA8C0, 0.55))
+                } else if let lock = hair(gx, gy) {
+                    c.px(x, y, lock)
                 } else if inside(gx - 3, gy) || inside(gx + 3, gy) || inside(gx, gy - 3) || inside(gx, gy + 3)
-                            || hair(gx + 2, gy) {
+                            || hair(gx + 2, gy) != nil {
                     c.px(x, y, C(0x7AC4FF, 0.3))
                 }
             }
         }
-        // The hollows of her eyes and her open mouth, and the hair falling over her brow.
+        // Her face, still and blank: dark, half-shut sockets with a pale glint in each, a small parted mouth, and
+        // her hair hanging over her brow and down the far side of her face in locks, hiding half of that eye.
         let hx = Int(head.x), hy = Int(head.y), u = max(1, Int(R * 0.09))
-        for y in (hy - Int(R * 0.6))...(hy - Int(R * 0.3)) {
-            let d = Double(y - hy) / (R * 0.6)
-            let half = Int(R * 0.46 * max(0, 1 - d * d).squareRoot())
-            c.rect(hx - half, y, half * 2 - Int(R * 0.12), 1, C(0x8AA8C0, 0.7))
+        let rx = R * 0.46, ry = R * 0.6
+        func onHead(_ x: Int, _ y: Int) -> Bool {
+            let a = (Double(x) + 0.5 - head.x) / rx, b = (Double(y) + 0.5 - head.y) / ry
+            return a * a + b * b <= 1
         }
-        c.ellipse(hx - Int(R * 0.14), hy - u / 2, u + 1, u + 2, C(0x061018, 0.9))
-        c.ellipse(hx + Int(R * 0.2), hy - u / 2, u + 1, u + 2, C(0x061018, 0.9))
-        c.ellipse(hx + u / 2 + 1, hy + Int(R * 0.3), u, u * 2 + 1, C(0x061018, 0.85))
+        let socket = C(0x14223A, 0.85)
+        for ex in [hx - Int(R * 0.14), hx + Int(R * 0.2)] {
+            c.ellipse(ex, hy - u / 2, u + 1, max(1, u / 2 + 1), socket)
+            c.rect(ex - u, hy - u / 2 - max(1, u / 2) - 1, 2 * u + 1, 1, C(0x1A2A40, 0.3))    // the shadow of her brow
+            c.px(ex + 1, hy - u / 2, C(0xF0FAFF))
+        }
+        c.ellipse(hx + Int(R * 0.06), hy + Int(R * 0.32), max(1, u - 1), max(1, u / 2), C(0x1A2A40, 0.6))
+        let crown = hy - Int(ry)
+        for x in (hx - Int(rx))...(hx + Int(R * 0.3)) {
+            let lock = (x - hx + 1000) / max(2, u)
+            let far = x < hx - Int(R * 0.2)
+            let reach = Int(R * (far ? 0.8 + 0.4 * rnd(lock, 41) : 0.24 + 0.1 * rnd(lock, 42)))
+            let col = lock % 2 == 0 ? C(0x7894B0, 0.7) : C(0x9AB6CC, 0.7)
+            for y in crown...(crown + reach) where onHead(x, y) { c.px(x, y, col) }
+        }
     }
 
     private static func mixHex(_ a: UInt32, _ b: UInt32, _ k: Double) -> UInt32 {
@@ -199,3 +228,52 @@ extension HuntTrip {
 
 /// Noise from a pair of numbers, 0…1.
 private func rnd(_ a: Int, _ b: Int) -> Double { noise((a &* 7919 &+ b &* 104729) & 0xFFFFF) }
+
+/// The last few tinted pictures: the old place stays frozen through the trip, so it's the same tint frame after frame.
+private var tints: [(img: CGImage, key: [Double], out: CGImage)] = []
+
+/// `img` with each of `fills` (a blend mode, a colour and how strongly) laid over it in turn, as filling the whole
+/// frame over it would come out, but worked out on the picture at its own size, not on every pixel of a Retina frame.
+/// A place's picture is pixel art with fewer than three pixels across for each of the trip's own art pixels (`art`),
+/// so tinting it at no more than that loses nothing, however big the frame.
+private func tinted(_ img: CGImage, _ art: HuntArt, like ctx: CGContext, _ fills: [(CGBlendMode, UInt32, Double)]) -> CGImage {
+    let key = fills.flatMap { [Double($0.0.rawValue), Double($0.1), $0.2] }
+    if let hit = tints.first(where: { $0.img === img && $0.key == key }) { return hit.out }
+    let cap = ComicTransition.snapshotQuality == nil                   // not a snapshot of the whole window
+    let w = cap ? min(img.width, art.w * 3) : img.width, h = cap ? min(img.height, art.h * 3) : img.height
+    let space = ctx.colorSpace ?? CGColorSpaceCreateDeviceRGB()
+    // In the frame's own pixel layout if it can be, so drawing it on is a straight copy, not a conversion.
+    guard let s = CGContext(data: nil, width: w, height: h, bitsPerComponent: 8, bytesPerRow: 0, space: space,
+                            bitmapInfo: ctx.bitmapInfo.rawValue)
+            ?? CGContext(data: nil, width: w, height: h, bitsPerComponent: 8, bytesPerRow: 0, space: space,
+                         bitmapInfo: layerBitmapInfo) else { return img }
+    let all = CGRect(x: 0, y: 0, width: w, height: h)
+    s.interpolationQuality = .none
+    s.draw(img, in: all)
+    for (mode, hex, a) in fills where a > 0 { s.setBlendMode(mode); s.setFillColor(huntTripRGB(hex, CGFloat(a))); s.fill(all) }
+    guard let out = s.makeImage() else { return img }
+    tints = [(img, key, out)] + tints.prefix(3)
+    return out
+}
+
+/// What `fills` come to over nothing at all: the colour of a gap where the picture has slipped away.
+private func bare(like ctx: CGContext, _ fills: [(CGBlendMode, UInt32, Double)]) -> CGColor? {
+    guard let s = CGContext(data: nil, width: 1, height: 1, bitsPerComponent: 8, bytesPerRow: 0,
+                            space: ctx.colorSpace ?? CGColorSpaceCreateDeviceRGB(), bitmapInfo: layerBitmapInfo) else { return nil }
+    for (mode, hex, a) in fills where a > 0 { s.setBlendMode(mode); s.setFillColor(huntTripRGB(hex, CGFloat(a))); s.fill(CGRect(x: 0, y: 0, width: 1, height: 1)) }
+    guard let space = s.colorSpace, let d = s.data else { return nil }
+    let b = d.assumingMemoryBound(to: UInt8.self)                   // one pixel, BGRA, premultiplied
+    let a = CGFloat(b[3]) / 255
+    guard a > 0 else { return nil }
+    return CGColor(colorSpace: space, components: [CGFloat(b[2]) / 255 / a, CGFloat(b[1]) / 255 / a, CGFloat(b[0]) / 255 / a, a])
+}
+
+/// The parts of `band` that `shot` leaves bare.
+private func uncovered(_ band: CGRect, by shot: CGRect) -> [CGRect] {
+    let on = band.intersection(shot)
+    guard !on.isNull, !on.isEmpty else { return [band] }
+    return [CGRect(x: band.minX, y: band.minY, width: on.minX - band.minX, height: band.height),
+            CGRect(x: on.maxX, y: band.minY, width: band.maxX - on.maxX, height: band.height),
+            CGRect(x: on.minX, y: band.minY, width: on.width, height: on.minY - band.minY),
+            CGRect(x: on.minX, y: on.maxY, width: on.width, height: band.maxY - on.maxY)].filter { $0.width > 0 && $0.height > 0 }
+}

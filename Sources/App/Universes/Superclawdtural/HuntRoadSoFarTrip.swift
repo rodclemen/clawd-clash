@@ -9,11 +9,11 @@ import Foundation
 extension HuntTrip {
     /// A frame `k` (0…1) of The Road So Far, over the whole of `r`. The old place turns sepia, grain and scratches
     /// coming up, the frame weaving in the gate (0–0.07); it darkens and THE ROAD SO FAR stamps on, a word at a time,
-    /// each landing with a jolt (0.07–0.3); five stills cut past, a white flash between each, jumping in the gate
-    /// (0.3–0.58); black, and SUPERCLAWDTURAL catches light by light and burns, flames licking off the tops of the
-    /// letters and sparks going up (0.58–0.8); NOW slams on in red (0.8–0.9); a flash, and the new place, sepia at
-    /// first, the colour and the grain clearing off it (0.9–1). Everything on the film moves on whole film frames, 24 a
-    /// second, so it judders like the real thing.
+    /// each landing with a jolt (0.07–0.3); five stills cut past, the frame jumping in the gate at each cut
+    /// (0.3–0.58); black, and SUPERCLAWDTURAL catches, a front of fire running along it, and burns, flames licking
+    /// off the tops of the letters and sparks going up (0.58–0.8); NOW slams on in red (0.8–0.9); a cut, and the new
+    /// place, sepia at first, the colour and the grain clearing off it (0.9–1). Everything on the film moves on whole
+    /// film frames, 24 a second, so it judders like the real thing.
     func drawRoadSoFar(_ ctx: CGContext, old: CGImage, new: CGImage, k: Double, in r: CGRect) {
         let under = HuntArt(r), over = HuntArt(r)
         let w = over.w, h = over.h
@@ -21,50 +21,57 @@ extension HuntTrip {
         let filmIn = Self.span(k, 0, 0.07), filmOut = Self.span(k, 0.9, 1)
         let film = k < 0.5 ? Self.ease(filmIn) : 1 - Self.ease(filmOut)
 
+        // The cuts, between the stills and to the new place: on the first film frame after each the frame jumps in
+        // the gate, the picture riding down with the black frame line above it.
+        let cuts = [0.3, 0.355, 0.41, 0.47, 0.525, 0.58, 0.9]
+        let roll = cuts.contains { k >= $0 && k < $0 + 1.0 / (duration * 24) } ? h * 3 / 10 : 0
+
         // The gate weave: the picture shuffling a pixel or two each film frame, harder through the stills.
         let jump = (k >= 0.3 && k < 0.58) ? 3.0 : 1.4
         let dx = Int(((rnd(frame, 1) - 0.5) * jump * film).rounded())
-        let dy = Int(((rnd(frame, 2) - 0.5) * jump * film).rounded())
+        let dy = Int(((rnd(frame, 2) - 0.5) * jump * film).rounded()) + roll
         let weave = CGRect(x: r.minX + CGFloat(dx) * under.px, y: r.minY - CGFloat(dy) * under.px,
                            width: r.width, height: r.height)
 
-        ctx.setFillColor(huntTripRGB(0x050403)); ctx.fill(r)
-        var black = false                                        // a card on black: no picture, no tint
-        if k < 0.3 {
-            // The old place on film, darkening under the words as they come.
-            ctx.drawShot(old, in: weave)
-            Self.wash(ctx, 0x000000, 0.55 * Self.span(k, 0.06, 0.09), in: r)
-        } else if k < 0.58 {
-            stills(ctx, under, old: old, k: Self.span(k, 0.3, 0.58), frame: frame, weave: weave, overArt: over)
-        } else if k < 0.9 {
-            black = true
-        } else {
-            ctx.drawShot(new, in: weave)
+        // The film look over whatever's showing: darkened under the words, sepia, and a flicker in the brightness,
+        // frame by frame. Worked out on each picture before it goes on, not over the whole frame after.
+        let flick = rnd(frame, 3)
+        let step = { (a: Double) in (a * 8).rounded() / 8 }                // `wash`'s pixel-art steps
+        var look: [(CGBlendMode, UInt32, Double)] = []
+        if k < 0.3 { look.append((.normal, 0x000000, step(0.55 * Self.span(k, 0.06, 0.09)))) }
+        if film > 0 {
+            look.append((.color, 0xA27C52, 0.85 * film))
+            if flick < 0.3 { look.append((.normal, 0x000000, step(0.125 * film))) }
+            else if flick > 0.85 { look.append((.normal, 0xFFF0D8, step(0.125 * film))) }
         }
-        under.show(ctx)
+        func shot(_ img: CGImage, in box: CGRect) { ctx.drawShot(look.isEmpty ? img : tinted(img, under, like: ctx, look), in: box) }
 
-        // The film look over whatever's showing: sepia, and a flicker in the brightness, frame by frame.
-        if !black && film > 0 {
-            ctx.saveGState()
-            ctx.setBlendMode(.color)
-            ctx.setFillColor(huntTripRGB(0xA27C52, CGFloat(0.85 * film))); ctx.fill(r)
-            ctx.restoreGState()
-            let flick = rnd(frame, 3)
-            if flick < 0.3 { Self.wash(ctx, 0x000000, 0.125 * film, in: r) }
-            else if flick > 0.85 { Self.wash(ctx, 0xFFF0D8, 0.125 * film, in: r) }
+        ctx.setFillColor(huntTripRGB(0x050403)); ctx.fill(r)
+        if k < 0.3 {
+            shot(old, in: weave)                                    // the old place on film
+        } else if k < 0.58 {
+            over.c.oy = roll; under.c.oy = roll
+            let drawn = stills(under, old: old, k: Self.span(k, 0.3, 0.58), frame: frame, weave: weave, overArt: over,
+                               shot: { shot($0, in: $1) })
+            over.c.oy = 0; under.c.oy = 0
+            if drawn && roll > 0 { under.c.rect(0, 0, w, roll, C(0x050403)) }   // the frame line, black above it
+            if drawn, let img = under.c.makeImage() {               // Baby on the road, or the eyes: art of its own
+                ctx.saveGState(); ctx.clip(to: r)
+                ctx.draw(look.isEmpty ? img : tinted(img, under, like: ctx, look, keep: false), in: under.frame(0, 0, w, h))
+                ctx.restoreGState()
+            }
+        } else if k >= 0.9 {
+            shot(new, in: weave)
         }
-        // The white flashes: one film frame between the stills, and the one that cuts to the new place.
-        let cuts = [0.3, 0.355, 0.41, 0.47, 0.525, 0.58, 0.9]
-        let flash = cuts.contains { k >= $0 && k < $0 + 1.0 / (duration * 24) }
 
         if k >= 0.07 && k < 0.3 { stampTitle(over, k: k) }
         if k >= 0.58 && k < 0.8 { burnTitle(over, s: Self.span(k, 0.58, 0.8), frame: frame) }
         if k >= 0.8 && k < 0.9 { stampNow(over, k: Self.span(k, 0.8, 0.9)) }
 
         // The grain, the dust and the scratches, and the corners going dark like an old print.
+        let black = k >= 0.58 && k < 0.9                             // a card on black: no picture, no tint
         let grain = black ? 0.6 : film
         if grain > 0 { filmDirt(over.c, w, h, frame: frame, amount: grain, vignette: !black) }
-        if flash { over.c.rect(0, 0, w, h, C(0xFFF6E4, 0.6)) }
         over.show(ctx)
     }
 
@@ -157,28 +164,31 @@ extension HuntTrip {
         for y in 0..<h { for x in 0..<w where ink[y * w + x] { c.px(x, y, face(x, y)) } }
     }
 
-    /// SUPERCLAWDTURAL burning in on black, `s` 0…1: the letters catch in patches from left to right, each bit of a
-    /// stroke flaring pale as it catches and settling to a smouldering orange that seethes frame by frame, hot yellow
-    /// along the edges; flames lick up off the tops of the strokes, and sparks rise off them. Just before it catches,
-    /// a dull red heat shows where each stroke will be.
+    /// SUPERCLAWDTURAL burning in on black, `s` 0…1, nearly the width of the frame: the letters catch along a ragged
+    /// front of fire running from left to right, each stroke from its foot up, each bit flaring pale as it catches and
+    /// settling to a smouldering orange that seethes frame by frame, hot yellow along the edges; flames lick up off the tops of the strokes, and sparks rise off them. Just ahead of the front,
+    /// a dull red heat glows up where each stroke will be.
     private func burnTitle(_ art: HuntArt, s: Double, frame: Int) {
         let c = art.c, w = art.w, h = art.h
         let title = "SUPERCLAWDTURAL"
-        let p = max(2, min(w * 84 / 100 / huntTripTextWidth(title, 1), h * 26 / 100 / 5))
+        let p = max(2, min(w * 96 / 100 / huntTripTextWidth(title, 1), h * 26 / 100 / 5))
         let x0 = (w - huntTripTextWidth(title, p)) / 2, y0 = (h - 5 * p) / 2
         let mask = PixelCanvas(w, h)
         huntTripText(mask, x0, y0, title, C(0xFFFFFF), p)
         func on(_ x: Int, _ y: Int) -> Bool { x >= 0 && y >= 0 && x < w && y < h && mask.buf[(y * w + x) * 4 + 3] > 127 }
         let span = Double(huntTripTextWidth(title, p))
+        // When each bit catches: a ragged front of fire running along the title from left to right, each stroke
+        // catching at its foot first and burning up it.
         func catches(_ x: Int, _ y: Int) -> Double {
-            0.02 + 0.42 * Double(x - x0) / span + 0.2 * rnd(x / max(1, p), y / max(1, p) + 900)
+            let up = Double(y0 + 5 * p - y) / Double(5 * p)
+            return 0.02 + 0.42 * Double(x - x0) / span + 0.07 * up + 0.025 * sin(Double(y) * 0.9 + Double(x) * 0.21)
         }
         for y in max(0, y0 - 4 * p)..<min(h, y0 + 6 * p) {
             for x in max(0, x0 - 2)..<min(w, x0 + Int(span) + 2) {
                 guard on(x, y) else { continue }
                 let age = s - catches(x, y)
-                if age < -0.12 { continue }
-                if age < 0 { c.px(x, y, C(0x6A1408, 0.5 + 4 * (age + 0.12))); continue }
+                if age < -0.1 { continue }
+                if age < 0 { c.px(x, y, C(0x6A1408, 0.9 * (age + 0.1) / 0.1)); continue }
                 let edge = !on(x - 1, y) || !on(x + 1, y) || !on(x, y - 1) || !on(x, y + 1)
                 let seethe = rnd(x / 2 + frame * 3, y / 2 + frame)
                 let col: Px
@@ -209,23 +219,25 @@ extension HuntTrip {
     /// The five stills that flash past, `s` 0…1 through them, each held a moment and pushing in a touch: the old place
     /// close up on one side, Baby on the road at dusk, the old place close on the other side, yellow eyes in the dark,
     /// and the old place whole. The pictures go under the film's sepia; the eyes go over it, so they stay yellow.
-    private func stills(_ ctx: CGContext, _ art: HuntArt, old: CGImage, k s: Double, frame: Int, weave: CGRect,
-                        overArt: HuntArt) {
+    /// Says whether it drew a still of its own into `art` (Baby or the eyes) rather than putting the old place on.
+    private func stills(_ art: HuntArt, old: CGImage, k s: Double, frame: Int, weave: CGRect, overArt: HuntArt,
+                        shot: (CGImage, CGRect) -> Void) -> Bool {
         let ends = [0.196, 0.393, 0.607, 0.804, 1.0]
         let i = ends.firstIndex { s < $0 } ?? 4
         let from = i == 0 ? 0 : ends[i - 1]
         let push = 1 + 0.06 * Self.span(s, from, ends[i])
-        func close(_ zoom: Double, _ fx: Double, _ fy: Double) {
+        func close(_ zoom: Double, _ fx: Double, _ fy: Double) -> Bool {
             let z = CGFloat(zoom * push), rw = weave.width * z, rh = weave.height * z
             let x = weave.minX - (rw - weave.width) * CGFloat(fx), y = weave.minY - (rh - weave.height) * CGFloat(fy)
-            ctx.drawShot(old, in: CGRect(x: x, y: y, width: rw, height: rh))
+            shot(old, CGRect(x: x, y: y, width: rw, height: rh))
+            return false
         }
         switch i {
-        case 0: close(1.6, 0.2, 0.45)
-        case 1: impalaStill(art, frame: frame)
-        case 2: close(2.1, 0.8, 0.6)
-        case 3: eyesStill(art, over: overArt, frame: frame)
-        default: close(1.12, 0.5, 0.5)
+        case 0: return close(1.6, 0.2, 0.45)
+        case 1: impalaStill(art, frame: frame); return true
+        case 2: return close(2.1, 0.8, 0.6)
+        case 3: eyesStill(art, over: overArt, frame: frame); return true
+        default: return close(1.12, 0.5, 0.5)
         }
     }
 
@@ -272,7 +284,16 @@ extension HuntTrip {
         }
         c.rect(cx - hr * 2 / 3, cy + hr - 1, hr * 4 / 3, 3, body)                        // the neck and collar
         c.ellipse(cx, cy, hr * 4 / 5, hr, body)                                           // the head
-        c.ellipse(cx, cy - hr * 3 / 4, hr * 4 / 5, hr / 3, body)                          // short hair on top
+        // Short, messy hair: the crown a touch wider than the skull above the ears, roughed up into little tufts
+        // along the top that lean back, so the head's outline reads as hair, not a smooth dome.
+        let hw = hr * 4 / 5 + 1, tuft = max(2, hr / 5)
+        for x in (cx - hw)...(cx + hw) {
+            let d = Double(x - cx) / Double(hw)
+            let skull = Int(Double(hr) * (1 - d * d).squareRoot())
+            let lift = Int(rnd(x / 2, 70) * Double(tuft)) + (x % 3 == 0 ? 1 : 0)
+            c.rect(x, cy - skull - lift, 1, skull + lift - hr / 3, body)
+            if x < cx - hw / 3, lift > tuft / 2 { c.px(x, cy - skull - lift, rim) }    // the light catching a tuft
+        }
         for y in (cy - hr + 2)...(cy + hr - 2) {                                          // lit down the left
             let d = Double(y - cy) / Double(hr)
             c.px(cx - Int(Double(hr * 4 / 5) * (1 - d * d).squareRoot()), y, rim)
@@ -301,6 +322,36 @@ private func blit(_ src: PixelCanvas, into c: PixelCanvas, x: Int, y: Int, scale
 
 /// Noise from a pair of numbers, 0…1.
 private func rnd(_ a: Int, _ b: Int) -> Double { noise((a &* 7919 &+ b &* 104729) & 0xFFFFF) }
+
+/// The last few tinted pictures: the old place stays frozen through the trip, and the film look over it only takes
+/// a handful of turns (the flicker's three), so it's often the same one again.
+private var tints: [(img: CGImage, key: [Double], out: CGImage)] = []
+
+/// `img` with each of `fills` (a blend mode, a colour and how strongly) laid over it in turn, as filling the whole
+/// frame over it would come out, but worked out on the picture at its own size, not on every pixel of a Retina frame.
+/// A place's picture is pixel art with fewer than three pixels across for each of the trip's own art pixels (`art`),
+/// so tinting it at no more than that loses nothing, however big the frame.
+/// `keep` keeps it for next time (not for art drawn fresh every frame).
+private func tinted(_ img: CGImage, _ art: HuntArt, like ctx: CGContext, _ fills: [(CGBlendMode, UInt32, Double)],
+                    keep: Bool = true) -> CGImage {
+    let key = fills.flatMap { [Double($0.0.rawValue), Double($0.1), $0.2] }
+    if keep, let hit = tints.first(where: { $0.img === img && $0.key == key }) { return hit.out }
+    let cap = ComicTransition.snapshotQuality == nil                   // not a snapshot of the whole window
+    let w = cap ? min(img.width, art.w * 3) : img.width, h = cap ? min(img.height, art.h * 3) : img.height
+    let space = ctx.colorSpace ?? CGColorSpaceCreateDeviceRGB()
+    // In the frame's own pixel layout if it can be, so drawing it on is a straight copy, not a conversion.
+    guard let s = CGContext(data: nil, width: w, height: h, bitsPerComponent: 8, bytesPerRow: 0, space: space,
+                            bitmapInfo: ctx.bitmapInfo.rawValue)
+            ?? CGContext(data: nil, width: w, height: h, bitsPerComponent: 8, bytesPerRow: 0, space: space,
+                         bitmapInfo: layerBitmapInfo) else { return img }
+    let all = CGRect(x: 0, y: 0, width: w, height: h)
+    s.interpolationQuality = .none
+    s.draw(img, in: all)
+    for (mode, hex, a) in fills where a > 0 { s.setBlendMode(mode); s.setFillColor(huntTripRGB(hex, CGFloat(a))); s.fill(all) }
+    guard let out = s.makeImage() else { return img }
+    if keep { tints = [(img, key, out)] + tints.prefix(5) }
+    return out
+}
 
 /// The film's dirt, `amount` 0…1, new every film frame: fine grain over everything, a few flecks of dust light and
 /// dark, a scratch or two running down the frame, and, with `vignette`, the corners darkened in steps.
