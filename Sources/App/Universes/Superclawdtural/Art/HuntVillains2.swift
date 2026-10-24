@@ -22,8 +22,8 @@ let huntVillains2: [HuntVillain: Persona] = [
                        magic: Magic(core: C(0xFFFFFF), glow: C(0xB4BCCC), jagged: false, rings: true),
                        headTop: 21, signature: 3.6, draw: drawAlastair),
     .abaddon: Persona(name: "Abaddon", weapon: .lightning,
-                      magic: Magic(core: C(0xFFD6CC), glow: C(0xD0182A), jagged: false, waves: true),
-                      headTop: 19, signature: 3.0, draw: drawAbaddon),
+                      magic: Magic(core: C(0xFFD4E0), glow: C(0xD0204C), jagged: false, grip: true),
+                      pivot: (43.5, 34), headTop: 19, signature: 3.4, draw: drawAbaddon),
     .cain: Persona(name: "Cain", weapon: .saber, headTop: 21, signature: 3.6, draw: drawCain),
     .asmodeus: Persona(name: "Asmodeus", weapon: .lightning, magic: Magic(core: C(0xFFFCE6), glow: C(0xF0C81E)),
                        headTop: 21, signature: 3.0, draw: drawAsmodeus),
@@ -439,13 +439,19 @@ private func drawAlastair(_ c: PixelCanvas, _ p: Pose) {
 
 /// Abaddon, the last Knight of Hell: a mane of red hair in big waves swept to one side, a long-sleeved black dress
 /// to the knee with a V neck and a thin silver-buckled belt, black stockings and heels, red lips. Her telekinesis is a
-/// steady red ray. Signature: she purrs, her eyes black, a slow smile on her red lips.
+/// grip: her arm out, her fist clenched and glowing, she chokes whoever she's fighting from across the room, lifting
+/// them off the ground in a crimson coil, her eyes going black while she holds them. Signature: she raises her hand, fingers
+/// spread, and slowly closes it into a fist, her eyes black and a slow smile on her red lips.
 private func drawAbaddon(_ c: PixelCanvas, _ p: Pose) {
     let dress = C(0x1C1A22), dressD = C(0x0C0B10), dressL = C(0x3E3A48)
     let hair = C(0xB8281E), hairD = C(0x7E160E), hairL = C(0xE44C34), lips = C(0xA8101E)
     let s = p.signature ?? -1
-    let purr = s > 0.08 && s < 0.92 ? (s - 0.08) / 0.84 : -1
-    let raise = p.armRaise
+    // The signature: her hand up by a sixth of the way in, spread, closing slowly from a third, a fist by three
+    // quarters, held, and lowered at the end.
+    let lift = s < 0 ? 0 : min(1, s / 0.16, (1 - s) / 0.12)
+    let close = s < 0 ? 0 : min(1, max(0, (s - 0.32) / 0.42))
+    let raise = s < 0 ? p.armRaise : Int((lift * 6).rounded())
+    let black = s > 0.36 && s < 0.9
 
     // Black stockings lit down the front, and black heels a shade deeper.
     drawLegs(c, Look(leg: C(0x2E2834)), step: p.step)
@@ -495,13 +501,42 @@ private func drawAbaddon(_ c: PixelCanvas, _ p: Pose) {
         "....d..................d....",
     ], ["H": hair, "d": hairD, "l": hairL])
 
-    if purr > 0.06 && purr < 0.94 {
-        // The purr: black eyes and the slow smile, its corners up.
+    // Choking someone in a fight: black eyes while the grip holds them up.
+    let holding = s < 0 && p.armRaise > 0 && gripHold(p.t) > 0.5
+    if black || holding {
         hvBlackEyes(c)
         c.rect(26, 32, 4, 1, lips); c.px(25, 31, lips); c.px(30, 31, lips)
     } else {
         hvEyes(c, ink)
         c.rect(26, 32, 4, 1, lips)
+    }
+
+    // Her hand, at the end of her arm reaching out past her hair so it shows against the background: clenched into a
+    // fist while she fights; in the signature spread wide, the fingers curling in one by one until it's a fist, a
+    // crimson glow gathering round it as it closes.
+    let hy = 33 - raise
+    if s < 0 && raise > 0 {
+        c.rect(38, hy + 1, 4, 2, dress); c.rect(38, hy + 2, 4, 1, dressD)
+        c.rect(42, hy, 3, 3, clawdOrange); c.rect(42, hy, 3, 1, clawdShade); c.px(45, hy + 1, clawdOrange)
+        c.px(44, hy + 2, clawdShade)
+    } else if s >= 0 && lift > 0.5 {
+        // The arm reaching out past her hair, so the hand shows against the background.
+        c.rect(38, hy + 1, 4, 2, dress); c.rect(38, hy + 2, 4, 1, dressD)
+        c.rect(42, hy, 3, 3, clawdOrange); c.px(44, hy + 2, clawdShade)
+        let curled = Int((close * 4).rounded())   // fingers folded so far: the little finger first, the thumb last
+        let tips: [(Int, Int, Int, Int)] = [(42, hy - 1, 42, hy - 2), (43, hy - 1, 43, hy - 3), (44, hy - 1, 45, hy - 3),
+                                            (45, hy, 46, hy - 1)]
+        for (i, f) in tips.enumerated() where i >= curled {
+            c.px(f.0, f.1, clawdOrange); c.px(f.2, f.3, clawdOrange)
+        }
+        if curled >= 4 { c.rect(42, hy, 3, 1, clawdShade); c.px(45, hy + 1, clawdOrange) }
+        if close > 0.2 {
+            let k = close * (0.5 + 0.5 * sin(p.t * 9))
+            for a in stride(from: 0.0, to: 2 * .pi, by: .pi / 5) {
+                let x = Int((43.5 + cos(a + p.t * 2) * 4).rounded()), y = Int((Double(hy) + 1 + sin(a + p.t * 2) * 3.5).rounded())
+                c.px(x, y, (Int(a * 10) % 2 == 0 ? C(0xFFD4E0) : C(0xD0204C)).alpha(0.22 * k))
+            }
+        }
     }
 }
 
