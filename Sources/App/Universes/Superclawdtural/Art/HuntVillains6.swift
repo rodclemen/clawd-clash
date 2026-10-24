@@ -15,17 +15,17 @@ let huntVillains6: [HuntVillain: Persona] = [
                          draw: drawToniBevell),
     .arthurKetch: Persona(name: "Arthur Ketch", weapon: .blaster, shot: .bullet, muzzle: (50, 31), headTop: 21,
                           signature: 3.0, draw: drawArthurKetch),
-    .gordonWalker: Persona(name: "Gordon Walker", weapon: .saber, headTop: 24, signature: 3.6, draw: drawGordonWalker),
+    .gordonWalker: Persona(name: "Gordon Walker", weapon: .saber, headTop: 25, signature: 3.6, draw: drawGordonWalker),
     .belaTalbot: Persona(name: "Bela Talbot", weapon: .blaster, shot: .bullet, muzzle: (46, 31), headTop: 21,
                          draw: drawBelaTalbot),
     .alphaVampire: Persona(name: "The Alpha Vampire", weapon: .saber, headTop: 21, signature: 3.6,
                            draw: drawAlphaVampire),
     .bloodyMary: Persona(name: "Bloody Mary", weapon: .lightning,
                          magic: Magic(core: C(0xE87080), glow: C(0x6E0A18), jagged: false, touch: true),
-                         headTop: 20, signature: 4.0, draw: drawBloodyMary),
+                         headTop: 22, signature: 4.0, draw: drawBloodyMary),
     .womanInWhite: Persona(name: "The Woman in White", weapon: .lightning, motion: .hover,
                            magic: Magic(core: C(0xEAF8FF), glow: C(0xA6D8EE), jagged: false, touch: true),
-                           canSit: false, headTop: 20, signature: 3.4, draw: drawWomanInWhite),
+                           canSit: false, headTop: 21, signature: 3.4, draw: drawWomanInWhite),
 ]
 
 // MARK: - Shared bits
@@ -243,12 +243,14 @@ private func drawArthurKetch(_ c: PixelCanvas, _ p: Pose) {
     c.rect(22, 28, 2, 1, hairD); c.rect(32, 28, 2, 1, hairD)
 
     if fix >= 0 {
-        // His hand across his chest at the knot (or running down the tie), the sleeve from his shoulder, a white cuff.
+        // His hand across his chest, pinching the side of the knot (or running down beside the tie), small and below
+        // his chin so a strip of white shirt keeps it apart from his face; the sleeve from his shoulder, a white cuff.
         let up = min(1, fix / 0.14, (1 - fix) / 0.12)
-        let hx = 29 + Int(((1 - up) * 9).rounded()), hy = smooth >= 0 ? 33 + Int(smooth * 2) : 33
-        c.rect(hx + 3, hy + 1, max(0, 38 - hx - 3), 2, suit); c.rect(hx + 3, hy + 1, max(0, 38 - hx - 3), 1, suitL)
-        c.px(hx + 3, hy + 2, shirt)
-        c.rect(hx, hy, 3, 3, clawdOrange); c.rect(hx, hy + 2, 3, 1, clawdShade); c.px(hx, hy, clawdShade)
+        let hx = 29 + Int(((1 - up) * 9).rounded()), hy = smooth >= 0 ? 34 + Int((smooth * 2).rounded()) : 34
+        c.rect(hx + 2, hy, max(0, 38 - hx - 2), 2, suit); c.rect(hx + 2, hy, max(0, 38 - hx - 2), 1, suitL)
+        c.rect(hx + 2, hy, 1, 2, shirt)
+        c.rect(hx, hy, 2, 2, clawdOrange); c.px(hx + 1, hy + 1, clawdShade)
+        if smooth < 0 { c.px(hx, hy - 1, clawdShade) }                                  // a fingertip on the knot
         return   // the pistol back in its holster while he does it
     }
 
@@ -275,7 +277,7 @@ private func drawArthurKetch(_ c: PixelCanvas, _ p: Pose) {
 private func drawGordonWalker(_ c: PixelCanvas, _ p: Pose) {
     let jacket = C(0x56593A), jacketD = C(0x3A3D26), jacketL = C(0x767A50)
     let tee = C(0x222226), teeL = C(0x3A3A42)
-    let hair = C(0x16120F), hairL = C(0x342A24)
+    let hair = C(0x16120F), hairL = C(0x4A3E36)
     let grip = C(0x1A1614), gripL = C(0x4A4038), steel = C(0x8E949C), steelD = C(0x5A6068), edge = C(0xC8CED6)
     let hone = hv6Span(p.signature, 0.05, 0.95)
 
@@ -304,13 +306,16 @@ private func drawGordonWalker(_ c: PixelCanvas, _ p: Pose) {
     c.rect(37, 33, 1, 5, jacketD); c.rect(19, 35, 1, 2, jacketL)
     c.rect(15, 35, 3, 1, jacketD)
 
-    // Close-cropped black hair, a cap of fine stubble that catches the light in short strokes.
-    c.pattern(17, 24, [
-        "...HHHHHHHHHHHHHH....",
-        "..HHlHHlHHHlHHHlHHH..",
-        ".HHHHHHHHHHHHHHHHHHH.",
-        ".HH...............HH.",
-    ], ["H": hair, "l": hairL])
+    // Close-cropped black hair hugging the top of his head: fine stubble catching the light in short strokes, and a
+    // real hairline (going back at the temples, a little point at the brow, short sideburns fading into stubble), so
+    // it reads as a buzz cut, not a band.
+    c.pattern(17, 25, [
+        "...HHHHHHHHHHHHHHH...",
+        "..HHlHHlHHHlHHlHHHH..",
+        ".HHHH..HHHHHHHH..HHHH",
+        ".Hs.......hh.......sH",
+        ".s..................s",
+    ], ["H": hair, "l": hairL, "h": C(0x3A2018), "s": C(0x7A4634)])
     c.rect(22, 28, 2, 1, hair); c.rect(32, 28, 2, 1, hair)
 
     if let a = p.melee {
@@ -323,15 +328,25 @@ private func drawGordonWalker(_ c: PixelCanvas, _ p: Pose) {
         // Up from his side to held out level, the whetstone run down the edge three times, and back down.
         let lift = min(1, hone / 0.14, (1 - hone) / 0.12)
         let a = 80 - lift * 140
-        drawMachete(c, [], angle: a, grip: grip, gripL: gripL, steel: steel, steelD: steelD, edge: edge)
         let run = hv6Span(hone, 0.16, 0.86)
+        // Where the stone is: run down the blade from near the guard to the tip, three times, lying on the steel.
+        var stone: (x: Int, y: Int)? = nil
+        var k = 0.0
         if run >= 0 {
-            let k = (run * 3).truncatingRemainder(dividingBy: 1)
-            let n = (x: -sin(a * .pi / 180), y: cos(a * .pi / 180))
+            k = (run * 3).truncatingRemainder(dividingBy: 1)
             let at = huntReach(huntHand, a, 4 + k * 8)
-            let sx = Int((at.x + n.x * 2).rounded()) - 1, sy = Int((at.y + n.y * 2).rounded())
-            c.rect(sx, sy, 3, 2, C(0x8A8478)); c.rect(sx, sy, 3, 1, C(0xB6AE9C))      // the stone
-            c.rect(sx, sy + 2, 3, 1, clawdOrange); c.px(sx + 2, sy + 2, clawdShade)     // his fingers under it
+            stone = (Int(at.x.rounded()) - 1, Int(at.y.rounded()) - 1)
+        }
+        if let st = stone {
+            // His other arm, reaching across from his shoulder behind the blade: the olive sleeve, lit on top.
+            huntLine(c, 35, 32.5, Double(st.x) - 0.5, Double(st.y) + 2, jacket, 1.0)
+            huntLine(c, 35, 31.8, Double(st.x) - 0.5, Double(st.y) + 1.3, jacketL, 0.4)
+        }
+        drawMachete(c, [], angle: a, grip: grip, gripL: gripL, steel: steel, steelD: steelD, edge: edge)
+        if let st = stone {
+            let (sx, sy) = st
+            c.rect(sx, sy, 3, 2, C(0x8A8478)); c.rect(sx, sy, 3, 1, C(0xB6AE9C))      // the stone, on the steel
+            c.rect(sx - 1, sy + 1, 2, 2, clawdOrange); c.px(sx - 1, sy + 2, clawdShade) // the hand holding it
             if k > 0.25 && k < 0.9 {
                 let f = Int(p.t * 20) % 2
                 c.px(sx + 3 + f, sy - 1, C(0xFFE08A, 0.95)); c.px(sx + 4, sy - 2 - f, C(0xFFC050, 0.7))
@@ -373,7 +388,7 @@ private func drawMachete(_ c: PixelCanvas, _ trail: [Double], angle a: Double, g
 private func drawBelaTalbot(_ c: PixelCanvas, _ p: Pose) {
     let coat = C(0x5C2A4A), coatD = C(0x3E1A32), coatL = C(0x80486A), collar = C(0x6E3858)
     let top = C(0xEEE4D4), topD = C(0xC8BCA8), gold = C(0xE4BC52), lips = C(0xB01E2E)
-    let hair = C(0x2A1C18), hairD = C(0x160E0C), hairL = C(0x4E362C)
+    let hair = C(0x2A1C18), hairD = C(0x160E0C), hairL = C(0x6A4C40)
 
     // Black stockings, a sheen down the front, and heeled black boots.
     drawLegs(c, Look(leg: C(0x26222A)), step: p.step)
@@ -409,22 +424,24 @@ private func drawBelaTalbot(_ c: PixelCanvas, _ p: Pose) {
     c.rect(37, 33, 1, 5, coatD); c.rect(18, 37, 20, 1, coatD); c.rect(31, 37, 2, 1, collar)
     c.rect(15, 35, 3, 1, coatD)
 
-    // The bob: near-black, glossy, cut level with her jaw and curling under, the fringe swept across her brow.
-    c.pattern(16, 20, [
-        ".......................",
+    // The bob: near-black and glossy, a side parting on the left with the fringe swept long across to the right
+    // (her brow showing under the parting), a gloss curving round the crown, strands down the sides, and the ends
+    // cut level with her jaw, curling under and flicking out.
+    c.pattern(16, 21, [
         "......HHHHHHHHHHH......",
-        "...HHHHHlllllHHHHHHH...",
-        "..HHHlllHHHHHHHlllHHH..",
-        ".HHHHHHHHHHHHHHHHHHHHH.",
-        ".HHHHHHHHHHHHHHHHhd.HHH",
-        "HHHHhd.....dHHHd....HHH",
-        "HHlHh...............dHH",
-        "HHHHh...............dHH",
-        "HlHHh...............dHH",
-        "HHlHh...............dHH",
-        ".HHHh...............HHd",
-        "..dd...............dd..",
-    ], ["H": hair, "h": hairD, "d": hairD, "l": hairL])
+        "....HHHlllllHHHHHHH....",
+        "...HHllHHHdHHHHHlllHH..",
+        "..HHHHHHHHdHHHHHHHHHHH.",
+        "..HHHHHHHHHdHHHHHHHHHH.",
+        ".HHHd...hhhh.dHHHHHdHHH",
+        ".HlH...........ddd.dHHH",
+        ".HlH................dHH",
+        ".HlH................dHH",
+        ".HHl................dHH",
+        ".HlH................dHH",
+        "HHHH...............dHHH",
+        ".ld.................dl.",
+    ], ["H": hair, "d": hairD, "l": hairL])
     c.rect(22, 28, 2, 1, hairD); c.rect(32, 28, 2, 1, hairD)
     c.rect(26, 32, 3, 1, lips); c.px(29, 32, C(0x7A1420))
 
@@ -449,7 +466,7 @@ private func drawBelaTalbot(_ c: PixelCanvas, _ p: Pose) {
 /// rakes with his long nails. Signature: his fangs drop slowly, one pixel at a time, a row of them, and slide back.
 private func drawAlphaVampire(_ c: PixelCanvas, _ p: Pose) {
     let coat = C(0x2E1C26), coatD = C(0x180E14), coatL = C(0x4E3444)
-    let velvet = C(0x140A10), velvetL = C(0x3C2432)
+    let velvet = C(0x0C0609), velvetL = C(0x7A3A52)
     let vest = C(0x7E6028), vestD = C(0x54401A), vestL = C(0xA88644), chain = C(0xE0C060)
     let cravat = C(0x18141A), cravatL = C(0x3C3444), shirt = C(0xF0ECE2), garnet = C(0xA0101E)
     let hair = C(0x241C1C), hairD = C(0x120C0C), hairL = C(0x40343A), grey = C(0x8E8A90)
@@ -491,24 +508,29 @@ private func drawAlphaVampire(_ c: PixelCanvas, _ p: Pose) {
     c.rect(25, 36, 3, 1, chain); c.px(24, 35, vestD)
     c.rect(26, 33, 4, 2, cravat); c.px(26, 33, cravatL); c.px(27, 34, garnet)
     c.px(25, 33, shirt); c.px(30, 33, shirt)
-    c.rect(19, 32, 4, 2, velvet); c.rect(19, 32, 4, 1, velvetL); c.rect(33, 32, 4, 2, velvet); c.px(33, 32, velvetL)
+    // The high velvet collar standing up either side of his jaw, its rolled edge catching a wine-red light, a dark
+    // line under it where it turns down onto the coat.
+    c.rect(18, 31, 5, 3, velvet); c.rect(18, 31, 5, 1, velvetL); c.px(22, 32, velvetL); c.px(18, 32, velvetL)
+    c.rect(33, 31, 5, 3, velvet); c.rect(33, 31, 3, 1, velvetL); c.px(33, 32, velvetL)
+    c.rect(19, 34, 4, 1, coatD); c.rect(33, 34, 4, 1, coatD)
     c.rect(23, 33, 1, 5, coatL); c.rect(32, 33, 1, 5, coatD)
     c.rect(19, 34, 1, 3, coatL); c.rect(37, 33, 1, 5, coatD); c.rect(18, 37, 20, 1, coatD)
     c.rect(15, 35, 3, 1, coatD); c.px(15, 34, shirt)
 
-    // Dark hair swept back from a high brow, a gleam along it, grey at the temples, and long sideburns down the cheeks.
+    // Dark hair swept back from a high brow, a gleam along it, grey at the temples, and long, narrow sideburns down
+    // the edges of his cheeks, well clear of his eyes.
     c.pattern(17, 21, [
         "......HHHHHHHHH.......",
         "...HHHHHHHHHHHHHHH....",
         "..HHlllHHHHHlllHHHH...",
         ".HHHHHHHHlllHHHHHHHHH.",
         ".HHhHHHHHHHHHHHHHhHHH.",
-        ".HgHg.............gHH.",
-        ".HHg..............HgH.",
-        ".HH................HH.",
-        ".Hh................hH.",
-        ".hh................hh.",
+        ".Hgg..............ggH.",
+        ".Hg................gH.",
+        ".H..................H.",
+        ".H..................h.",
         ".h..................h.",
+        ".h....................",
     ], ["H": hair, "h": hairD, "l": hairL, "g": grey])
     c.rect(22, 28, 2, 1, hairD); c.rect(32, 28, 2, 1, hairD)
 
@@ -650,29 +672,29 @@ private func drawMaryBody(_ c: PixelCanvas, _ p: Pose) {
     c.rect(22, 29, 2, 3, ink); c.rect(32, 29, 2, 3, ink)
     c.px(22, 31, C(0x8A1424)); c.px(32, 31, C(0x8A1424))
 
-    // Long wet black hair from a centre parting, hanging straight and lank either side of her face, past her
-    // shoulders, the ends ragged; a lit streak where it's wet.
-    c.pattern(15, 20, [
-        "........HHHHHHHHH........",
-        "......HHHHHHhHHHHHH......",
-        "....HHHHlHHHhHHHlHHHH....",
-        "...HHHlHHHHHhHHHHHlHHH...",
-        "..HHHlHHHHHhhHHHHHHlHHH..",
-        "..HHlHHHHHHh.hHHHHHHlHHH.",
-        "..HHlHHHHh....hHHHHHlHHH.",
-        "..HlHHd..........dHHHlHH.",
-        ".HHlHd............dHHlHH.",
-        ".HHlHd..............HlHHH",
-        ".HHlHd..............HlHHH",
-        ".HlHHd..............dHlHH",
-        ".HlHH................HlHH",
-        ".HlHH................HlHh",
-        ".HHlH................HlHh",
-        ".HlHh................hlHh",
-        ".HHlH................HlH.",
-        ".hHlh.................Hh.",
-        "..H.h.................h..",
-    ], ["H": hair, "h": hairD, "l": hairL, "d": hairD])
+    // Long wet black hair from a centre parting, lying flat on her head (the pale line of the parting showing) and
+    // falling either side of her face, straight and lank, in separate wet locks past her shoulders, the ends ragged
+    // and uneven; a lit streak down each lock where it's wet.
+    c.pattern(15, 22, [
+        ".........HHHHpHHHH.......",
+        ".......HHlHHHpHHHlHH.....",
+        ".....HHHlHHHhphHHHlHHH...",
+        "....HHHlHHHHhphHHHHlHHH..",
+        "...HHHlHHHHhphHHHHlHHHH..",
+        "...HHlHHd.........dHHlHH.",
+        "..HHlHHd...........dHlHH.",
+        "..HlHHd.............dHlHH",
+        "..HlHd...............HlHH",
+        "..HlH.d..............HlHH",
+        ".HHlH.d.............dHlHH",
+        ".HlHH..d............dHl.H",
+        ".HlH.H..............dHl.H",
+        ".HlH.H...............Hl.H",
+        ".HHl.H...............Hl.h",
+        ".hlH.h...............hl...",
+        "..H..h................h...",
+        "..h.......................",
+    ], ["H": hair, "h": hairD, "l": hairL, "d": hairD, "p": C(0x8E7A80)])
 
     // Her reaching hand, over the hair when it's raised to touch.
     if p.armRaise > 0 { c.rect(38, 33 - p.armRaise, 3, 3, clawdOrange); c.px(40, 35 - p.armRaise, clawdShade) }
@@ -681,8 +703,8 @@ private func drawMaryBody(_ c: PixelCanvas, _ p: Pose) {
 // MARK: - The Woman in White
 
 /// The Woman in White, the ghost who hitches on Centennial Highway: long dark hair in loose waves, a long white
-/// dress with long sleeves and a little lace at the throat, a pale blue sash, its skirt to her ankles and its hem
-/// trailing away in see-through wisps, bare feet that never touch the road. She hovers, cold, cooled pale blue with a
+/// fitted dress with long sleeves and a little lace at the throat, a pale blue sash, its skirt to the floor and its
+/// hem trailing away in see-through wisps, her bare toes peeping out under it, never touching the road. She hovers, cold, cooled pale blue with a
 /// faint halo. Her touch is a pale blue glow. Signature: she flickers like a bad signal, tearing sideways, gone; shows
 /// up again a little further down the road, flickers, and is back where she was.
 private func drawWomanInWhite(_ c: PixelCanvas, _ p: Pose) {
@@ -707,55 +729,72 @@ private func drawWomanInWhite(_ c: PixelCanvas, _ p: Pose) {
     }
 }
 
-/// The Woman in White, opaque, for `hv6Ghost` to cool, tear and fade.
+/// The Woman in White, opaque, for `hv6Ghost` to cool, tear and fade. A grown woman, not a girl: a long fitted
+/// gown to the floor with only her toes showing, a slim waist, a lace V at the throat, long sleeves with lace cuffs,
+/// rose lips and long waves of hair down past her shoulders.
 private func drawWomanInWhiteBody(_ c: PixelCanvas, _ p: Pose) {
     let dress = C(0xF0F2F6), dressD = C(0xC6D0DE), dressL = C(0xFFFFFF), fold = C(0xDAE2EC), sash = C(0x9CC0DE)
+    let lace = C(0xE2E8F0), legShadow = C(0xB8C4D4), lips = C(0xB83C50)
     let hair = C(0x2A1E1C), hairD = C(0x160F0E), hairL = C(0x4A3832)
 
-    // Bare legs, the feet hanging below the hem.
-    drawLegs(c, Look(leg: clawdOrange), step: p.step)
+    // Bare feet: only her toes peep out under the hem (the legs themselves stay hidden under the gown).
+    if !seatedPose {
+        for (i, lx) in [19, 23, 31, 35].enumerated() {
+            let lift = p.step >= 0 && i % 2 == p.step ? 1 : 0
+            c.rect(lx, 43 - lift, 2, 1, clawdOrange); c.px(lx + 1, 43 - lift, clawdShade)
+        }
+    }
 
     c.oy += p.breathe
-    // The skirt, long, to just above her feet: soft folds down each leg, the far side in shade, and below the hem,
-    // see-through wisps trailing off.
-    c.rect(17, 38, 22, 4, dress)
-    c.rect(17, 38, 1, 4, dressL); c.rect(38, 38, 1, 4, dressD); c.rect(17, 41, 22, 1, fold)
-    for x in [21, 25, 29, 33] { c.rect(x, 38, 1, 4, fold) }
-    c.rect(36, 38, 1, 4, dressD)
-    for x in stride(from: 17, through: 38, by: 2) {
+    // The gown, long, to the floor: falling a little wider at the hem, a soft shadow either side of each leg under
+    // the cloth, the far side in shade, and below the hem see-through wisps trailing off.
+    c.rect(17, 38, 22, 5, dress); c.rect(16, 41, 24, 2, dress)
+    c.rect(17, 38, 1, 3, dressL); c.rect(16, 41, 1, 2, dressL)
+    c.rect(38, 38, 1, 3, dressD); c.rect(39, 41, 1, 2, dressD); c.rect(16, 42, 24, 1, fold)
+    for lx in [19, 23, 31, 35] { c.rect(lx - 1, 39, 1, 3, fold); c.rect(lx + 2, 39, 1, 3, legShadow) }
+    c.rect(36, 38, 1, 5, dressD)
+    for x in stride(from: 16, through: 39, by: 2) {
         let len = 1 + Int((sin(p.lt * 3 + Double(x) * 0.9) + 1) * 0.8)
-        c.rect(x, 42, 1, len, dress.alpha(0.2))
+        c.rect(x, 43, 1, len, dress.alpha(0.2))
     }
     drawBody(c, Look(arm: dress), armRight: p.armRaise)
 
-    // The bodice: a little lace at the throat, a pale blue sash at the waist with its bow, the far side shaded.
+    // The bodice, fitted: a lace V at the throat, darts drawing it in to a slim waist, a narrow pale blue sash with a
+    // little bow, the far side shaded; long sleeves ending in lace cuffs.
     c.rect(18, 33, 20, 5, dress)
-    c.rect(25, 33, 6, 1, fold); c.px(25, 33, dressL); c.px(27, 33, dressL); c.px(29, 33, dressL)
-    c.rect(18, 36, 20, 1, sash); c.rect(20, 36, 2, 1, C(0x7EA4C8)); c.px(20, 37, sash)
-    c.rect(22, 34, 1, 2, fold); c.rect(33, 34, 1, 2, fold)
-    c.rect(37, 33, 1, 5, dressD); c.rect(18, 37, 20, 1, fold)
-    c.rect(15, 35, 3, 1, dressD); c.rect(38, 35 - p.armRaise, 3, 1, dressD)
+    c.rect(25, 33, 6, 1, lace); c.rect(26, 34, 4, 1, lace); c.rect(27, 35, 2, 1, fold)
+    c.px(25, 33, dressL); c.px(27, 33, dressL); c.px(29, 33, dressL)
+    c.rect(22, 34, 1, 3, fold); c.rect(33, 34, 1, 3, fold); c.px(21, 36, dressD); c.px(34, 36, dressD)
+    c.rect(18, 37, 20, 1, sash); c.rect(24, 37, 2, 1, C(0x7EA4C8)); c.px(25, 38, sash)
+    c.rect(37, 33, 1, 5, dressD)
+    c.rect(15, 35, 3, 1, dressD); c.px(15, 33, lace); c.px(15, 34, lace)
+    c.rect(38, 35 - p.armRaise, 3, 1, dressD)
 
-    // Long dark hair in loose waves, parted at the side, falling over her shoulders and down her back.
-    c.pattern(15, 20, [
-        "........HHHHHHHHH........",
-        "......HHHHHlllHHHHH......",
-        "....HHHHlllHHHHHHHHHH....",
-        "...HHHlHHHHHHHHHHlHHHH...",
-        "..HHlHHHHHHHHHHHHHHlHHH..",
-        "..HHlHHHHHHHHHHHHHHHlHHH.",
-        "..HlHHHHh.......hHHHHlHH.",
-        ".HHlHHh...........hHHlHH.",
-        ".HlHHd.............dHlHH.",
-        "HHlHHd..............dHlHH",
-        ".HHlHd..............dHHl.",
-        "HlHHd................HlHH",
-        ".HlHH................HHl.",
-        "HHlHd................dHlH",
-        ".HlHH.................Hl.",
-        "..HlH.................dH.",
-        "..hHd....................",
-        "...h.....................",
+    // Rose lips, and a lash at the outer corner of each eye.
+    c.rect(27, 32, 2, 1, lips)
+    c.px(21, 29, ink); c.px(34, 29, ink)
+
+    // Long dark hair in loose waves from a side parting, close over the crown, falling over her shoulders and down
+    // her back past the waist, a lit run along each wave.
+    c.pattern(15, 21, [
+        ".........HHHHHHHH........",
+        "......HHHHHlllHHHHHH.....",
+        ".....HHHlllHHHHHHHHHHH...",
+        "....HHlHHHHHHHHHHHlHHHH..",
+        "...HHlHHHHHHHhhHHHHHlHHH.",
+        "...HlHHHh..........hHlHH.",
+        "...HlHh..............HlH.",
+        "..HlHd...............dHlH",
+        "..HHld...............dlHH",
+        "..HlH.................HlH",
+        ".HlHd.................dlHH",
+        ".HHl...................HlH",
+        "..HlH..................lH.",
+        ".HlHd.................dHlH",
+        ".HHl...................HlH",
+        "..HlH..................lH.",
+        "..hHd.................dHh.",
+        "...h...................h..",
     ], ["H": hair, "h": hairD, "l": hairL, "d": hairD])
     c.rect(22, 28, 2, 1, hairD); c.rect(32, 28, 2, 1, hairD)
 

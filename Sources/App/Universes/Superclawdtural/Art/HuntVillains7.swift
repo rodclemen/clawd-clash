@@ -18,7 +18,7 @@ let huntVillains7: [HuntVillain: Persona] = [
     .djinn: Persona(name: "The Djinn", weapon: .lightning,
                     magic: Magic(core: C(0xE6FAFF), glow: C(0x1E96FF), jagged: false, touch: true),
                     headTop: 26, signature: 3.2, draw: drawDjinn),
-    .clown: Persona(name: "The Clown", weapon: .saber, headTop: 17, signature: 3.0, draw: drawClown),
+    .clown: Persona(name: "The Clown", weapon: .saber, headTop: 20, signature: 3.0, draw: drawClown),
     .scarecrow: Persona(name: "The Scarecrow", weapon: .saber, headTop: 17, signature: 3.8, draw: drawScarecrow),
     .hellhound: Persona(name: "Hellhound", canSit: false, headTop: 23, fidgets: false, draw: drawHellhound),
     .leviathanBlob: Persona(name: "Leviathan Blob", canSit: false, headTop: 28, fidgets: false,
@@ -45,19 +45,31 @@ private func drawHookman(_ c: PixelCanvas, _ p: Pose) {
     let drag = s < 0.2 ? 0 : s < 0.8 ? (s - 0.2) / 0.6 : 1
     let tipX = 45 + Int((drag * 9).rounded())
 
-    // Dark trousers and old black shoes.
-    drawLegs(c, Look(leg: C(0x4A4A54)), step: p.step)
+    // Grey trousers, lit down the front, and old black shoes with a dull shine on the toe: a shade apart from
+    // the dark coat, so all four legs show under it.
+    drawLegs(c, Look(leg: C(0x5C5E6A)), step: p.step)
+    if !seatedPose {
+        for (i, lx) in [19, 23, 31, 35].enumerated() {
+            let lift = p.step >= 0 && i % 2 == p.step ? 1 : 0
+            c.rect(lx, 39 - lift, 1, 3, C(0x7A7C88))
+        }
+    }
     drawBoots(c, C(0x101012), step: p.step, rows: 1)
+    if !seatedPose {
+        for (i, lx) in [19, 23, 31, 35].enumerated() {
+            c.px(lx + 1, p.step >= 0 && i % 2 == p.step ? 42 : 43, C(0x3A3A44))
+        }
+    }
 
     c.oy += p.breathe
-    // The frock coat's skirts to the knees, the tails at the back hanging lower, a fold over each leg.
+    // The frock coat's skirts to just above the knee, the tails at the back hanging lower, a fold over each leg.
     if seatedPose {
         c.rect(16, 38, 23, 1, coat); c.px(16, 38, coatL)
     } else {
-        c.rect(17, 38, 22, 2, coat); c.rect(17, 40, 22, 1, coatD)
+        c.rect(17, 38, 22, 1, coat); c.rect(17, 39, 22, 1, coatD)
         c.rect(16, 38, 3, 4, coat); c.rect(16, 38, 1, 4, coatL); c.rect(16, 41, 3, 1, coatD)
-        for x in [21, 25, 33] { c.rect(x, 38, 1, 2, coatD) }
-        c.rect(29, 38, 1, 3, C(0x101318)); c.rect(38, 38, 1, 3, coatD)
+        for x in [21, 25, 33] { c.px(x, 38, coatD) }
+        c.rect(29, 38, 1, 2, C(0x101318)); c.rect(38, 38, 1, 2, coatD)
     }
     drawBody(c, Look(arm: coat), armRight: scraping ? -2 : 0)
 
@@ -196,9 +208,12 @@ private func drawShapeshifter(_ c: PixelCanvas, _ p: Pose) {
     // The eyes: dark with a silver glint, or, while the camera catches him, all silver.
     for ex in [22, 32] {
         if mirror {
-            c.rect(ex, 29, 2, 3, silver); c.rect(ex + 1, 30, 1, 2, silverD)
+            // Eyeshine: the whole eye a flat bright silver, wide open in a dark rim, like a lens catching the light.
+            c.rect(ex - 1, 28, 4, 5, ink)
+            c.rect(ex, 29, 2, 3, silver); c.px(ex + 1, 31, silverD); c.px(ex, 29, C(0xFFFFFF))
         } else {
-            c.rect(ex, 29, 2, 3, ink); c.px(ex, 29, C(0xB8C2D0))
+            // Dark, but a silver catchlight two pixels tall that gives him away.
+            c.rect(ex, 29, 2, 3, ink); c.rect(ex, 29, 1, 2, C(0xD4DEEA))
         }
     }
     if glint > 0 {
@@ -271,30 +286,32 @@ private func drawDjinn(_ c: PixelCanvas, _ p: Pose) {
     c.rect(18, 37, 20, 1, sash); c.rect(18, 37, 6, 1, sashL); c.rect(26, 37, 2, 2, sashL); c.px(27, 39, sash)
     c.rect(15, 35, 3, 1, clawdShade)
 
-    // The tattoos, in strokes: swirls over the scalp, lines curling round the eyes and down the cheeks, a band
-    // across the chin, a pattern down the V of his chest, and a band round each arm.
+    // The tattoos, in strokes, kept off his face: swirls over the scalp, a line down the edge of each cheek curling
+    // in under the jaw, a small mark on the chin, a pattern down the V of his chest, and a band round each arm.
     let face = [
-        ".TTT...TTTTTT...TTT.",
-        "T...T.T......T.T...T",
-        "T..T..T.TTTT.T..T..T",
-        ".T....T......T....T.",
-        ".T...T...TT...T...T.",
-        "..T.....T..T.....T..",
-        "...TTTT..TT..TTTT...",
-        ".......T....T.......",
+        "..TT..TTTTTTTT..TT..",
+        ".T..T.T......T.T..T.",
+        "T.T..............T.T",
+        "T..................T",
+        ".T................T.",
+        ".T................T.",
+        "..TT.....TT.....TT..",
         "........T..T........",
         ".........TT.........",
     ]
     for (dy, row) in face.enumerated() {
         for (dx, ch) in row.enumerated() where ch == "T" { c.px(18 + dx, 26 + dy, tattoo(18 + dx, 26 + dy)) }
     }
+    c.px(28, 36, tattoo(28, 36)); c.px(27, 35, tattoo(27, 35)); c.px(28, 35, tattoo(28, 35))
+    // The bald scalp's shine, top left.
+    c.rect(20, 27, 2, 1, C(0xF09878)); c.px(19, 28, C(0xF09878))
     for x in 15...17 { c.px(x, 34, tattoo(x, 34)) }
     for x in 38...40 { c.px(x, 34 - raise, tattoo(x, 34 - raise)) }
     c.px(16, 33, tattoo(16, 33)); c.px(39, 33 - raise, tattoo(39, 33 - raise))
 
     // His eyes glow blue while he works.
     if casting || (wave.map { $0 > 20 && $0 < 36 } ?? false) {
-        for ex in [22, 32] { c.rect(ex, 29, 2, 3, lit); c.px(ex, 30, hot) }
+        for ex in [22, 32] { c.rect(ex, 29, 2, 3, hot); c.px(ex + 1, 31, lit) }   // white-hot, apart from the tattoos
     }
 }
 
@@ -361,19 +378,21 @@ private func drawClown(_ c: PixelCanvas, _ p: Pose) {
         c.rect(26, 29, 4, 2, red); c.rect(27, 28, 2, 1, red); c.rect(27, 31, 2, 1, redD); c.px(27, 29, C(0xFF8A86))
     }
 
-    // The wig: a big round mop in rainbow bands, its curls scalloped round the edge, lifting a pixel at each honk.
+    // The wig: a rainbow mop in bands, low on the crown and puffed out over each ear (the classic party-clown
+    // shape, so his painted face keeps most of the sprite), its curls scalloped round the edge, lifting a pixel at
+    // each honk.
     let bands: [(Px, Px)] = [(C(0xD8282C), C(0xA81C20)), (C(0xF08A24), C(0xC06A18)), (C(0xF4D23A), C(0xC8A626)),
                              (C(0x3AAE4E), C(0x26803A)), (C(0x3A6AD8), C(0x2A4CA8))]
-    for y in 17...31 {
-        for x in 14...41 {
-            if y >= 27 && x >= 19 && x <= 36 { continue }
-            if y >= 26 && x >= 21 && x <= 34 { continue }
-            let dx = Double(x) - 27.5, dy = (Double(y) - 29) * 1.15
+    for y in 19...31 {
+        for x in 13...42 {
+            if y >= 25 && x >= 20 && x <= 35 { continue }
+            if y >= 24 && x >= 22 && x <= 33 { continue }
+            let dx = Double(x) - 27.5, dy = (Double(y) - 27.5) * 1.4
             let r = (dx * dx + dy * dy).squareRoot()
-            let curl = sin(atan2(dy, dx) * 9) * 0.8
-            let edge = 12.8 + curl
+            let curl = sin(atan2(dy, dx) * 9) * 0.7
+            let edge = 10.6 + curl
             guard r <= edge else { continue }
-            let band = min(4, max(0, Int((edge - r) / 1.7)))
+            let band = min(4, max(0, Int((edge - r) / 1.3)))
             let (base, dark) = bands[band]
             c.px(x, y + boing, (x * 2 + y * 3) % 7 == 0 ? dark : base)
         }
@@ -532,6 +551,7 @@ private func drawScarecrow(_ c: PixelCanvas, _ p: Pose) {
 /// then with a flash of teeth, and rakes the floor, leaving three red scratches that fade.
 private func drawHellhound(_ c: PixelCanvas, _ p: Pose) {
     let fur = C(0x1A171E), furD = C(0x0A090D), furL = C(0x38323F), eye = C(0xFF2A1E), tooth = C(0xF0ECE0)
+    let rim = C(0x5E2228)
     let t = p.lt
     let sniff = !p.walking && sin(t * 0.9) > 0.55
     let growl = !p.walking && !sniff && Int(t * 1.3) % 6 == 0
@@ -548,19 +568,24 @@ private func drawHellhound(_ c: PixelCanvas, _ p: Pose) {
         c.px(x + 1, y - 1, C(0x1A171E, 0.16 * (1 - ph)))
     }
 
-    // Four long, thin legs: the hind ones bent at the hock, the front ones straight; they stride when it moves.
-    for (i, lx) in [20, 24, 37, 41].enumerated() {
+    // Four long, thin legs, each pair set well apart: the hind ones bent at the hock, the front ones straight; they
+    // stride when it moves. The far leg of each pair is a shade blacker, the near one lit down its front edge with a
+    // dim ember rim, so the two never run together.
+    for (i, lx) in [18, 25, 35, 42].enumerated() {
         let sw = i % 2 == 0 ? pace : -pace
         let lift = p.step >= 0 && i % 2 == p.step ? 1 : 0
-        let col = i % 2 == 0 ? furD : fur
+        let near = i % 2 == 1
+        let col = near ? fur : furD
         if i < 2 {
             c.rect(lx + sw, 37, 2, 3, col); c.rect(lx + sw - 1, 40, 2, 3 - lift, col)
-            c.rect(lx + sw - 1, 42 - lift, 3, 1 + lift, furD)
+            c.rect(lx + sw - 1, 42 - lift, 3, 1 + lift, near ? fur : furD)
+            if near { c.rect(lx + sw, 37, 1, 3, furL); c.rect(lx + sw - 1, 40, 1, 2 - lift, rim) }
         } else {
-            c.rect(lx + sw, 38, 2, 5 - lift, col)
-            c.rect(lx + sw, 42 - lift, 3, 1 + lift, furD)
+            c.rect(lx + sw, 37, 2, 6 - lift, col)
+            c.rect(lx + sw, 42 - lift, 3, 1 + lift, near ? fur : furD)
+            if near { c.rect(lx + sw, 38, 1, 4 - lift, rim) }
         }
-        c.px(lx + sw + (i < 2 ? 1 : 2), 43 - lift, furL)
+        c.px(lx + sw + (i < 2 ? 1 : 2), 43 - lift, near ? furL : fur)
     }
     c.oy += p.breathe
     // The tail, long and low, swaying.
@@ -614,10 +639,29 @@ private func drawHellhound(_ c: PixelCanvas, _ p: Pose) {
         c.rect(47, 31 + dip, 6, 1, C(0x3A0E10))
         for x in stride(from: 47, through: 52, by: 2) { c.px(x, 31 + dip, tooth) }
     }
+    // A dim ember rim along the top of its back, neck and head, as if lit from below by hellfire: enough to keep the
+    // black shape on a dark desktop.
+    hv7Rim(c, rim, from: 13, to: 53)
     if rake >= 0 && rake < 0.5 {
         // Three red scratches glowing on the floor in front of its paws, fading.
         let fade = rake < 0.1 ? rake / 0.1 : max(0, 1 - (rake - 0.1) / 0.4)
         for k in 0..<3 { c.rect(46 + k * 3, 44, 2, 1, C(0xE0281E, 0.75 * fade)); c.px(47 + k * 3, 45, C(0xE0281E, 0.4 * fade)) }
+    }
+}
+
+/// Turns the topmost solid pixel of each column from `from` to `to` into `rim`, where it's one of the near-black fur
+/// tones (never the eye, the teeth or a lit stroke).
+private func hv7Rim(_ c: PixelCanvas, _ rim: Px, from x0: Int, to x1: Int) {
+    let (ox, oy, by) = (c.ox, c.oy, c.baseY)
+    c.ox = 0; c.oy = 0; c.baseY = 0
+    defer { c.ox = ox; c.oy = oy; c.baseY = by }
+    for x in max(0, x0)...min(c.w - 1, x1) {
+        for y in 0..<c.h {
+            let i = (y * c.w + x) * 4
+            guard c.buf[i + 3] >= 250 else { continue }
+            if Int(c.buf[i]) + Int(c.buf[i + 1]) + Int(c.buf[i + 2]) < 100 { c.px(x, y, rim) }
+            break
+        }
     }
 }
 
@@ -686,8 +730,9 @@ private func drawLeviathanBlob(_ c: PixelCanvas, _ p: Pose) {
 // MARK: - Demon Smoke
 
 /// A demon out of its host: a twisting column of thick black smoke, a billowing head over a tail that thins to a
-/// wisp, coiling as it drifts, with red flickering deep inside it like lightning in a cloud. Its soft edge and the
-/// puffs it sheds are see-through; the core is solid black.
+/// wisp, coiling as it drifts, with red flickering deep inside it like lightning in a cloud. Its soft edge, the
+/// puffs it sheds off its head and the wisps off its tail are see-through, in a smoky grey with a red glow so they
+/// still show on a dark desktop; the core is solid black.
 private func drawDemonSmoke(_ c: PixelCanvas, _ p: Pose) {
     let smoke = C(0x1A171E), smokeD = C(0x0C0A0E), smokeL = C(0x3C3644)
     let t = p.lt
@@ -700,8 +745,8 @@ private func drawDemonSmoke(_ c: PixelCanvas, _ p: Pose) {
         let w = (0.7 + 6.8 * pow(1 - u, 0.9)) * dome * (0.88 + 0.12 * sin(t * 2.4 + Double(y) * 0.5)) + rag
         let x0 = Int((cx - w).rounded()), x1 = Int((cx + w).rounded())
         guard x1 >= x0 else { continue }
-        // The soft edge: a faint pixel either side.
-        c.px(x0 - 1, y, C(0x1A171E, 0.2)); c.px(x1 + 1, y, C(0x1A171E, 0.2))
+        // The soft edge: a faint, smoky grey pixel either side (pale enough to show on a dark desktop).
+        c.px(x0 - 1, y, C(0x6A6078, 0.2)); c.px(x1 + 1, y, C(0x6A6078, 0.2))
         for x in x0...x1 {
             // Coils: lit and dark bands twisting down it, lit on the left.
             let band = (Double(x) - cx) * 0.6 + Double(y) * 0.5 - t * 4
@@ -710,11 +755,27 @@ private func drawDemonSmoke(_ c: PixelCanvas, _ p: Pose) {
             c.px(x, y, col)
         }
     }
-    // Puffs shed off the head, drifting up and back, see-through and fading.
-    for k in 0..<3 {
-        let ph = (t * 0.5 + Double(k) / 3).truncatingRemainder(dividingBy: 1)
-        let x = 24 + k * 5 - Int(ph * 4), y = 21 - Int(ph * 5)
-        c.rect(x, y, 2, 2, C(0x1A171E, 0.22 * (1 - ph)))
+    // Puffs shed off the head, curling up and back: see-through, a smoky grey lit on top with a red glow under
+    // them from the fire inside, swelling in from nothing just clear of the head, then thinning away.
+    for k in 0..<4 {
+        let ph = (t * 0.45 + Double(k) / 4).truncatingRemainder(dividingBy: 1)
+        let a = 0.62 * sin(ph * .pi)
+        let x = 23 + k * 4 - Int(ph * 6) + Int((sin(t * 2 + Double(k) * 1.7) * 1.2).rounded()), y = 17 - Int(ph * 9)
+        if ph > 0.25 && ph < 0.85 {
+            // Grown into a round puff: a rounded 4×3 blob, lit along its top.
+            c.rect(x + 1, y, 2, 1, C(0x9A90AC, a)); c.rect(x, y + 1, 4, 1, C(0x6A6078, a))
+            c.px(x, y + 1, C(0x9A90AC, a)); c.rect(x + 1, y + 2, 2, 1, C(0x6A6078, a))
+            c.rect(x + 1, y + 3, 2, 1, C(0xC03028, a * 0.5))
+        } else {
+            c.rect(x, y, 2, 2, C(0x6A6078, a)); c.px(x, y, C(0x9A90AC, a)); c.px(x + 1, y + 2, C(0xC03028, a * 0.5))
+        }
+    }
+    // Wisps unravelling off the tip of its tail, drifting down and back.
+    for k in 0..<2 {
+        let ph = (t * 0.7 + Double(k) * 0.5).truncatingRemainder(dividingBy: 1)
+        let a = 0.6 * sin(ph * .pi)
+        let x = 29 - Int(ph * 5) + Int((sin(t * 3 + Double(k)) * 1).rounded()), y = 43 + Int(ph * 3)
+        c.rect(x, y, 3, 1, C(0x7A7090, a)); c.rect(x - 2, y + 1, 2, 1, C(0x8A8098, a * 0.8))
     }
     // The red: a jagged flicker inside, now here, now there, and an ember glow at its heart.
     let flick = Int(t * 7)
