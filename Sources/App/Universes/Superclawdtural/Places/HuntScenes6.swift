@@ -1349,6 +1349,7 @@ extension Scenes {
     private static func huntSiouxFallsAttic(_ c: PixelCanvas, _ g: Int) {
         let s = unit(g), f = huntSiouxFallsFrame(c, g)
         let base = f.attic - 4 * s, mx = c.w / 2, peak = 2 * s
+        guard base > peak + 4 * s else { return }   // a frame too short to have room for the attic
         let wood = C(0x8A6A44), woodD = C(0x5A4028), woodL = C(0xA88A5A)
         // The gable wall: rough boards, each its own shade of old pine, butt joints staggered, knots and nail heads,
         // darker up towards the ridge where the light doesn't reach.

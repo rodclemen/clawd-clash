@@ -216,8 +216,8 @@ extension HuntTrip {
         }
         // His body over them: body, arm nubs, four legs, Clawd's own layout (Characters.swift), eyes and all.
         let legs: [Double] = [19, 23, 31, 35]
-        for y in max(0, Int(oy + 25 * sb))..<min(h, Int(oy + 45 * sb)) {
-            for x in max(0, Int(ox + 14 * sb))..<min(w, Int(ox + 42 * sb)) {
+        for y in stride(from: max(0, Int(oy + 25 * sb)), to: min(h, Int(oy + 45 * sb)), by: 1) {
+            for x in stride(from: max(0, Int(ox + 14 * sb)), to: min(w, Int(ox + 42 * sb)), by: 1) {
                 let sx = (Double(x) + 0.5 - ox) / sb, sy = (Double(y) + 0.5 - oy) / sb
                 if (sx >= 18 && sx < 38 && sy >= 26 && sy < 38) || (sy >= 33 && sy < 36 && ((sx >= 15 && sx < 18) || (sx >= 38 && sx < 41)))
                     || (sy >= 36 && sy < 44 && legs.contains { sx >= $0 && sx < $0 + 2 }) {

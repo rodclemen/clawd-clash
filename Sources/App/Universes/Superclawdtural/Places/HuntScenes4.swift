@@ -148,7 +148,7 @@ extension Scenes {
             for k in [-4, 4] {
                 for p in 0..<(poles.count - 1) {
                     let a = poles[p] + k * s, b = poles[p + 1] + k * s
-                    for xx in a..<min(c.w, b) {
+                    for xx in stride(from: a, to: min(c.w, b), by: 1) {
                         let u = Double(xx - a) / Double(b - a)
                         c.px(xx, f.horizon - 36 * s + Int(sin(u * .pi) * Double((k < 0 ? 3 : 4) * s)), C(0x14141A, 0.85))
                     }
@@ -327,7 +327,7 @@ extension Scenes {
         for (k, sag) in [(-8, 7), (9, 10)] {
             for i in 0..<(poles.count - 1) {
                 let a = poles[i] + k * s, b = poles[i + 1] + k * s
-                for xx in max(0, a)..<min(c.w, b) {
+                for xx in stride(from: max(0, a), to: min(c.w, b), by: 1) {
                     let u = Double(xx - a) / Double(max(1, b - a))
                     c.px(xx, top + s + Int(sin(u * .pi) * Double(sag * s)), C(0x101016, 0.85))
                 }
@@ -886,7 +886,7 @@ extension Scenes {
         for (k, sag) in [(-7, 4), (7, 6)] {
             for i in 0..<(poles.count - 1) {
                 let a = poles[i] + k * s, b = poles[i + 1] + k * s
-                for xx in max(0, a)..<min(c.w, b) {
+                for xx in stride(from: max(0, a), to: min(c.w, b), by: 1) {
                     let u = Double(xx - a) / Double(max(1, b - a))
                     c.px(xx, foot - h + s + Int(sin(u * .pi) * Double(sag * s)), C(0x0E0E14, 0.9))
                 }

@@ -807,7 +807,7 @@ extension Scenes {
             let shoulder = 0.18 * exp(-pow((d + 0.55) / 0.22, 2)) - 0.08 * exp(-pow((d - 0.5) / 0.2, 2))
             return foot - Int(Double(rise) * (pow(1 - d * d, 1.4) + shoulder))
         }
-        for x in max(0, dx - half)..<min(c.w, dx + half) {
+        for x in stride(from: max(0, dx - half), to: min(c.w, dx + half), by: 1) {
             guard let top = crest(x) else { continue }
             let depth = foot - top
             c.rect(x, top, 1, depth, C(0x6E9E54))
