@@ -67,15 +67,6 @@ private func hvBlackEyes(_ c: PixelCanvas) {
     }
 }
 
-/// A knife held point down at the side, the fist round its grip, for whoever carries one when not fighting.
-private func hvKnifeAtRest(_ c: PixelCanvas, grip: Px, steel: Px, steelD: Px, edge: Px, notch: Px? = nil,
-                           length: Int = 4) {
-    c.rect(39, 34, 2, 3, grip)
-    if let notch { c.px(39, 35, notch) }
-    c.rect(39, 37, 2, length, steel); c.rect(40, 37, 1, length, steelD); c.px(40, 36 + length, edge)
-    c.rect(38, 34, 3, 2, clawdOrange)
-}
-
 // MARK: - Azazel
 
 /// Azazel, the Yellow-Eyed Demon: an everyday man you'd pass in the street, in a tan canvas work jacket with a
@@ -209,12 +200,18 @@ private func drawMegMasters(_ c: PixelCanvas, _ p: Pose) {
         c.rect(22, 28, 2, 1, hairD); c.rect(32, 28, 2, 1, hairD)
     }
 
-    // The knife: drawn and swung, or held point down at her side.
+    // The knife: drawn and swung, or held point down a little out from her side, clear of her hair, so it shows
+    // against whatever's behind her: the black grip's pommel above her fist with a grey lit edge, the short blade
+    // below, bright down its edge.
     let grip = C(0x1A1A1E), steel = C(0xBCC0C8), edge = C(0xEEF0F4)
     if let a = p.melee {
         huntBlade(c, p, angle: a, grip: grip, steel: steel, edge: edge, length: 6)
     } else {
-        hvKnifeAtRest(c, grip: grip, steel: steel, steelD: C(0x7E848E), edge: edge, length: 3)
+        c.rect(38, 34, 2, 2, jacket)                                          // the sleeve, reaching out
+        c.rect(42, 32, 2, 2, grip); c.px(42, 32, C(0x6A6A74))
+        c.rect(41, 34, 3, 3, clawdOrange); c.px(43, 36, clawdShade)           // her fist round the grip
+        c.rect(42, 37, 2, 4, steel); c.rect(43, 37, 1, 4, C(0x7E848E)); c.rect(42, 37, 1, 4, edge)
+        c.px(43, 41, edge)
     }
 }
 
