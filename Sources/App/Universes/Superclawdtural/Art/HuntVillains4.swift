@@ -5,7 +5,7 @@ import Foundation
 // Four Horsemen dressed as a businessman in red, a frail old man, a sick salesman and an undertaker.
 //
 // The suits are told apart at a glance: Clawdley's is black with an overcoat and a goatee (HuntVillains1.swift),
-// Dick Roman's navy with slick grey hair and the grin, War's red, Pestilence's a rumpled olive, and Death's black
+// Dick Roman's navy with slicked-back salt-and-pepper hair and the grin, War's red, Pestilence's a rumpled olive, and Death's black
 // with a white shirt, a high grey hairline, hollow cheeks and a cane.
 //
 // Magic (`weapon: .lightning`): `magic:` says how the stream looks, and the engine draws it from `pivot` (the casting
@@ -29,7 +29,7 @@ let huntVillains4: [HuntVillain: Persona] = [
                          headTop: 22, signature: 3.2, draw: drawPestilence),
     .death: Persona(name: "Death", weapon: .lightning,
                     magic: Magic(core: C(0xC4C4CC), glow: C(0x1C1C24), jagged: false, touch: true),
-                    headTop: 18, signature: 4.0, draw: drawDeath),
+                    headTop: 19, signature: 4.0, draw: drawDeath),
 ]
 
 // MARK: - Metatron
@@ -73,44 +73,55 @@ private func drawMetatron(_ c: PixelCanvas, _ p: Pose) {
         ".HHh..............hHH.",
         ".Hh................h..",
     ], ["H": hair, "h": hairD, "l": hairL])
-    // The glasses: a thin dark rim round each eye, joined by the bridge, a glint on the near lens.
-    c.rect(21, 28, 4, 1, frame); c.rect(31, 28, 4, 1, frame)
-    c.px(21, 29, frame); c.px(21, 30, frame); c.px(24, 29, frame); c.px(24, 30, frame)
-    c.px(31, 29, frame); c.px(31, 30, frame); c.px(34, 29, frame); c.px(34, 30, frame)
-    c.rect(25, 29, 6, 1, frame)
-    c.rect(21, 31, 1, 1, frame); c.rect(34, 31, 1, 1, frame)
-    c.px(33, 29, C(0xFFFFFF, 0.9))
+    // The glasses: a thin dark rim round each eye with the lens a pale tint inside it, so his eyes show through; a
+    // fine bridge between them, the arms back to his ears, a glint on the near lens.
+    let lens = C(0xF2B496)
+    for x0 in [20, 30] {
+        c.rect(x0 + 1, 28, 4, 1, frame); c.rect(x0 + 1, 32, 4, 1, frame)
+        c.rect(x0, 29, 1, 3, frame); c.rect(x0 + 5, 29, 1, 3, frame)
+        c.rect(x0 + 1, 29, 4, 3, lens)
+        c.rect(x0 + 2, 29, 2, 3, ink)
+    }
+    c.rect(26, 29, 4, 1, frame)
+    c.px(19, 29, frame); c.px(36, 29, frame)
+    c.px(34, 29, C(0xFFFFFF)); c.px(31, 31, C(0xFFF4EC))
 
     guard tw >= 0 else { return }
-    // The typewriter, held in front of him: a black-green body lit along its top, rows of round keys, the chrome
-    // carriage with its knobs and return lever, and the page curling up out of the roller with its typed lines.
+    // The typewriter, held in front of him: a black-green body lit along its top, three rows of round keys and the
+    // space bar, the chrome carriage with its knobs and return lever, and the page curling up out of the roller with
+    // its typed lines.
     let open = min(1.0, tw / 0.1, (1 - tw) / 0.08)
     let drop = Int(((1 - open) * 3).rounded())
-    let body = C(0x26302A), bodyL = C(0x46544A), bodyD = C(0x141A16), key = C(0xE2DED2)
-    let chrome = C(0xC4C8CE), chromeD = C(0x80868E), paper = C(0xF6F4EC), ink = C(0x4A4A52)
+    let body = C(0x2C3A32), bodyL = C(0x5A6E60), bodyD = C(0x161E1A), key = C(0xE8E4D8), keyD = C(0xA8A49A)
+    let chrome = C(0xD0D4DA), chromeD = C(0x8A9098), paper = C(0xF8F6EE), paperD = C(0xD8D4C8), typed = C(0x3A3A44)
     let typing = max(0, min(0.9999, (tw - 0.1) / 0.8)) * 3
     let line = Int(typing), frac = typing - Double(line)
     let k = tw < 0.1 || tw > 0.9 ? 0 : frac > 0.9 ? 0 : Int(frac / 0.9 * 4.99)   // the carriage creeping left
     c.oy += drop
-    c.rect(39, 35, 14, 4, body); c.rect(39, 35, 14, 1, bodyL); c.rect(39, 38, 14, 1, bodyD); c.rect(52, 35, 1, 4, bodyD)
-    for x in stride(from: 40, through: 50, by: 2) { c.px(x, 36, key) }
-    for x in stride(from: 41, through: 51, by: 2) { c.px(x, 37, key) }
+    c.rect(40, 34, 18, 6, body); c.rect(40, 34, 18, 1, bodyL); c.rect(40, 39, 18, 1, bodyD); c.rect(57, 34, 1, 6, bodyD)
+    c.px(40, 34, C(0x7A8E80))
+    for x in stride(from: 41, through: 55, by: 2) { c.px(x, 35, key) }
+    for x in stride(from: 42, through: 56, by: 2) { c.px(x, 36, key) }
+    for x in stride(from: 41, through: 55, by: 2) { c.px(x, 37, keyD) }
+    c.rect(45, 38, 8, 1, keyD)                                                   // the space bar
     // The page: a row taller for every line typed, each line a run of ink, the current one as far as he's got.
-    let top = 30 - line * 2
-    c.rect(44 - k, top, 6, 33 - top, paper); c.rect(49 - k, top, 1, 33 - top, C(0xD8D4C8))
+    let top = 29 - line * 2
+    c.rect(45 - k, top, 8, 31 - top, paper); c.rect(52 - k, top, 1, 31 - top, paperD)
     for l in 0...line {
         let y = top + 1 + (line - l) * 2
-        let len = l < line ? 5 : k
-        if len > 0 && y < 33 { c.rect(44 - k, y, len, 1, ink) }
+        let len = l < line ? 6 : k + 1
+        if len > 0 && y < 31 { c.rect(46 - k, y, len, 1, typed) }
     }
-    c.rect(41 - k, 33, 12, 2, chrome); c.rect(41 - k, 34, 12, 1, chromeD)
-    c.rect(40 - k, 33, 1, 2, bodyD); c.rect(53 - k, 33, 1, 2, bodyD)
-    c.px(41 - k, 32, chrome); c.px(40 - k, 31, chrome)                       // the return lever
-    if frac > 0.9 && tw > 0.1 && tw < 0.9 { c.px(55, 31, C(0xFFE28A)); c.px(56, 30, C(0xFFE28A, 0.5)) }   // ding
+    c.rect(42 - k, 31, 15, 2, chrome); c.rect(42 - k, 33, 15, 1, chromeD); c.rect(43 - k, 31, 13, 1, C(0xF4F6FA))
+    c.rect(41 - k, 31, 1, 3, bodyD); c.rect(57 - k, 31, 1, 3, bodyD)            // the knobs
+    c.px(41 - k, 30, chrome); c.px(40 - k, 29, chrome); c.px(39 - k, 29, chrome)  // the return lever
+    if frac > 0.9 && tw > 0.1 && tw < 0.9 {                                      // ding
+        c.px(60, 29, C(0xFFE28A)); c.px(59, 28, C(0xFFE28A, 0.6)); c.px(61, 28, C(0xFFE28A, 0.6)); c.px(60, 27, C(0xFFE28A, 0.6))
+    }
     // His hands on the keys, pecking in turn.
     let tap = Int(p.t * 8) % 2
-    c.rect(40 + tap * 2, 35 + tap, 3, 2, clawdOrange)
-    c.rect(46 + (1 - tap) * 2, 35 + (1 - tap), 3, 2, clawdOrange); c.px(48 + (1 - tap) * 2, 36 + (1 - tap), clawdShade)
+    c.rect(41 + tap * 2, 34 + tap, 3, 2, clawdOrange)
+    c.rect(49 + (1 - tap) * 2, 34 + (1 - tap), 3, 2, clawdOrange); c.px(51 + (1 - tap) * 2, 35 + (1 - tap), clawdShade)
 }
 
 // MARK: - Dick Roman
@@ -122,7 +133,7 @@ private func drawMetatron(_ c: PixelCanvas, _ p: Pose) {
 private func drawDickRoman(_ c: PixelCanvas, _ p: Pose) {
     let suit = C(0x2C3A58), suitD = C(0x1A243A), suitL = C(0x4C5E84)
     let shirt = C(0xD6E4F4), tie = C(0x98A2B2), tieD = C(0x646E7E)
-    let hair = C(0x5E5A54), hairD = C(0x3A3632), hairL = C(0xA8A49C)
+    let hair = C(0x34322F), hairD = C(0x1E1C1A), hairL = C(0xD0CCC4), silver = C(0x8E8A84)
     let s = p.signature ?? -1
     // The maw: opening, held wide, closing.
     var maw = s > 0.1 && s < 0.9 ? min(1.0, (s - 0.1) / 0.18, (0.9 - s) / 0.16) : 0.0
@@ -144,16 +155,17 @@ private func drawDickRoman(_ c: PixelCanvas, _ p: Pose) {
     c.rect(37, 33, 1, 5, suitD); c.rect(18, 37, 20, 1, suitD)
     c.rect(15, 35, 3, 1, suitD); c.px(15, 34, shirt)
 
-    // Hair slicked straight back, smooth as a helmet, grey running through it and a long gleam along the top.
+    // Hair slicked straight back off his brow: high at the front and swept down to the back of his head, dark with
+    // silver combed through it in long strokes that run back, a gleam along the top, grey at the temple.
     c.pattern(17, 22, [
-        ".....HHHHHHHHHHHH.....",
-        "...HHllllllllHHHHHH...",
-        "..HHHHHHHHHHHHHHHHHH..",
-        ".HhhHHHHhHHHHHhHHHHHH.",
-        ".HHlHH...........HHlH.",
-        ".HlH..............HHH.",
-        ".Hh................l..",
-    ], ["H": hair, "h": hairD, "l": hairL])
+        "........HHHHHHHHHH....",
+        "....HHHHlllllllHHHH...",
+        "..HHgggHHHHgggHHHHHH..",
+        ".HgggHHHHgggHHHHgggHH.",
+        ".HHHHHgggHHHHH....gg..",
+        ".HHggHH...........g...",
+        ".HHh..................",
+    ], ["H": hair, "h": hairD, "l": hairL, "g": silver])
     c.rect(22, 28, 2, 1, hairD); c.rect(32, 28, 2, 1, hairD)
 
     if maw <= 0.02 {
@@ -181,18 +193,30 @@ private func drawDickRoman(_ c: PixelCanvas, _ p: Pose) {
         }
     }
 
-    // The bite: a black tendril of goo out of his sleeve, a little pair of jaws snapping at the end of it.
+    // The bite: a thick black tendril of goo lashing out of his sleeve, lit violet along its top so it shows on the
+    // dark, and a pair of jaws snapping at the end of it, white fangs in a red maw.
     if let a = p.melee {
         let h = huntHand
-        huntSmear(c, h, p.trail, from: 2, to: 10, C(0x3A2A4A))
-        huntBar(c, h, a, from: 0, to: 7, C(0x141018), r: 1.1)
-        huntBar(c, h, a, from: 1, to: 6, C(0x2E2638), r: 0.4)
-        let tip = huntReach(h, a, 9)
-        let tx = Int(tip.x.rounded()), ty = Int(tip.y.rounded())
-        let snap = Int(p.t * 10) % 2
-        c.rect(tx - 2, ty - 2 - snap, 4, 2, C(0x141018)); c.rect(tx - 2, ty + 1 + snap, 4, 2, C(0x141018))
-        c.rect(tx - 2, ty - 1, 2, 2, C(0x141018)); c.px(tx, ty, C(0x5A1E30)); c.px(tx, ty - 1, C(0x5A1E30))
-        for x in [tx - 1, tx + 1] { c.px(x, ty - 1 - snap + 1, C(0xFAF6EA)); c.px(x, ty + snap, C(0xFAF6EA)) }
+        let goo = C(0x141018), gooL = C(0x6A4E8A)
+        huntSmear(c, h, p.trail, from: 3, to: 13, C(0x6A4E8A))
+        huntBar(c, h, a, from: 0, to: 11, goo, r: 1.6)
+        let side = huntReach((0, 0), a - 90, 1.1)
+        huntBar(c, (h.x + side.x, h.y + side.y), a, from: 2, to: 10, gooL, r: 0.45)
+        // The jaws: two wedges hinged at the end of it, opening and snapping shut along the line of the lash, the red
+        // maw between them and white fangs along their inner edges.
+        let hinge = huntReach(h, a, 10)
+        let spread = Int(p.t * 10) % 2 == 0 ? 32.0 : 18.0
+        let maw = C(0x8A2038), fang = C(0xFAF6EA)
+        huntBar(c, hinge, a, from: 0, to: 4.5, maw, r: 1.4)
+        for sgn in [-1.0, 1.0] {
+            let ang = a + sgn * spread
+            huntBar(c, hinge, ang, from: -1, to: 6.5, goo, r: 1.25)
+            if sgn < 0 { huntBar(c, huntReach(hinge, ang - 90, 1), ang, from: 0, to: 6, gooL, r: 0.4) }   // lit on top
+            for d in [2.5, 4.5, 6.2] {
+                let q = huntReach(huntReach(hinge, ang, d), ang - sgn * 90, 1.3)
+                c.px(Int(q.x.rounded()), Int(q.y.rounded()), fang)
+            }
+        }
         c.rect(38, 33, 3, 3, suit); c.px(40, 35, shirt)
     }
 }
@@ -205,7 +229,8 @@ private func drawDickRoman(_ c: PixelCanvas, _ p: Pose) {
 /// notes drifting up, then slings it back.
 private func drawChuck(_ c: PixelCanvas, _ p: Pose) {
     let robe = C(0x7C3A40), robeD = C(0x52242A), robeL = C(0xA05A5E), tee = C(0x8E949C), teeD = C(0x6E747C)
-    let hair = C(0x3E2C1E), hairD = C(0x261A10), hairL = C(0x624632), beard = C(0x4A3626)
+    let hair = C(0x3E2C1E), hairD = C(0x261A10), hairL = C(0x624632)
+    let beard = C(0x7A5436), beardD = C(0x56391F), beardL = C(0x9E7650)
     let wood = C(0xC48A4C), woodD = C(0x8C5C2C), woodL = C(0xE0AE6E), neck = C(0x4A2E1A), strap = C(0x3A2A1E)
     let s = p.signature ?? -1
     let play = s > 0.08 && s < 0.92 ? (s - 0.08) / 0.84 : -1.0
@@ -258,7 +283,8 @@ private func drawChuck(_ c: PixelCanvas, _ p: Pose) {
         c.px(19, 33, strap); c.px(20, 33, strap); c.px(33, 35, strap); c.px(34, 35, strap); c.px(35, 36, strap); c.px(36, 36, strap)
     }
 
-    // Hair a mess, sticking out every way; the beard scruffy round his jaw and up his cheeks, his mouth just showing.
+    // Hair a mess, sticking out every way; the beard a warmer brown, scruffy round his jaw and up his cheeks, a row of
+    // bare cheek between it and his hair, his mouth just showing.
     c.pattern(17, 21, [
         "..H....H...H..H...H...",
         "...HH.HHH.HHHHH.HH.H..",
@@ -270,12 +296,11 @@ private func drawChuck(_ c: PixelCanvas, _ p: Pose) {
         ".Hh................h..",
     ], ["H": hair, "h": hairD, "l": hairL])
     c.rect(22, 28, 2, 1, hairD); c.rect(32, 28, 2, 1, hairD)
-    c.pattern(18, 29, [
-        "bd................db",
+    c.pattern(18, 30, [
         "bbd..............dbb",
-        "bbbd.bb.....bd.dbbbb",
-        ".bbbbbbbmmmbbbbbbbb.",
-    ], ["b": beard, "d": hairD, "m": C(0x7A3A2A)])
+        "blbd.bl.....bl.dbbbb",
+        ".bblbbbbmmmbbbblbbb.",
+    ], ["b": beard, "d": beardD, "l": beardL, "m": C(0x8A3A2A)])
 
     guard front else { return }
     // The guitar across his front, played: the body lit on its upper edge, the soundhole, the bridge; the neck up and
@@ -354,26 +379,38 @@ private func drawWar(_ c: PixelCanvas, _ p: Pose) {
     // Both hands up before his chest, the far one turning the ring on the near one's finger.
     let hy = 33 - raise
     c.rect(39, hy, 3, 3, clawdOrange); c.px(41, hy + 2, clawdShade)
-    c.rect(41, hy + 1, 3, 2, clawdOrange); c.px(43, hy + 2, clawdShade); c.px(42, hy + 1, C(0xF09070))
-    // The ring: the gold band round his finger, the stone coming round to the front and going back as it turns.
+    c.rect(42, hy, 3, 3, clawdOrange); c.px(44, hy + 2, clawdShade); c.px(43, hy, C(0xF09070))
+    // The ring: a broad gold band round his finger, the blood-red stone coming round over the top, to the front with a
+    // glint, underneath, and out of sight behind as it turns.
     let spin = Int(turn * 12) % 4
-    c.px(40, hy + 1, gold); c.px(41, hy + 1, gold); c.px(40, hy + 2, C(0xA88020))
-    if spin != 3 { c.px(39 + spin / 2 + (spin == 2 ? 1 : 0), hy + 1, gem) }
+    c.rect(41, hy, 1, 3, gold); c.px(41, hy + 2, C(0xA88020)); c.px(41, hy, C(0xFFE08A))
+    switch spin {
+    case 0: c.rect(41, hy - 1, 1, 1, gem); c.px(42, hy - 1, gem)
+    case 1: c.rect(40, hy + 1, 2, 1, gem); c.px(40, hy, C(0xFFB0A0))
+    case 2: c.px(41, hy + 3, gem); c.px(42, hy + 3, gem)
+    default: break
+    }
     let flare = 0.5 + 0.5 * sin(turn * 30)
-    c.glowLine(40.5, Double(hy) + 1.5, 40.5, Double(hy) + 1.5, core: C(0xFF5048, 0.3), glow: C(0xE0101C),
-               coreR: 0.4, glowR: 2.2, strength: 0.35 * flare * hold)
-    // Red ripples spreading from the ring, slow and deep, and his eyes catching the red.
-    for r in 0..<2 {
-        let f = (turn * 2.5 + Double(r) * 0.5).truncatingRemainder(dividingBy: 1)
-        let rad = 3 + f * 9
-        for k in 0..<28 {
-            let a = Double(k) / 28 * 2 * .pi
-            let x = 41 + Int((cos(a) * rad).rounded()), y = hy + 1 + Int((sin(a) * rad * 0.8).rounded())
-            guard x > 43 else { continue }   // only out in front, clear of him
-            c.px(x, y, C(0xD01822, 0.7 * (1 - f) * hold))
+    c.glowLine(41.5, Double(hy) + 1.5, 41.5, Double(hy) + 1.5, core: C(0xFF5048, 0.4), glow: C(0xE0101C),
+               coreR: 0.5, glowR: 3.2, strength: (0.3 + 0.3 * flare) * hold)
+    // Red rings spreading from the ring, slow and deep, each a bright red edge with a darker band inside it, and his
+    // eyes gone red.
+    for r in 0..<3 {
+        let f = (turn * 2.5 + Double(r) / 3).truncatingRemainder(dividingBy: 1)
+        let rad = 4 + f * 13
+        let a0 = 0.9 * pow(1 - f, 0.6) * hold
+        for k in 0..<96 {
+            let a = Double(k) / 96 * 2 * .pi
+            for (d, col) in [(0.0, C(0xFF4A44)), (-1.0, C(0x8E0C16))] {
+                let x = 42 + Int((cos(a) * (rad + d)).rounded()), y = hy + 1 + Int((sin(a) * (rad + d) * 0.8).rounded())
+                guard x > 45 else { continue }   // only out in front, clear of him
+                c.px(x, y, col.alpha(a0 * (d == 0 ? 1 : 0.7)))
+            }
         }
     }
-    c.px(23, 29, C(0xC0101C, 0.8 * hold)); c.px(33, 29, C(0xC0101C, 0.8 * hold))
+    for x in [22, 32] {
+        c.rect(x, 29, 2, 3, C(0x5A060C, hold)); c.px(x + 1, 29, C(0xFF3A3A, hold)); c.px(x, 30, C(0xD0101C, hold))
+    }
 }
 
 // MARK: - Famine
@@ -392,9 +429,12 @@ private func drawFamine(_ c: PixelCanvas, _ p: Pose) {
     drawLegs(c, Look(leg: C(0x5E5C56)), step: p.step)
     drawBoots(c, C(0x4A3A2C), step: p.step, rows: 1)
 
-    // The walking stick, planted on the floor by his front feet, its crook under his hand.
+    // The walking stick, leaning out from his hand to a rubber tip on the floor ahead of his front feet: a thin slant,
+    // nothing like his legs.
     if !seatedPose {
-        c.rect(41, 35, 1, 9, cane); c.rect(42, 35, 1, 9, caneD); c.px(41, 36, caneL); c.px(41, 43, C(0x2A1E14))
+        huntLine(c, 43.5, 34.5, 47.5, 42.5, cane, 0.55)
+        for (x, y) in [(44, 35), (45, 37), (46, 39)] { c.px(x, y, caneL) }
+        c.rect(47, 42, 2, 2, C(0x22180E))
     }
 
     c.oy += p.breathe
@@ -410,10 +450,10 @@ private func drawFamine(_ c: PixelCanvas, _ p: Pose) {
     c.rect(18, 34, 1, 3, cardL); c.px(21, 35, cardD); c.px(22, 36, cardD)
     c.rect(37, 33, 1, 5, cardD); c.rect(18, 37, 20, 1, cardD)
     c.rect(15, 35, 3, 1, cardD)
-    // The crook of the stick in his hand.
+    // The crook of the stick hooked over his hand, curling back, lit along its top.
     if !seatedPose {
-        c.rect(39, 33, 4, 1, cane); c.px(39, 34, caneD); c.px(40, 33, caneL)
-        c.rect(40, 34, 2, 2, clawdOrange)
+        c.px(40, 33, caneD); c.px(40, 32, cane); c.rect(41, 31, 2, 1, caneL); c.px(43, 32, cane); c.px(44, 33, caneD)
+        c.rect(41, 33, 3, 2, clawdOrange); c.px(43, 34, clawdShade)
     }
 
     // Bald on top; white wisps fluffing out over his ears and a few strands across the crown.
@@ -425,9 +465,12 @@ private func drawFamine(_ c: PixelCanvas, _ p: Pose) {
         ".WWw...............wW.",
         "..w.................w.",
     ], ["W": wisp, "w": wispD])
-    // Bushy white brows, heavy lids over tired eyes, a hollow under each cheek.
+    // Bushy white brows; heavy lids drooping over tired eyes, only the bottom of each eye showing under a dark lid
+    // line that sags at the outer corner; a hollow under each cheek.
     c.rect(21, 28, 3, 1, wisp); c.rect(32, 28, 3, 1, wisp); c.px(24, 28, wispD); c.px(31, 28, wispD)
-    c.rect(22, 29, 2, 1, clawdShade); c.rect(32, 29, 2, 1, clawdShade)
+    let lid = C(0xEE9474), lidLine = C(0x7A3420)
+    c.rect(22, 29, 2, 1, lid); c.rect(32, 29, 2, 1, lid)
+    c.rect(22, 30, 2, 1, lidLine); c.rect(32, 30, 2, 1, lidLine); c.px(21, 30, lidLine); c.px(34, 30, lidLine)
     c.px(20, 32, clawdShade); c.px(35, 32, clawdShade)
 
     guard inhale >= 0 else { return }
@@ -453,6 +496,7 @@ private func drawPestilence(_ c: PixelCanvas, _ p: Pose) {
     let suit = C(0x66684A), suitD = C(0x464832), suitL = C(0x8A8C66), shirt = C(0xD8D2A2), tie = C(0xA48C34)
     let tieD = C(0x76641E), hanky = C(0xECE8D4)
     let hair = C(0x4A4436), hairD = C(0x2E2A20), hairL = C(0x6E6650)
+    let sick = C(0xA6C47A), sickD = C(0x7E9C58), sickL = C(0xC4DC9C)
     let s = p.signature ?? -1
     let cough = s > 0.05 && s < 0.95 ? (s - 0.05) / 0.9 : -1.0
     let handUp = cough < 0 ? 0.0 : min(1.0, cough / 0.1, (0.62 - cough) / 0.08)
@@ -466,9 +510,11 @@ private func drawPestilence(_ c: PixelCanvas, _ p: Pose) {
     c.oy += p.breathe + jerk
     let raise = handUp > 0 ? Int((handUp * 3).rounded()) : p.armRaise
     drawBody(c, Look(arm: suit), armRight: raise)
-    // The green tinge, over his whole face.
-    c.rect(18, 26, 20, 7, C(0x7ACC3E, 0.3))
-    c.rect(22, 32, 2, 1, C(0x8AA25A)); c.rect(32, 32, 2, 1, C(0x8AA25A))
+    // The green tinge: his whole face a sickly pale green, the far side in shade, his eyes redrawn on it and sallow
+    // rings under them.
+    c.rect(18, 26, 19, 7, sick); c.rect(37, 26, 1, 7, sickD)
+    c.rect(22, 29, 2, 3, ink); c.rect(32, 29, 2, 3, ink)
+    c.rect(22, 32, 2, 1, sickD); c.rect(32, 32, 2, 1, sickD)
 
     // The suit, creased: lapels lit, the shirt and the loose tie in the V, its knot dragged down, the hanky poking out
     // of the breast pocket, wrinkles across the front, the far side and hem in shade.
@@ -481,15 +527,16 @@ private func drawPestilence(_ c: PixelCanvas, _ p: Pose) {
     c.rect(37, 33, 1, 5, suitD); c.rect(18, 37, 20, 1, suitD)
     c.rect(15, 35, 3, 1, suitD)
 
-    // Thin greasy hair, a few long strands combed over the top, the scalp showing between them.
+    // Thin greasy hair: parted low over his far ear, three long strands combed right across the top of his head,
+    // the pale green scalp showing between them in bands.
     c.pattern(17, 22, [
-        ".......HHHHHHHHH......",
-        "....HHlHHlHHoHHlHHH...",
-        "..HHoHHHoHHHHHoHHHHH..",
-        ".HHHHhooHHHooHHHoHHHH.",
+        ".......sssssssss......",
+        "....HHHHHHHHHHHHHsH...",
+        "..HHHsssssssssssssss..",
+        ".HHHHHHHHHHHHHHHHHHHH.",
         ".HH...............HHH.",
         ".Hh................h..",
-    ], ["H": hair, "h": hairD, "l": hairL, "o": C(0xC09A60)])
+    ], ["H": hair, "h": hairD, "s": sickL])
     c.rect(22, 28, 2, 1, hairD); c.rect(32, 28, 2, 1, hairD)
 
     guard cough >= 0 else { return }
@@ -553,18 +600,18 @@ private func drawDeath(_ c: PixelCanvas, _ p: Pose) {
     c.rect(18, 34, 1, 3, suitL); c.rect(37, 33, 1, 5, suitD); c.rect(18, 37, 20, 1, suitD)
     c.rect(15, 35, 3, 1, suitD); c.px(15, 34, shirt)
 
-    // Thin grey hair combed straight back from that high brow, the comb lines running back.
-    c.pattern(17, 18, [
-        "....HHHHHHHH..........",
-        "..HHlllllHHHHHH.......",
-        ".HHHHhhHHHHhhHHHH.....",
-        ".HHhHHHHHhHHHHHhh.....",
-        ".HHHHhHHHHHh..........",
-        ".HHHhH................",
-        ".HHH..................",
+    // Thin grey hair combed straight back from that high brow: a few long strands lying flat along his skull with the
+    // scalp showing between them, shorter towards the front where it recedes, and thicker at the back of his head.
+    c.pattern(17, 19, [
+        "......HHHHHHH.........",
+        "...HHHllllllHHH.......",
+        ".HHHHHHHHHHHHHHHHh....",
+        ".HHh..................",
+        ".HHHHHHHHHHHHh........",
+        ".HHh..................",
+        ".HHHHHHHHh............",
         ".HHh..................",
         ".Hh...................",
-        ".h....................",
     ], ["H": hair, "h": hairD, "l": hairL])
     // A stern brow, and the hollows under his cheekbones.
     c.rect(21, 28, 3, 1, hairD); c.rect(32, 28, 3, 1, hairD)
@@ -578,21 +625,25 @@ private func drawDeath(_ c: PixelCanvas, _ p: Pose) {
         return
     }
     // The table: a red diner top edged in chrome on one chrome pedestal. On it a plate, and on the plate the chili
-    // dog: a long bun, the sausage, chili heaped along the top.
+    // dog, big enough to see from across the room: a long bun, the sausage poking out at both ends, chili heaped
+    // along the top and a squiggle of mustard over it. Each bite takes the end off.
     let k = min(1.0, eat / 0.08, (1 - eat) / 0.08)
     guard k > 0.3 else { return }
     let bites = eat < 0.32 ? 0 : eat < 0.58 ? 1 : eat < 0.84 ? 2 : 3
     c.oy -= p.breathe
-    c.rect(41, 37, 16, 1, C(0xB4343A)); c.rect(41, 38, 16, 1, C(0xD8DEE2)); c.rect(41, 37, 1, 1, C(0xD84A4E))
-    c.rect(48, 39, 2, 4, C(0xA8AEB4)); c.px(48, 39, C(0xDCE0E4)); c.rect(45, 43, 8, 1, C(0x8A9096))
-    c.rect(43, 36, 12, 1, C(0xF2F2EE)); c.rect(44, 35, 10, 1, C(0xDCDCD6))
+    c.rect(41, 37, 18, 1, C(0xB4343A)); c.rect(41, 38, 18, 1, C(0xD8DEE2)); c.rect(41, 37, 1, 1, C(0xD84A4E))
+    c.rect(49, 39, 2, 4, C(0xA8AEB4)); c.px(49, 39, C(0xDCE0E4)); c.rect(46, 43, 8, 1, C(0x8A9096))
+    c.rect(42, 36, 16, 1, C(0xF2F2EE)); c.rect(43, 35, 14, 1, C(0xDCDCD6)); c.px(42, 36, C(0xFFFFFF))
+    let x1 = 55 - bites * 4
     if bites < 3 {
-        let x1 = 52 - bites * 3
-        let bun = C(0xD8A262), bunD = C(0xAA7438), sausage = C(0x9A3A2A), chili = C(0x6A2A18), chiliL = C(0xA44428)
-        c.rect(45, 33, x1 - 45 + 1, 2, bun); c.rect(45, 34, x1 - 45 + 1, 1, bunD)
-        c.rect(44, 33, 1, 2, sausage); c.px(x1 + 1, 33, sausage)
-        for x in 45...x1 { c.px(x, 32, x % 2 == 0 ? chili : chiliL) }
-        c.px(46, 31, chili); if x1 > 49 { c.px(49, 31, chiliL) }
+        let bun = C(0xE0A862), bunD = C(0xAA7438), bunL = C(0xF4C88A), sausage = C(0xB0402C)
+        let chili = C(0x7A2E18), chiliL = C(0xB84A28), mustard = C(0xF2CC2A)
+        c.rect(44, 32, x1 - 43, 3, bun); c.rect(44, 34, x1 - 43, 1, bunD); c.rect(44, 32, x1 - 43, 1, bunL)
+        c.rect(43, 31, x1 - 41, 1, sausage); c.px(43, 32, sausage)
+        c.rect(44, 30, x1 - 43, 1, chili)
+        for x in stride(from: 45, through: x1, by: 2) { c.px(x, 30, chiliL); c.px(x, 29, chili) }
+        for x in 44...x1 { c.px(x, (x / 2) % 2 == 0 ? 29 : 30, mustard) }
+        c.px(x1, 31, C(0xD86A50))   // the cut end
     }
     c.oy += p.breathe
     // Knife and fork: the fork in his near hand, the knife in the other, sawing; after each cut the fork carries a
@@ -608,7 +659,7 @@ private func drawDeath(_ c: PixelCanvas, _ p: Pose) {
         c.rect(38, 30, 3, 3, clawdOrange)
         huntLine(c, 40, 31, 44, 32, fork, 0.5); c.px(45, 31, fork); c.px(45, 32, fork)
     }
-    let kx = 49 - bites * 3 + saw
-    c.rect(kx, 28, 2, 2, clawdOrange); c.px(kx + 1, 29, clawdShade)
-    c.rect(kx, 30, 1, 3, C(0xE4E8EE)); c.px(kx + 1, 30, C(0x2A2A30))   // the knife, its handle in his fist
+    let kx = x1 - 3 + saw
+    c.rect(kx, 26, 2, 2, clawdOrange); c.px(kx + 1, 27, clawdShade)
+    c.rect(kx, 28, 1, 4, C(0xE4E8EE)); c.px(kx + 1, 28, C(0x2A2A30))   // the knife, its handle in his fist
 }

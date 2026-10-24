@@ -137,7 +137,7 @@ private func drawRaphael(_ c: PixelCanvas, _ p: Pose) {
             prev = q
         }
     }
-    huntWingShadows(c, min(1, wings * 1.3), strength: 0.3 + 0.35 * flash)
+    huntWingShadows(c, min(1, wings * 1.3), strength: 0.5 + 0.16 * flash)
 
     drawLegs(c, Look(leg: C(0x2C2C34)), step: p.step)
     if !seatedPose {
@@ -265,15 +265,13 @@ private func drawGadreel(_ c: PixelCanvas, _ p: Pose) {
     c.oy += p.breathe
     drawBody(c, Look(arm: jacket), armRight: p.armRaise)
 
-    // The jacket, open down the front on the henley and its buttoned placket: a stand collar, two chest pockets with
-    // flaps and buttons, the near edge lit, the waistband and the far side in shade, cuffs.
+    // The jacket, plain canvas, open down the front on the henley and its one button: a stand collar, the flap of a
+    // chest pocket either side, the near edge lit, the waistband and the far side in shade, cuffs.
     c.rect(18, 33, 20, 5, jacket)
-    c.rect(25, 33, 6, 5, henley); c.rect(25, 33, 6, 1, henleyL); c.rect(28, 34, 1, 2, henleyL)
-    c.px(28, 34, button); c.px(28, 36, button)
+    c.rect(25, 33, 6, 5, henley); c.rect(25, 33, 6, 1, henleyL); c.px(28, 34, button)
     c.rect(24, 33, 1, 5, jacketL); c.rect(31, 33, 1, 5, jacketD)
     c.rect(22, 33, 2, 1, jacketL); c.rect(32, 33, 2, 1, jacketD)
-    c.rect(19, 34, 4, 1, jacketD); c.px(21, 35, jacketL); c.rect(19, 35, 1, 2, jacketL)
-    c.rect(33, 34, 3, 1, jacketD); c.px(34, 35, jacketL)
+    c.rect(20, 34, 3, 1, jacketD); c.rect(33, 34, 3, 1, jacketD)
     c.rect(18, 37, 20, 1, jacketD); c.rect(37, 33, 1, 5, jacketD); c.rect(18, 34, 1, 3, jacketL)
     c.rect(15, 35, 3, 1, jacketD); c.rect(38, 35 - p.armRaise, 3, 1, jacketD)
 
@@ -339,32 +337,34 @@ private func drawEve(_ c: PixelCanvas, _ p: Pose) {
     c.rect(20, 33, 1, 3, linenD); c.rect(34, 34, 1, 2, linenD)
     c.rect(18, 33, 1, 3, linenL); c.rect(37, 33, 1, 5, linenD); c.rect(18, 37, 20, 1, linenD)
 
-    // The mane: wild copper hair, tangled, streaming down her back to the waist, a twig with leaves caught on top and a
-    // leaf in the tangles behind.
-    c.pattern(12, 18, [
-        "...........HH..HHH..........",
-        ".........HHHHHHHHHHHH.H.....",
-        "......H.HHHlHHHHHlHHHHHH....",
-        ".....HHHHlHHHHHHHHHlHHHHH...",
-        "....HHHlHHHHHdHHHHHHHlHHHH..",
-        "...HHHlHHHHHHHHdHHHHHHHlHHH.",
-        "..HHHlHHHHHHHHHHHHHHHHHHlHH.",
-        "..HHlHHHHdHHHHHHHHHHdHHHHHHH",
-        ".HHHlHHHHHHHdHHHHHdHHHHHHHH.",
-        ".HHlHHHHH....HHH.....HHHHHH.",
-        "HHHlHHHd..............dHHHH.",
-        ".HHlHHd................dHHH.",
-        "HHHlHHd................dHH..",
-        ".HHHlHd.................dH..",
-        "HHHlHHd..................d..",
-        ".HHlHHd.....................",
-        "HHHHlHd.....................",
+    // The mane: wild copper hair, tangled, tufts sticking up every way, swept back off her face and streaming down
+    // her back to the waist in long strokes; a twig with leaves caught on top and a leaf in the tangles behind.
+    c.pattern(12, 16, [
+        "........H....H...H..........",
+        ".......HH..HHH..HH...H......",
+        "......HHHHHHHHHHHHH.HH......",
+        "....H.HHlllHHHHlllHHHH.H....",
+        "...HHHHHHHHlHHHHHHHlHHHH....",
+        "..HHHlHHHdHHHHHdHHHHHHHHH...",
+        ".HHHlHHHdHHHHHdHHHHHdHHHHH..",
+        "HHHlHHHdHHHHHdHHHHHdHHHHHHH.",
+        ".HHlHHdHHHHHdHHHHHdHHHHHHHHH",
+        "HHlHHdHHHH..HHHH...HHHHHHHH.",
+        ".HlHHdHHH.............HHHH..",
+        "HHlHHdHH..............HH....",
+        ".HlHHdH.....................",
+        "HHlHHdH.....................",
         ".HHlHHd.....................",
         "HHHlHd......................",
+        ".HHlHHd.....................",
+        "HHlHHd......................",
         ".HHlHd......................",
-        "..HHd.......................",
-        ".HdH........................",
-        "..d.........................",
+        "HHHlHd......................",
+        ".HHlHd......................",
+        "HHlHd.......................",
+        ".HlHd.......................",
+        "HHd.........................",
+        ".H.d........................",
     ], ["H": hair, "d": hairD, "l": hairL])
     c.px(32, 19, twig); c.px(33, 18, twig); c.px(34, 17, twig); c.px(35, 17, leaf); c.px(35, 16, leafL)
     c.px(33, 17, leaf)
@@ -374,18 +374,21 @@ private func drawEve(_ c: PixelCanvas, _ p: Pose) {
     c.rect(26, 32, 4, 1, C(0x9A4A3A))
 
     guard s >= 0 else { return }
-    // The little monster: a mossy, spiny thing with a glowing eye, a tail and six scrabbling legs.
+    // The little monster: a mossy, spiny, hunched thing with a glowing eye, fangs, a tail and eight scrabbling legs,
+    // lit along its back.
     let legsUp = Int(p.t * 12) % 2 == 0
-    func beastie(_ x: Int, _ y: Int, rows: Int = 4, sink: Int = 0) {
+    func beastie(_ x: Int, _ y: Int, rows: Int = 6, sink: Int = 0) {
         let art = [
-            "..s.s..",
-            ".kkkkkk",
-            "tkKKkEk",
-            legsUp ? ".l.l.l." : "..l.l.l",
+            "..s.s.s....",
+            ".kKKKKKKk..",
+            "tkKkkkkkEkk",
+            "tkkkkkkkkfk",
+            ".kkkkkkkk..",
+            legsUp ? ".l.l.l.l..." : "..l.l.l.l..",
         ]
-        let cols: [Character: Px] = ["s": C(0x2A3220), "k": C(0x3E4A2C), "K": C(0x62763E), "t": C(0x3E4A2C),
-                                     "E": C(0xFF6A2A), "l": C(0x2A3220)]
-        for (dy, row) in art.enumerated() where dy >= 4 - rows {
+        let cols: [Character: Px] = ["s": C(0x5A6A3A), "k": C(0x3E4A2C), "K": C(0x7A9248), "t": C(0x3E4A2C),
+                                     "E": C(0xFF7A2A), "f": C(0xF4F0E0), "l": C(0x2A3220)]
+        for (dy, row) in art.enumerated() where dy >= 6 - rows {
             guard y + dy + sink <= 43 else { continue }
             for (dx, ch) in row.enumerated() { if let col = cols[ch] { c.px(x + dx, y + dy + sink, col) } }
         }
@@ -400,14 +403,14 @@ private func drawEve(_ c: PixelCanvas, _ p: Pose) {
         let k = hv5Ramp(s, 0.16, 0.34)
         c.glowLine(41, Double(palmY - 2), 41, Double(palmY - 2), core: C(0x3E4A2C, 0), glow: C(0x6A8A3A),
                    coreR: 0.1, glowR: 4, strength: 0.18 * sin(k * .pi))
-        beastie(37, palmY - 4, rows: max(1, Int((k * 4).rounded(.up))))
+        beastie(36, palmY - 6, rows: max(1, Int((k * 6).rounded(.up))))
     } else if s >= 0.36 && s < 0.5 {
-        beastie(37, palmY - 4)   // sitting on her palm, looking about
+        beastie(36, palmY - 6)   // sitting on her palm, looking about
     } else if s >= 0.5 && s < 0.62 {
         // The hop down to the floor, in an arc.
         let k = hv5Ramp(s, 0.5, 0.62)
         c.oy -= p.breathe
-        let x = 37 + Int((k * 7).rounded()), y = Int((Double(palmY - 4) + (40 - Double(palmY - 4)) * k - sin(k * .pi) * 5).rounded())
+        let x = 36 + Int((k * 8).rounded()), y = Int((Double(palmY - 6) + (38 - Double(palmY - 6)) * k - sin(k * .pi) * 5).rounded())
         beastie(x, y)
         c.oy += p.breathe
     } else if s >= 0.62 && s < 0.96 {
@@ -415,11 +418,11 @@ private func drawEve(_ c: PixelCanvas, _ p: Pose) {
         c.oy -= p.breathe
         let run = hv5Ramp(s, 0.62, 0.84), dig = hv5Ramp(s, 0.84, 0.95)
         let x = 44 + Int((run * 12).rounded())
-        beastie(x, 40, sink: Int((dig * 4).rounded()))
+        beastie(x, 38, sink: Int((dig * 6).rounded()))
         if dig > 0 && dig < 1 {
             let dirt = C(0x6A4A2E)
             let hop = Int(p.t * 10) % 2
-            c.px(x - 1, 42 - hop, dirt); c.px(x + 7, 41 + hop, dirt); c.px(x - 2, 40 + hop, C(0x8A6440))
+            c.px(x - 1, 42 - hop, dirt); c.px(x + 10, 41 + hop, dirt); c.px(x - 2, 40 + hop, C(0x8A6440)); c.px(x + 11, 42 - hop, C(0x8A6440))
         }
         c.oy += p.breathe
     }
@@ -453,21 +456,23 @@ private func drawAmara(_ c: PixelCanvas, _ p: Pose) {
     let s = p.signature ?? -1
     let mist = s < 0 ? 0 : sin(hv5Ramp(s, 0.04, 0.96) * .pi)
 
-    // The swirl: wisps of black mist going round her on a tilted ring and rising as they go. `front`: the half that
-    // passes in front of her (drawn over her), or the half behind.
+    // The swirl: six long ribbons of black mist going round her on a tilted ring and spiralling up as they go, each
+    // a dark band lit violet along its top edge so it shows on a dark desktop, its tail thinning away behind it.
+    // `front`: the half that passes in front of her (drawn over her), or the half behind.
     func swirl(front: Bool) {
         guard mist > 0.02 else { return }
-        for i in 0..<22 {
-            let a = p.t * 1.6 + Double(i) / 22 * 2 * .pi
-            let inFront = sin(a) > 0
-            guard inFront == front else { continue }
-            let rise = (p.t * 0.25 + Double(i) * 0.37).truncatingRemainder(dividingBy: 1)
-            let cx = 28 + cos(a) * 20, cy = 40 - rise * 20 + sin(a) * 5
-            let fade = mist * sin(rise * .pi)
-            let col = i % 3 == 0 ? C(0x7A52B4) : i % 3 == 1 ? C(0x4A2C78) : C(0x140A20)
-            for (dx, dy, k) in [(0, 0, 1.0), (1, 0, 0.85), (-1, 0, 0.85), (0, -1, 0.75), (1, -1, 0.6), (-1, -1, 0.5),
-                                (-2, 0, 0.5), (2, 0, 0.4), (0, 1, 0.5)] {
-                hv5Mist(c, Int(cx.rounded()) + dx, Int(cy.rounded()) + dy, col, 0.9 * fade * k, front: front)
+        for i in 0..<6 {
+            let head = p.t * 1.6 + Double(i) / 6 * 2 * .pi
+            let rise = (p.t * 0.22 + Double(i) * 0.41).truncatingRemainder(dividingBy: 1)
+            for j in 0..<24 {
+                let a = head - Double(j) * 0.045
+                guard (sin(a) > 0) == front else { continue }
+                let cx = 28 + cos(a) * 20, cy = 40 - (rise - Double(j) * 0.007) * 20 + sin(a) * 5
+                let fade = mist * sin(rise * .pi) * (1 - Double(j) / 24)
+                let x = Int(cx.rounded()), y = Int(cy.rounded())
+                hv5Mist(c, x, y - 1, C(0x9A72D4), 0.9 * fade, front: front)
+                hv5Mist(c, x, y, C(0x4A2C78), 0.95 * fade, front: front)
+                if j < 16 { hv5Mist(c, x, y + 1, C(0x1A0C2A), 0.9 * fade, front: front) }
             }
         }
     }
@@ -536,32 +541,34 @@ private func drawAmara(_ c: PixelCanvas, _ p: Pose) {
 
 // MARK: - Billie
 
-/// Billie's hourglass, rotated `turn` radians about its neck at (cx, cy) (pixel centres): a brass frame top and
-/// bottom, two glass bulbs, `upper` and `lower` grains of sand (of 13 each) and the thread falling between them.
+/// Billie's hourglass, rotated `turn` radians about its neck at (cx, cy) (pixel centres): an 11×13 brass frame, its
+/// caps top and bottom and a post either side, two glass bulbs lit on the left, `upper` and `lower` grains of sand (of
+/// 23 each) and the thread falling between them.
 private func hv5Hourglass(_ c: PixelCanvas, cx: Double, cy: Double, turn: Double, upper: Int, lower: Int,
                           falling: Bool) {
-    let brass = C(0xD0A848), brassD = C(0x8A6A2A), glass = C(0xB8CCDA), glassL = C(0xEAF4FA)
-    let sand = C(0xE4BE6C), sandD = C(0xB8903C)
-    var grid = [[Px?]](repeating: [Px?](repeating: nil, count: 7), count: 9)
-    for x in 0..<7 { grid[0][x] = x < 3 ? brass : brassD; grid[8][x] = x < 3 ? brass : brassD }
-    for r in [1, 2, 6, 7] { for x in 1...5 { grid[r][x] = glass } }
-    for r in [3, 5] { for x in 2...4 { grid[r][x] = glass } }
-    grid[4][3] = glass
-    for r in 1...7 where grid[r][1] != nil { grid[r][1] = glassL }
-    if grid[3][2] != nil { grid[3][2] = glassL }; grid[5][2] = glassL
+    let brass = C(0xD8B04C), brassD = C(0x8A6A2A), brassL = C(0xF4D890), glass = C(0xA8C0D2), glassL = C(0xEAF4FA)
+    let sand = C(0xEAC270), sandD = C(0xB8903C)
+    var grid = [[Px?]](repeating: [Px?](repeating: nil, count: 11), count: 13)
+    for x in 0..<11 { grid[0][x] = x < 4 ? brassL : x < 8 ? brass : brassD; grid[12][x] = x < 4 ? brass : brassD }
+    for r in 1...11 { grid[r][1] = brass; grid[r][9] = brassD }
+    let bulb: [Int: ClosedRange<Int>] = [1: 2...8, 2: 2...8, 3: 3...7, 4: 4...6, 5: 5...5, 6: 5...5,
+                                         7: 5...5, 8: 4...6, 9: 3...7, 10: 2...8, 11: 2...8]
+    for (r, cols) in bulb { for x in cols { grid[r][x] = x == cols.lowerBound && cols.count > 1 ? glassL : glass } }
     // The sand: the upper bulb holds its grains down at the neck, the lower one fills from the bottom.
-    let up: [(Int, Int)] = [(3, 2), (3, 3), (3, 4)] + (1...5).map { (2, $0) } + (1...5).map { (1, $0) }
-    let low: [(Int, Int)] = (1...5).map { (7, $0) } + (1...5).map { (6, $0) } + [(5, 2), (5, 3), (5, 4)]
+    let up: [(Int, Int)] = [(5, 5)] + (4...6).map { (4, $0) } + (3...7).map { (3, $0) } + (2...8).map { (2, $0) }
+        + (2...8).map { (1, $0) }
+    let low: [(Int, Int)] = (2...8).map { (11, $0) } + (2...8).map { (10, $0) } + (3...7).map { (9, $0) }
+        + (4...6).map { (8, $0) } + [(7, 5)]
     for (i, cell) in up.enumerated() where i < upper { grid[cell.0][cell.1] = i % 4 == 3 ? sandD : sand }
     for (i, cell) in low.enumerated() where i < lower { grid[cell.0][cell.1] = i % 4 == 2 ? sandD : sand }
-    if falling { grid[4][3] = sand; if lower < 13 { grid[5][3] = sand } }
+    if falling { grid[6][5] = sand; grid[7][5] = sand; if lower < 22 { grid[8][5] = sand } }
     let co = cos(turn), si = sin(turn)
-    for y in Int(cy - 7)...Int(cy + 7) {
-        for x in Int(cx - 7)...Int(cx + 7) {
+    for y in Int(cy - 9)...Int(cy + 9) {
+        for x in Int(cx - 9)...Int(cx + 9) {
             let dx = Double(x) + 0.5 - cx, dy = Double(y) + 0.5 - cy
             let u = dx * co + dy * si, v = -dx * si + dy * co
-            let col = Int(floor(u + 3.5)), row = Int(floor(v + 4.5))
-            guard row >= 0, row < 9, col >= 0, col < 7, let px = grid[row][col] else { continue }
+            let col = Int(floor(u + 5.5)), row = Int(floor(v + 6.5))
+            guard row >= 0, row < 13, col >= 0, col < 11, let px = grid[row][col] else { continue }
             c.px(x, y, px)
         }
     }
@@ -665,10 +672,10 @@ private func drawBillie(_ c: PixelCanvas, _ p: Pose) {
     let hy = 33 - raise
     if turn < 1 {
         let k = turn * turn * (3 - 2 * turn)
-        hv5Hourglass(c, cx: 44.5, cy: Double(hy) - 4.5, turn: k * .pi, upper: 0, lower: 13, falling: false)
+        hv5Hourglass(c, cx: 47.5, cy: Double(hy) - 6.5, turn: k * .pi, upper: 0, lower: 23, falling: false)
     } else {
-        let up = Int((13 * (1 - flow)).rounded())
-        hv5Hourglass(c, cx: 44.5, cy: Double(hy) - 4.5, turn: 0, upper: up, lower: 13 - up, falling: up > 0)
+        let up = Int((23 * (1 - flow)).rounded())
+        hv5Hourglass(c, cx: 47.5, cy: Double(hy) - 6.5, turn: 0, upper: up, lower: 23 - up, falling: up > 0)
     }
-    c.rect(40, hy, 3, 2, clawdOrange); c.px(42, hy + 1, clawdShade)   // her fingers under its base
+    c.rect(41, hy, 4, 2, clawdOrange); c.px(44, hy + 1, clawdShade)   // her fingers under its base
 }
