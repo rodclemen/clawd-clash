@@ -33,19 +33,24 @@ extension Location {
     /// ask for each new case.
     static func eterniaHome(of villain: EterniaVillain) -> Location {
         switch villain {
-        case .skeleclawd, .evilLynn, .beastClawd, .trapClawd, .triClawdps, .merClawd, .kobraKhan, .clawdful, .screeech:
-            return .eterniaGreyskull   // until Snake Mountain is built
-        case .hordakk, .shadowWeaver, .katra, .scorpia, .mantenna, .imp, .hordeTrooper:
-            return .eterniaGreyskull   // until the Fright Zone is built
+        case .skeleclawd, .evilLynn, .beastClawd, .trapClawd, .triClawdps, .merClawd, .clawdful, .screeech:
+            return .eterniaSnakeMountain   // Mer-Clawd and Beast Clawd until their own realms are built
+        case .kobraKhan: return .eterniaVineJungle
+        case .hordakk, .shadowWeaver, .katra, .scorpia, .mantenna, .imp, .hordeTrooper: return .eterniaFrightZone
         }
     }
 
     static func eterniaHome(of hero: EterniaHero) -> Location {
         switch hero {
-        case .heClawd, .orkko, .hem, .princeAddam, .battleKat, .cringer, .teelah, .manAtClawds, .sorceress, .kingRandor,
-             .queenMarlena, .stratos, .ramClawd, .manEClawds, .mekaneck, .buzzOff, .clawdfist,
-             .sheClawd, .adorra, .spirit, .swiftWind, .bow, .glimmer, .madameRazz, .kowl:
-            return .eterniaGreyskull   // until their own places are built
+        case .heClawd, .sorceress, .battleKat, .hem: return .eterniaGreyskull
+        case .kingRandor, .queenMarlena, .princeAddam, .cringer, .teelah, .orkko, .ramClawd, .manEClawds, .mekaneck:
+            return .eterniaPalace
+        case .stratos, .buzzOff: return .eterniaPalace   // until Avion and Andreenos are built
+        case .manAtClawds: return .eterniaWorkshop
+        case .clawdfist: return .eterniaVineJungle
+        case .adorra, .spirit, .bow, .madameRazz, .kowl: return .eterniaWhisperingWoods
+        case .glimmer: return .eterniaWhisperingWoods   // until Bright Moon is built
+        case .sheClawd, .swiftWind: return .eterniaCrystalCastle
         }
     }
 }
@@ -79,7 +84,8 @@ let eterniaTheme = Theme(
     heroes: EterniaHero.allCases.map(\.persona),
     // Every place, in menu order. The first is the default: where the crew stands when nobody's home is known. A full
     // universe has about 20.
-    places: [.eterniaGreyskull],
+    places: [.eterniaGreyskull, .eterniaPalace, .eterniaWorkshop, .eterniaSnakeMountain, .eterniaVineJungle,
+             .eterniaFrightZone, .eterniaWhisperingWoods, .eterniaCrystalCastle],
     home: { c in
         c.isDark ? .eterniaHome(of: EterniaVillain(rawValue: c.index) ?? .skeleclawd)
                  : .eterniaHome(of: EterniaHero(rawValue: c.index) ?? .heClawd)
