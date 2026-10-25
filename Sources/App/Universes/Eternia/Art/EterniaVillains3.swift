@@ -24,12 +24,16 @@ let eterniaVillains3: [EterniaVillain: Persona] = [
 /// 0 before `a`, 1 after `b`, a straight run between.
 private func hordeRamp(_ s: Double, _ a: Double, _ b: Double) -> Double { min(1, max(0, (s - a) / (b - a))) }
 
-/// The Horde's red bat on a chest plate: a steel plate from row 33 to 37, its top edge dark so it parts cleanly from
-/// the face, and a small bat on it, ears up and wings raised, kept narrow so it never reads as a grinning mouth.
-private func hordeBat(_ c: PixelCanvas, plate: Px, plateD: Px, plateL: Px, red: Px, redD: Px) {
+/// A plain chest plate from row 33 to 37, its top edge dark so it parts cleanly from the face, lit under that.
+private func hordePlate(_ c: PixelCanvas, plate: Px, plateD: Px, plateL: Px) {
     c.rect(20, 33, 16, 5, plate); c.rect(20, 33, 16, 1, plateD); c.rect(20, 34, 16, 1, plateL)
     c.rect(35, 34, 1, 4, plateD); c.rect(20, 37, 16, 1, plateD)
-    c.pattern(23, 34, [
+}
+
+/// The Horde's red bat, ears up and wings raised, 9 wide and 4 high, its top-left corner at (`x`, `y`). It goes on the
+/// brow, above the eyes: anything red and spiky on the chest just under Clawd's eyes reads as a grinning mouth.
+private func hordeBat(_ c: PixelCanvas, _ x: Int, _ y: Int, red: Px, redD: Px) {
+    c.pattern(x, y, [
         "R..R.R..R",
         "RR.RRR.RR",
         ".RRRdRRR.",
@@ -72,8 +76,8 @@ private func drawHordakk(_ c: PixelCanvas, _ p: Pose) {
     c.rect(18, 32, 1, 5, suitL)
     c.rect(15, 33, 3, 1, boneD); c.px(15, 33, bone)   // the bracer on his far wrist
 
-    // The chest plate with the red bat on it.
-    hordeBat(c, plate: steel, plateD: steelD, plateL: steelL, red: red, redD: redD)
+    // A plain steel chest plate (the bat is on his brow).
+    hordePlate(c, plate: steel, plateD: steelD, plateL: steelL)
 
     // The face: a white mask lit at the top left, heavy black brows, red eyes, the upturned snout and the grim mouth.
     c.pattern(20, 25, [
@@ -95,6 +99,9 @@ private func drawHordakk(_ c: PixelCanvas, _ p: Pose) {
     c.rect(27, 19, 1, 6, boneL); c.rect(28, 19, 1, 6, boneD)
     c.px(20, 16, bone); c.rect(20, 17, 2, 1, bone); c.rect(20, 18, 3, 1, bone); c.px(20, 17, boneL)
     c.px(35, 16, bone); c.rect(34, 17, 2, 1, bone); c.rect(33, 18, 3, 1, bone); c.px(35, 17, boneD)
+    // The Horde's red bat on the cowl's brow, like a crest, on a dark patch so it stands off the bone.
+    c.rect(22, 20, 11, 5, boneD)
+    hordeBat(c, 23, 20, red: red, redD: redD)
 
     // The right arm: a plain gauntleted fist, or, as it changes, a steel cannon growing out of it, red bands round the
     // barrel and a heavy ring at the muzzle.
@@ -564,10 +571,12 @@ private func drawHordeTrooper(_ c: PixelCanvas, _ p: Pose) {
     c.rect(19, 28, 18, 3, dark); c.rect(19, 28, 18, 1, darkL)
     c.rect(22, 29, 2, 1, lamp); c.rect(32, 29, 2, 1, lamp)
     c.glowLine(22.5, 29.5, 33.5, 29.5, core: C(0xFF4A3A, 0), glow: C(0xFF3020, 0.18), coreR: 0.1, glowR: 1.4)
-    // A seam under the visor, then the chest plate with the Horde's bat and a rivet either side of it.
+    // The Horde's bat on the helmet's forehead, above the visor.
+    hordeBat(c, 23, 22, red: red, redD: redD)
+    // A seam under the visor, then a plain chest plate with a few rivets.
     c.rect(20, 31, 16, 1, greyD)
-    hordeBat(c, plate: greyL, plateD: greyD, plateL: C(0xE2E4EA), red: red, redD: redD)
-    c.px(21, 36, greyD); c.px(33, 36, greyD)
+    hordePlate(c, plate: greyL, plateD: greyD, plateL: C(0xE2E4EA))
+    c.px(22, 35, greyD); c.px(27, 35, greyD); c.px(32, 35, greyD)
 
     if march {
         // The rifle shouldered, straight up against him, its muzzle up past his helmet.
