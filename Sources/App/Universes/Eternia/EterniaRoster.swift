@@ -19,10 +19,10 @@ extension EterniaVillain {
 
 /// Every hero's persona, from the Art/EterniaHeroes*.swift files (8 to 10 a file), and HEM's, who the engine draws
 /// in this universe's costume (EterniaHem.swift). Add each new art file to the list.
-let eterniaHeroPersonas: [EterniaHero: Persona] = [eterniaHeroes1]
+let eterniaHeroPersonas: [EterniaHero: Persona] = [eterniaHeroes1, eterniaHeroes2, eterniaHeroes3, eterniaHeroes4]
     .reduce([.hem: hemPersona(.eternia)]) { $0.merging($1) { a, _ in a } }
 /// Every villain's persona, from the Art/EterniaVillains*.swift files.
-let eterniaVillainPersonas: [EterniaVillain: Persona] = [eterniaVillains1]
+let eterniaVillainPersonas: [EterniaVillain: Persona] = [eterniaVillains1, eterniaVillains2, eterniaVillains3]
     .reduce([:]) { $0.merging($1) { a, _ in a } }
 
 // MARK: - Homes
@@ -33,13 +33,19 @@ extension Location {
     /// ask for each new case.
     static func eterniaHome(of villain: EterniaVillain) -> Location {
         switch villain {
-        case .skeleclawd: return .eterniaGreyskull   // until Snake Mountain is built
+        case .skeleclawd, .evilLynn, .beastClawd, .trapClawd, .triClawdps, .merClawd, .kobraKhan, .clawdful, .screeech:
+            return .eterniaGreyskull   // until Snake Mountain is built
+        case .hordakk, .shadowWeaver, .katra, .scorpia, .mantenna, .imp, .hordeTrooper:
+            return .eterniaGreyskull   // until the Fright Zone is built
         }
     }
 
     static func eterniaHome(of hero: EterniaHero) -> Location {
         switch hero {
-        case .heClawd, .orkko, .hem: return .eterniaGreyskull
+        case .heClawd, .orkko, .hem, .princeAddam, .battleKat, .cringer, .teelah, .manAtClawds, .sorceress, .kingRandor,
+             .queenMarlena, .stratos, .ramClawd, .manEClawds, .mekaneck, .buzzOff, .clawdfist,
+             .sheClawd, .adorra, .spirit, .swiftWind, .bow, .glimmer, .madameRazz, .kowl:
+            return .eterniaGreyskull   // until their own places are built
         }
     }
 }
@@ -57,6 +63,14 @@ extension Cast {
 /// pair is a hero and a villain from this universe; a character can be in more than one pair.
 private let eterniaNemeses: [(EterniaHero, EterniaVillain)] = [
     (.heClawd, .skeleclawd),
+    (.sheClawd, .hordakk),
+    (.princeAddam, .beastClawd),
+    (.adorra, .katra),
+    (.teelah, .evilLynn),
+    (.manAtClawds, .trapClawd),
+    (.mekaneck, .triClawdps),
+    (.ramClawd, .clawdful),
+    (.bow, .mantenna),
 ]
 
 let eterniaTheme = Theme(
@@ -88,9 +102,16 @@ let eterniaTheme = Theme(
 // with the prefix (Tools/new-universe.sh renames the `sample…` ones here).
 extension Location {
     static let eterniaGreyskull = Location("eterniaGreyskull")   // Castle Greyskull, the default
+    static let eterniaPalace = Location("eterniaPalace")         // the Royal Palace of Eternos
+    static let eterniaWorkshop = Location("eterniaWorkshop")     // Man-At-Clawds's workshop
+    static let eterniaSnakeMountain = Location("eterniaSnakeMountain")
+    static let eterniaVineJungle = Location("eterniaVineJungle")
+    static let eterniaFrightZone = Location("eterniaFrightZone")
+    static let eterniaWhisperingWoods = Location("eterniaWhisperingWoods")
+    static let eterniaCrystalCastle = Location("eterniaCrystalCastle")
 }
 
 /// Every place's drawing, from the Places/EterniaScenes*.swift files (a few places a file). Add each new file to the
 /// list.
-let eterniaPlaces: [Location: Place] = [eterniaScenes1]
+let eterniaPlaces: [Location: Place] = [eterniaScenes1, eterniaScenes2, eterniaScenes3]
     .reduce([:]) { $0.merging($1) { a, _ in a } }

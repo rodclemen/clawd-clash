@@ -13,13 +13,20 @@ import Foundation
 
 enum EterniaHero: Int, CaseIterable {
     // The Masters of the Universe
-    case heClawd, orkko
+    case heClawd, orkko, princeAddam, battleKat, cringer, teelah, manAtClawds, sorceress, kingRandor, queenMarlena
+    case stratos, ramClawd, manEClawds, mekaneck, buzzOff, clawdfist
+    // She-Clawd and the Great Rebellion
+    case sheClawd, adorra, spirit, swiftWind, bow, glimmer, madameRazz, kowl
     case hem   // always last (`Universe.hem`)
 }
 
 enum EterniaVillain: Int, CaseIterable {
     // Skeleclawd and the Evil Warriors
-    case skeleclawd
+    case skeleclawd, evilLynn, beastClawd, trapClawd, triClawdps, merClawd, kobraKhan, clawdful
+    // Hordakk and the Evil Horde
+    case hordakk, shadowWeaver, katra, scorpia, mantenna
+    // Small fry, agents only: Hordakk's spy, his foot soldiers, Skeleclawd's bird
+    case imp, hordeTrooper, screeech
 }
 
 extension Universe {
@@ -32,7 +39,13 @@ enum EterniaFacts {
     static let entry = UniverseEntry(universe: .eternia, key: "eternia", title: "Clawds of the Universe", facts: facts)
     static let facts = UniverseFacts(
         // The counts come from the enums, never typed by hand.
-        villainCount: EterniaVillain.allCases.count, heroCount: EterniaHero.allCases.count
+        villainCount: EterniaVillain.allCases.count, heroCount: EterniaHero.allCases.count,
+        agentOnly: Set([EterniaVillain.imp, .hordeTrooper, .screeech].map(\.rawValue)),
+        // The two big bads, old pupil and old teacher: two cackling skull faces in a row would wear thin.
+        rivals: [EterniaVillain.skeleclawd.rawValue, EterniaVillain.hordakk.rawValue],
+        // The secret identities: one hero in two guises, never on stage together (compaction swaps them, phase 4).
+        guises: [(EterniaHero.princeAddam, EterniaHero.heClawd), (.cringer, .battleKat), (.adorra, .sheClawd),
+                 (.spirit, .swiftWind)].map { [UniverseFacts.heroBase + $0.0.rawValue, UniverseFacts.heroBase + $0.1.rawValue] as Set }
         // Everything below is optional: uncomment what your universe needs. Ids here are local: a villain's is its
         // rawValue, a hero's `UniverseFacts.heroBase + rawValue`.
         //
