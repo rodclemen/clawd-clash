@@ -19,8 +19,9 @@ let eterniaScenes4: [Location: Place] = [
 
 /// The frame of a place drawn whole at a unit a pixel on a canvas `w` by `h` units, blown up `q` times so that its
 /// bottom row sits on the ground row and its middle column on the picture's (the same rule as Greyskull's scale).
-private func eterniaS4Frame(_ c: PixelCanvas, _ g: Int) -> (q: Int, x: Int, y: Int, w: Int, h: Int) {
-    let q = max(1, min(g * 62 / (100 * 56), c.w * 8 / (10 * 120)))
+/// A room (the chamber) already fills the screen, so it isn't blown up further on the screen saver.
+private func eterniaS4Frame(_ c: PixelCanvas, _ g: Int, room: Bool = false) -> (q: Int, x: Int, y: Int, w: Int, h: Int) {
+    let q0 = max(1, min(g * 62 / (100 * 56), c.w * 8 / (10 * 120))), q = room ? q0 : eterniaTall(c, q0)
     let w = (c.w + q - 1) / q + 2, h = (g + q - 1) / q
     return (q, c.w / 2 - w / 2 * q, g - h * q, w, h)
 }
@@ -106,7 +107,7 @@ extension Scenes {
     /// violet dusk in them. On the screen saver the hall rises into a ribbed vault, a clerestory of falcons carved
     /// between pairs of little dusk-lit lancets under a dog-tooth band, iron braziers hanging on long chains.
     static func eterniaChamber(_ c: PixelCanvas, _ g: Int) {
-        let f = eterniaS4Frame(c, g)
+        let f = eterniaS4Frame(c, g, room: true)
         let u = PixelCanvas(f.w, f.h)
         eterniaChamberHall(u)
         eterniaS4BlowUp(c, u, f.x, f.y, f.q)
@@ -411,7 +412,7 @@ extension Scenes {
     /// The chamber's life: the pool's light rippling over the walls, the alcove and the throne, rings spreading on
     /// the water, motes of light rising off it and, on the screen saver, the braziers' flames flickering.
     static func eterniaChamberLife(_ c: PixelCanvas, _ g: Int, _ t: Double) {
-        let f = eterniaS4Frame(c, g)
+        let f = eterniaS4Frame(c, g, room: true)
         let u = PixelCanvas(f.w, f.h)
         let B = f.h, cx = f.w / 2, top = B - 56
         let px0 = cx, py0 = B - 7

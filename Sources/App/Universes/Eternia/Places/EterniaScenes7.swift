@@ -19,7 +19,7 @@ extension Scenes {
     /// How many times a landmark drawn `w` units wide is blown up: once in the window, three times or more on the
     /// screen saver (the same rule as Greyskull's).
     private static func eterniaPlaces7Q(_ c: PixelCanvas, _ g: Int, _ w: Int) -> Int {
-        max(1, min(g * 62 / (100 * 56), c.w * 8 / (10 * w)))
+        eterniaTall(c, max(1, min(g * 62 / (100 * 56), c.w * 8 / (10 * w))))
     }
 
     /// Copies `art` onto `c` with its top left at (`x`, `y`), each of its pixels a `q`×`q` block, faded to `alpha`.

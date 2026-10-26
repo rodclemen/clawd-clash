@@ -19,7 +19,7 @@ extension Scenes {
     /// jawbridge comes down from.
     static func eterniaGreyskullFrame(_ c: PixelCanvas, _ g: Int) -> (q: Int, cliff: Int, x: Int, y: Int,
                                                                       mouth: (x: Int, w: Int, y: Int)) {
-        let q = max(1, min(g * 62 / (100 * 56), c.w * 8 / (10 * 120)))
+        let q = eterniaTall(c, max(1, min(g * 62 / (100 * 56), c.w * 8 / (10 * 120))))
         let cliff = g - (isTall(c) ? 12 : 9) * q
         let x = c.w * 56 / 100 - 60 * q, y = cliff - 54 * q
         return (q, cliff, x, y, (x + 47 * q, 27 * q, y + 46 * q))

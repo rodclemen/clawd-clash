@@ -37,14 +37,18 @@ private func eterniaDither(_ tones: [Px], _ v: Double, _ x: Int, _ y: Int, grain
     return tones[max(0, min(tones.count - 1, i))]
 }
 
-/// How many times the big things are blown up: once in the window, growing with the screen saver (as Greyskull).
-private func eterniaBigScale(_ c: PixelCanvas, _ g: Int) -> Int { max(1, min(g * 62 / (100 * 56), c.w * 8 / (10 * 120))) }
+/// How many times the big things are blown up: once in the window, growing with the screen saver (as Greyskull). A
+/// room already fills the screen, so it isn't blown up further there (its ceiling would be cut off).
+private func eterniaBigScale(_ c: PixelCanvas, _ g: Int, room: Bool = false) -> Int {
+    let q = max(1, min(g * 62 / (100 * 56), c.w * 8 / (10 * 120)))
+    return room ? q : eterniaTall(c, q)
+}
 
 /// The frame of a place drawn whole at a unit a pixel on a canvas `w` by `h` units, blown up `q` times so that its
 /// bottom row sits on the ground row and its middle column on the picture's: `h` rows reach the top of the picture,
 /// the place's 56 at the bottom and its ceiling (or the air) over them.
-private func eterniaHall(_ c: PixelCanvas, _ g: Int) -> (q: Int, x: Int, y: Int, w: Int, h: Int) {
-    let q = eterniaBigScale(c, g)
+private func eterniaHall(_ c: PixelCanvas, _ g: Int, room: Bool = false) -> (q: Int, x: Int, y: Int, w: Int, h: Int) {
+    let q = eterniaBigScale(c, g, room: room)
     let w = (c.w + q - 1) / q + 2, h = (g + q - 1) / q
     return (q, c.w / 2 - w / 2 * q, g - h * q, w, h)
 }
@@ -108,7 +112,7 @@ extension Scenes {
     /// against the light. The whole hall is drawn at a unit a pixel and blown up; on the screen saver it stands
     /// three times the size or more, under a ribbed vault and a gold chandelier.
     static func eterniaPalace(_ c: PixelCanvas, _ g: Int) {
-        let f = eterniaHall(c, g)
+        let f = eterniaHall(c, g, room: true)
         let u = PixelCanvas(f.w, f.h)
         eterniaPalaceHall(u)
         eterniaBlowUp(c, u, f.x, f.y, f.q)
@@ -425,7 +429,7 @@ extension Scenes {
     /// The throne room's life: the torches flickering, a slow ripple travelling across each banner and, on the
     /// screen saver, now and then the green-and-orange Wind Raider gliding past outside the windows.
     static func eterniaPalaceLife(_ c: PixelCanvas, _ g: Int, _ t: Double) {
-        let f = eterniaHall(c, g), B = f.h, cx = f.w / 2, top = B - 56
+        let f = eterniaHall(c, g, room: true), B = f.h, cx = f.w / 2, top = B - 56
         let u = PixelCanvas(f.w, f.h)
         let piers = eterniaBays(f.w, first: 27, step: 36)
         let torches = piers.filter { $0.k % 2 == 1 }.map(\.x) + [cx - 21, cx + 21]
@@ -484,7 +488,7 @@ extension Scenes {
     /// pieces), and tall racks of jars, boxes and spare parts between. On the screen saver the room rises to a
     /// high rack of hanging tools and a timber roof with a skylight, its light slanting down across the Ram.
     static func eterniaWorkshop(_ c: PixelCanvas, _ g: Int) {
-        let f = eterniaHall(c, g)
+        let f = eterniaHall(c, g, room: true)
         let u = PixelCanvas(f.w, f.h)
         eterniaWorkshopHall(u)
         eterniaBlowUp(c, u, f.x, f.y, f.q)
@@ -895,7 +899,7 @@ extension Scenes {
     /// The workshop's life: the cogs on the wall turning, the big one driving the others, and bursts of welding at
     /// the Ram's seam, a blue-white spark spitting showers of orange that fall to the floor.
     static func eterniaWorkshopLife(_ c: PixelCanvas, _ g: Int, _ t: Double) {
-        let f = eterniaHall(c, g), B = f.h, cx = f.w / 2
+        let f = eterniaHall(c, g, room: true), B = f.h, cx = f.w / 2
         let u = PixelCanvas(f.w, f.h)
         let brass = [C(0x5A3E18), C(0x8A6428), C(0xB08838), C(0xD8B050)], steel = [C(0x3A3E48), C(0x5E6470), C(0x868C98), C(0xB0B6C0)]
         let cogs = eterniaWorkshopCogs(f.w, f.h)

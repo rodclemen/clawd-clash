@@ -33,7 +33,7 @@ extension Scenes {
     /// for the outer walls and towers either side, the palace itself `off` units in. The frozen lake between it and
     /// the crew is wider on the screen saver.
     static func eterniaCastleChillFrame(_ c: PixelCanvas, _ g: Int) -> (q: Int, base: Int, x: Int, y: Int, w: Int, off: Int) {
-        let q = max(1, min(g * 62 / (100 * 56), c.w * 8 / (10 * 120)))
+        let q = eterniaTall(c, max(1, min(g * 62 / (100 * 56), c.w * 8 / (10 * 120))))
         let base = g - (isTall(c) ? 10 : 5) * q
         let w = isTall(c) ? 120 : 200
         return (q, base, c.w / 2 - w / 2 * q, base - 56 * q, w, (w - 120) / 2)
@@ -420,7 +420,7 @@ extension Scenes {
     /// window the street runs on either side of it. `x0` is where the block starts and `foot` the row the shop
     /// fronts stand on, both in units.
     static func eterniaEarthTownFrame(_ c: PixelCanvas, _ g: Int) -> (q: Int, w: Int, h: Int, y: Int, x0: Int, foot: Int) {
-        let q = max(1, min(g * 62 / (100 * 56), c.w / 236))
+        let q = max(1, min(g * 62 / (100 * 56), c.w / 236))   // the street already spans the screen: no screen-saver boost
         let w = c.w / q + 2, h = (g + q - 1) / q
         return (q, w, h, g - h * q, w / 2 - 113, h - 8)
     }

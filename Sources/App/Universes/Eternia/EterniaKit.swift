@@ -52,3 +52,7 @@ func eterniaFur(_ c: PixelCanvas, _ x: Int, _ y: Int, _ w: Int, _ h: Int, base: 
         if ragged && (xx - x) % 2 == 0 { c.px(xx, y + h, (xx - x) % 4 == 0 ? dark : base) }
     }
 }
+
+/// How many times a landmark is blown up, `q` from the usual rule (the floor's height, kept inside the width): on the
+/// screen saver half as big again, so the castles fill the screen rather than standing small under a lot of sky.
+func eterniaTall(_ c: PixelCanvas, _ q: Int) -> Int { Scenes.isTall(c) ? (q * 3 + 1) / 2 : q }

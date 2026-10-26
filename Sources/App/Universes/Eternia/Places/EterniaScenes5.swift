@@ -18,7 +18,7 @@ let eterniaScenes5: [Location: Place] = [
 // MARK: - Shared
 
 /// How many times the big things are blown up: once in the window, growing with the screen saver (as Greyskull).
-private func eternia5Scale(_ c: PixelCanvas, _ g: Int) -> Int { max(1, min(g * 62 / (100 * 56), c.w * 8 / (10 * 120))) }
+private func eternia5Scale(_ c: PixelCanvas, _ g: Int) -> Int { eterniaTall(c, max(1, min(g * 62 / (100 * 56), c.w * 8 / (10 * 120)))) }
 
 /// Paints `src` onto `c` blown up `q` times, its top left at (x, y), skipping rows off the picture.
 private func eternia5BlowUp(_ c: PixelCanvas, _ src: PixelCanvas, _ x: Int, _ y: Int, _ q: Int) {
