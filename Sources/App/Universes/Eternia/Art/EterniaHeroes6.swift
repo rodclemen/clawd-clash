@@ -181,10 +181,12 @@ private func drawQueenAngella(_ c: PixelCanvas, _ p: Pose) {
 
     c.oy += p.breathe
     drawBody(c, Look(arm: gown))
-    // The gown: a lit neckline, the far side shaded, folds; the gold belt and its gem; the skirt flaring to a
-    // purple hem just above her slippers.
-    c.rect(18, 32, 20, 4, gown); c.rect(18, 32, 20, 1, gownL); c.rect(37, 32, 1, 4, gownD)
-    c.rect(21, 33, 1, 3, gownD); c.rect(34, 33, 1, 3, gownD)
+    // The gown: cut low, so a band of Clawd shows under her face before it starts (lilac right under the eyes
+    // swallows her mouth and chin); a gold neckline lit along the top, the far side shaded, folds; the gold belt and
+    // its gem; the skirt flaring to a purple hem just above her slippers.
+    c.rect(18, 34, 20, 2, gown); c.rect(37, 34, 1, 2, gownD)
+    c.rect(18, 34, 20, 1, gold); c.rect(18, 34, 7, 1, goldL); c.rect(34, 34, 4, 1, goldD)
+    c.px(21, 35, gownD); c.px(34, 35, gownD)
     c.rect(18, 36, 20, 1, gold); c.rect(18, 36, 6, 1, goldL); c.rect(27, 36, 2, 1, gem)
     for y in 37...40 where y + c.oy <= 42 {
         let f = (y - 37) / 2
