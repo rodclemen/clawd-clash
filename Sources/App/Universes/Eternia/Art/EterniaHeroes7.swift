@@ -9,11 +9,11 @@ let eterniaHeroes7: [EterniaHero: Persona] = [
     .netossa: Persona(name: "Netossa", weapon: .blaster, shot: .thrown(C(0xE8ECF4)), muzzle: (44, 30), handGun: false,
                       headTop: 20, signature: 3.4, draw: drawNetossa),
     .flutterina: Persona(name: "Flutterina", motion: .fly, headTop: 16, signature: 3.2, draw: drawFlutterina),
-    .lightHope: Persona(name: "Light Hope", motion: .hover, canSit: false, headTop: 7, signature: 3.6,
+    .lightHope: Persona(name: "Light Hope", motion: .hover, canSit: false, headTop: 5, signature: 3.6,
                         draw: drawLightHope),
     .stonedar: Persona(name: "Stonedar", weapon: .saber, armoured: true, headTop: 22, signature: 3.6,
                        draw: drawStonedar),
-    .looKee: Persona(name: "Loo-Kee", headTop: 19, signature: 4.0, draw: drawLooKee),
+    .looKee: Persona(name: "Loo-Kee", headTop: 14, signature: 4.0, draw: drawLooKee),
 ]
 
 private let none = C(0, 0)
@@ -38,7 +38,7 @@ private func cuffedBoots(_ c: PixelCanvas, step: Int, rows: Int, _ col: Px, _ li
 /// Peekablue: the rebel who sees far off through the eyes in her tail. Long pale-gold hair in strands, a crest of
 /// three little blue feathers on her crown, each tipped with an eye, a white tunic with a royal-blue neckline, belt
 /// and skirt, blue boots, and a great peacock tail, teal and green, folded behind her into a long train that sweeps
-/// down to the ground, its eyes shut. She doesn't fight. Signature: she fans the tail up into a wheel behind her, every
+/// down to the ground, its eyes shut. Her long hair falls in strands either side, to her waist behind. She doesn't fight. Signature: she fans the tail up into a wheel behind her, every
 /// gold-ringed eye on it opening wide, holds it, and folds it away again.
 private func drawPeekablue(_ c: PixelCanvas, _ p: Pose) {
     let hair = C(0xF0D88A), hairD = C(0xC4A85A), hairL = C(0xFFF0BE)
@@ -83,6 +83,36 @@ private func drawPeekablue(_ c: PixelCanvas, _ p: Pose) {
         "Hh...................hH.",
         ".h....................h.",
     ], ["H": hair, "h": hairD, "l": hairL])
+    // The long locks either side, out past her face and down over her shoulders in strands, a darker edge so the
+    // white outline doesn't swallow the pale gold: down her back to her waist behind, to her shoulder in front.
+    c.pattern(12, 24, [
+        "....HH",
+        "...HHH",
+        "..hHlH",
+        ".hHlHH",
+        ".hHlHh",
+        "hHlHHh",
+        "hHlHhh",
+        "hHlHh.",
+        "hHlHh.",
+        "hHlHh.",
+        ".hlHh.",
+        ".hH.h.",
+        "..h...",
+    ], ["H": hair, "h": hairD, "l": hairL])
+    c.pattern(37, 24, [
+        "HH....",
+        "HHH...",
+        "HlHh..",
+        "HHlHh.",
+        "hHlHh.",
+        "hHlHHh",
+        "hHlHhh",
+        ".hlHh.",
+        "..hh..",
+    ], ["H": hair, "h": hairD, "l": hairL])
+    // Her front arm over the lock, its blue cuff.
+    c.rect(38, 33 - p.armRaise, 3, 3, tunic); c.rect(38, 35 - p.armRaise, 3, 1, blue)
     // The crest: three blue feathers fanned up from her crown, each tipped with a little gold-ringed eye.
     let crest: [(Double, Double)] = [(25, 14.5), (28.5, 13), (32, 14.5)]
     for (x, y) in crest {
@@ -276,8 +306,9 @@ private func drawFlutterina(_ c: PixelCanvas, _ p: Pose) {
     let lift = Int((aloft * 8).rounded())
     // How far open the wings are, from the side (1: spread flat, low: closed up together over her back).
     var openK = 0.85 + 0.15 * sin(p.t * 2.2)
-    if p.flying { openK = Int(p.t * 10) % 2 == 0 ? 1 : 0.3 }
-    else if s >= 0.04 && s < 0.96 { openK = Int(p.t * (aloft > 0.95 ? 4 : 10)) % 2 == 0 ? 1 : 0.35 }
+    // Closed up they still show a good width of orange, never a thin dark stick.
+    if p.flying { openK = Int(p.t * 10) % 2 == 0 ? 1 : 0.6 }
+    else if s >= 0.04 && s < 0.96 { openK = Int(p.t * (aloft > 0.95 ? 4 : 10)) % 2 == 0 ? 1 : 0.6 }
 
     c.oy -= lift
     // The wings behind her: the far pair, then the near pair, both from her back.
@@ -365,7 +396,8 @@ private func leafWing(_ c: PixelCanvas, root: (Double, Double), angle: Double, l
             let tip = k > 0.6 ? sqrt(max(0, 1 - pow((k - 0.6) / 0.4, 2))) : 0.3 + k / 0.6 * 0.7
             let w = half * tip
             guard abs(v) <= w else { continue }
-            let border = abs(v) > w - 1.3 || k > 0.92
+            // A narrow wing gets a thinner border, so the orange inside still shows.
+            let border = abs(v) > w - (w > 3.5 ? 1.3 : 0.7) || k > 0.94
             let isVein = !border && k > 0.15 && k < 0.75 && abs(v) < 0.5
             let isSpot = !border && w > 3 && abs(k - 0.62) < 0.08 && abs(abs(v) - w * 0.45) < 1
             var col: Px = k < 0.3 ? yellow : orange
@@ -381,8 +413,8 @@ private func leafWing(_ c: PixelCanvas, root: (Double, Double), angle: Double, l
 
 /// Light Hope: the spirit of the Crystal Castle, a pillar of rainbow light. No body to speak of: a tall column of
 /// light rising from a robe of it, in bands of red, orange, yellow, green, blue and violet, a calm pale face in the
-/// middle with its eyes peacefully shut, and four pale legs of light under the hem, never quite on the ground. A faint
-/// shimmer rises off the top. He doesn't fight. Signature: the light cycles through the rainbow, the bands running
+/// middle with its eyes peacefully shut, and four pale legs of light under the hem, never quite on the ground. The
+/// pillar has no top: it pales and fades away as it rises, soft motes drifting up through it. He doesn't fight. Signature: the light cycles through the rainbow, the bands running
 /// down the pillar and the face glowing brighter.
 private func drawLightHope(_ c: PixelCanvas, _ p: Pose) {
     let bands: [(Px, Px)] = [
@@ -409,17 +441,22 @@ private func drawLightHope(_ c: PixelCanvas, _ p: Pose) {
     }
     c.oy += p.breathe
     drawBody(c, Look(body: C(0xFFF6E2), shade: C(0xE8D8C0), arm: band(34).0, eye: nil), armRight: p.armRaise)
-    // The robe and the pillar, row by row: each row in its band's colour, lit on its left edge. The pillar rises
-    // from the shoulders, narrowing and rounding off at the top; the robe flares to the hem.
-    for y in 7...40 where y + c.oy <= 41 {
-        let (col, lit) = band(y)
+    // The robe and the pillar, row by row: each row in its band's colour, lit on its left edge. The pillar has no
+    // top: it rises out of the frame of light, its upper rows paling and fading away to nothing, so it's a beam, not
+    // a cap. Lower down it widens smoothly into the hood with no step, and the robe flares to the hem.
+    for y in 3...40 where y + c.oy <= 41 {
+        var (col, lit) = band(y)
         var l = 0, r = 0
         switch y {
-        case 7: (l, r) = (24, 31)
-        case 8: (l, r) = (22, 33)
-        case 9...25: (l, r) = (21, 34)
+        case 3...20: (l, r) = (21, 34)
+        case 21...25: (l, r) = (21 - (y - 20) * 4 / 5, 34 + (y - 20) * 4 / 5)
         case 26...32: (l, r) = (17, 38)
         default: (l, r) = (17 - (y - 33) / 3, 38 + (y - 33) / 3)
+        }
+        if y < 12 {
+            // Paling to white as it fades, so it reads as light thinning out, not as a dark cap.
+            let k = Double(y - 2) / 10
+            col = lit.alpha(0.25 + 0.75 * k * k); lit = C(0xFFFFFF, 0.25 + 0.75 * k * k)
         }
         if (26...32).contains(y) {
             // Round the face: the robe's sides only, as a hood.
@@ -440,11 +477,10 @@ private func drawLightHope(_ c: PixelCanvas, _ p: Pose) {
     if glow > 0 {
         c.glowLine(28, 29, 28, 29, core: C(0xFFFFFF, 0.25 * glow), glow: C(0xFFF4C0, 0.22 * glow), coreR: 3, glowR: 9)
     }
-    // The shimmer off the top of the pillar: thin see-through rays, never solid.
-    for (i, x) in [24.0, 28, 32].enumerated() {
+    // The shimmer up the fading beam: soft white motes rising through it and fading out, never solid.
+    for (i, x) in [24, 28, 31].enumerated() {
         let f = frac(p.t * 0.7 + Double(i) * 0.33)
-        let y0 = 6 - f * 3
-        c.glowLine(x, y0, x, y0 - 2, core: C(0xFFFFFF, 0.22 * (1 - f)), glow: none, coreR: 0.5, glowR: 0.6)
+        c.px(x, 14 - Int(f * 10), C(0xFFFFFF, 0.7 * (1 - f)))
     }
 }
 
@@ -452,9 +488,10 @@ private func drawLightHope(_ c: PixelCanvas, _ p: Pose) {
 
 /// Stonedar: the Comet Warrior, a man of living stone. A body of grey-brown rock, lumpy along the top and in cracks
 /// rather than bricks, heavy brows over small amber eyes, and the Comet Warriors' armour over it: dark teal shoulder
-/// plates and a chest plate lit along the top, a silver comet streaking across it. Big stone fists. Signature: he
+/// plates and a chest plate lit along the top, a comet streaking across it on a slant, its bright gold head high by his
+/// front shoulder and its silver tail streaming down to the far hip. Big stone fists. Signature: he
 /// curls up into a boulder, rolls a little way forward and back, his armour and cracks going round with him, and
-/// stands up again.
+/// stands up again, pale dust billowing up behind him as he rolls.
 private func drawStonedar(_ c: PixelCanvas, _ p: Pose) {
     let rock = C(0x8E8272), rockD = C(0x62584A), rockL = C(0xB4A896), crack = C(0x463E34)
     let teal = C(0x2E6E6A), tealD = C(0x1E4C4A), tealL = C(0x4E9A92)
@@ -486,16 +523,16 @@ private func drawStonedar(_ c: PixelCanvas, _ p: Pose) {
     // The heavy brow and the small amber eyes under it.
     c.rect(20, 28, 6, 1, rockD); c.rect(30, 28, 6, 1, rockD); c.rect(21, 28, 4, 1, crack); c.rect(31, 28, 4, 1, crack)
     c.rect(22, 29, 2, 2, C(0xF2B636)); c.rect(32, 29, 2, 2, C(0xF2B636)); c.px(22, 29, C(0xFFE8A0)); c.px(32, 29, C(0xFFE8A0))
-    // The Comet Warrior chest plate: dark teal, lit along the top, shaded underneath, the silver comet across it.
-    c.rect(19, 33, 18, 4, teal); c.rect(19, 33, 18, 1, tealL); c.rect(19, 36, 18, 1, tealD); c.rect(36, 33, 1, 4, tealD)
-    // The comet: a bright star at the front with its tail streaming back, fading from gold to silver.
-    c.pattern(21, 33, [
-        "...........gGg..",
-        "..ss.ggGGGGYWYG.",
-        ".sssggGGGYYWWWYG",
-        "..ss.ggGGGGYWYG.",
-    ], ["s": C(0x9AA4B4), "g": C(0xC8A040), "G": C(0xE8C048), "Y": C(0xFFE890), "W": white])
-    c.rect(18, 37, 20, 1, crack)
+    // The Comet Warrior chest plate: dark teal, lit along the top, shaded underneath, the comet streaking across it.
+    c.rect(19, 32, 18, 5, teal); c.rect(19, 32, 18, 1, tealL); c.rect(19, 36, 18, 1, tealD); c.rect(36, 32, 1, 5, tealD)
+    // The comet: a small bright head high on the plate by his front shoulder, its silver tail streaming down and back
+    // across the whole plate to the far hip, widening as it goes; off centre and on a slant, so never a buckle.
+    line(c, 33.5, 33, 21, 35.8, C(0x7A8494), 0.9)
+    line(c, 33.5, 33, 21.5, 35, C(0xC4CAD6), 0.45)
+    line(c, 33, 33.5, 25, 35.5, C(0xE8ECF4), 0.4)
+    c.glowLine(34.5, 33.5, 34.5, 33.5, core: C(0xFFFFFF, 0), glow: C(0xFFE070, 0.35), coreR: 0.1, glowR: 2.6)
+    c.pattern(32, 31, ["..Y..", ".YWY.", "YWWWY", ".YWY.", "..Y.."], ["Y": C(0xF8D860), "W": white])
+    c.rect(18, 37, 20, 1, rockD)
     // The shoulder plates over his arms.
     c.rect(14, 32, 5, 2, teal); c.rect(14, 32, 5, 1, tealL)
     if p.melee == nil {
@@ -555,19 +592,25 @@ private func boulder(_ c: PixelCanvas, _ p: Pose, s k: Double) {
     let pa = turn - 0.9
     let px = Int((cx + cos(pa) * 5).rounded()), py = Int((cy + sin(pa) * 5).rounded())
     c.rect(px - 2, py - 1, 5, 3, teal); c.rect(px - 2, py - 1, 5, 1, tealL); c.px(px, py, silver); c.px(px + 1, py, silver)
-    // The dust he kicks up rolling.
-    if abs(cos(k * .pi)) > 0.3 {
+    // The dust he kicks up rolling: pale puffs billowing up off the ground behind him, growing and fading, bright
+    // enough to show on a dark desktop.
+    let speed = abs(cos(k * .pi))
+    if speed > 0.2 {
         let back = cos(k * .pi) > 0 ? -1.0 : 1.0
-        let dx = cx - back * 10
-        c.glowLine(dx - 2, 42, dx + 2, 42, core: C(0xE8DCC0, 0.5), glow: C(0xE8DCC0, 0.2), coreR: 0.5, glowR: 1.2)
+        for n in 0..<3 {
+            let f = frac(p.t * 2.2 + Double(n) / 3)
+            let x = cx - back * (9 + f * 6), y = 42 - f * 4
+            let a = min(1, speed * 1.5) * (1 - f * 0.7)
+            c.glowLine(x, y, x, y, core: C(0xFAF4E6, 0.9 * a), glow: C(0xE8DCC0, 0.5 * a),
+                       coreR: 0.8 + f * 1.2, glowR: 1.8 + f * 1.6)
+        }
     }
-    _ = p
 }
 
 // MARK: - Loo-Kee
 
 /// Loo-Kee: the little yellow Kon-Seal who hides somewhere in every story. Short yellow fur all over in strokes, a
-/// pale belly, two big pointed ears out at the sides with pink insides, an orange tuft on top, a leaf collar from the
+/// pale belly, two big pointed ears standing up and out from the top of his head with pink insides, an orange tuft on top, a leaf collar from the
 /// Whispering Woods, and big round eyes, white with large dark pupils that look about. Signature: he hides behind a
 /// leafy branch, his ears giving him away, then lowers it just enough to peek over the top, as if asking whether
 /// you've found him.
@@ -592,16 +635,25 @@ private func drawLooKee(_ c: PixelCanvas, _ p: Pose) {
         }
     }
     c.oy += p.breathe
-    // The ears, big and pointed, out to either side, pink inside.
-    c.pattern(9, 24, [
-        "EE.......................................",
-        ".EEE..................................EE.",
-        ".EIEEE..............................EEE..",
-        "..EIIEEE..........................EEIE...",
-        "..EEIIIEE........................EEIIE...",
-        "...EEEEEE.......................EEIIEE...",
-        ".....eeee........................eEEe....",
-    ], ["E": fur, "e": furD, "I": inner])
+    // The ears, big and pointed, standing up and leaning out from the top corners of his head, a broad pink inside
+    // running up each: tall and upright, so they read as ears, never as wings.
+    let ear = [
+        "E.........",
+        "EE........",
+        "EIE.......",
+        "EIIE......",
+        ".EIIE.....",
+        ".EIIIE....",
+        ".EIIIEE...",
+        "..EIIIEE..",
+        "..EIIIIEE.",
+        "..eEIIIIEE",
+        "...eEIIIEE",
+        "....eEEEEE",
+        ".....eeEEE",
+    ]
+    c.pattern(11, 14, ear, ["E": furL, "e": furD, "I": inner])
+    c.pattern(35, 14, ear.map { String($0.reversed()) }, ["E": fur, "e": furD, "I": inner])
     drawBody(c, Look(body: fur, shade: furD, leg: fur, arm: fur, eye: nil), armRight: p.armRaise)
     c.rect(18, 26, 20, 1, furL); c.rect(18, 26, 1, 8, furL)
     // Fur strokes on his sides, and the pale belly.

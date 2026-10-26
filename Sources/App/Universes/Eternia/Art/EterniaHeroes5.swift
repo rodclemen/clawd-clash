@@ -10,7 +10,7 @@ let eterniaHeroes5: [EterniaHero: Persona] = [
     .mossClawd: Persona(name: "Moss Clawd", weapon: .saber, headTop: 17, signature: 3.6, draw: drawMossClawd),
     .syClawdne: Persona(name: "Sy-Clawdne", weapon: .lightning,
                         magic: Magic(core: C(0xF8FCFF), glow: C(0x8EC8F0), jagged: false, waves: true),
-                        headTop: 10, signature: 3.2, draw: drawSyClawdne),
+                        headTop: 12, signature: 3.2, draw: drawSyClawdne),
     .snoutSpout: Persona(name: "Snout Spout", weapon: .blaster, shot: .beam(core: C(0xF4FAFF), glow: C(0x2A7AE8)),
                          muzzle: m5SnoutTip, handGun: false, headTop: 19, signature: 3.6, draw: drawSnoutSpout),
     .zodac: Persona(name: "Zodac", weapon: .blaster, shot: .energy(core: C(0xF6E8FF), glow: C(0x9A3AF0)),
@@ -156,7 +156,8 @@ private func drawRoboto(_ c: PixelCanvas, _ p: Pose) {
 // MARK: - Moss Clawd
 
 /// Moss Clawd: the Masters' spy, who blends into any forest. Shaggy green moss from head to foot in hanging strokes,
-/// lit along the top, a mossy mound over his crown and a brown face peering out of it, bare brown feet. He fights
+/// lit along the top, a mossy mound over his crown with tufts standing up off it, ragged locks hanging off his sides
+/// and between his legs, a brown face peering out of it, bare brown feet. He fights
 /// with a long green vine, a leaf every few pixels along it, which he lashes like a whip; put away, it's coiled at his
 /// hip. Signature: a stem pushes up out of the moss on his head, a bud swells on it, and it opens into a big pink
 /// flower with a yellow heart, nods a moment, then closes and sinks back in.
@@ -223,6 +224,23 @@ private func drawMossClawd(_ c: PixelCanvas, _ p: Pose) {
         ".dMM................MdM.",
         ".MlM................MMl.",
     ], ["M": moss, "d": mossD, "l": mossL])
+    // Shaggy locks off his outline, so he never reads as a round blob: tufts standing up off his crown, long ragged
+    // locks hanging down his sides, each a different length, and a fringe hanging between his legs.
+    for (x, y, h, col) in [(18, 18, 2, moss), (21, 16, 2, mossL), (24, 15, 3, moss), (31, 15, 3, mossL),
+                           (34, 16, 2, moss), (37, 18, 2, mossL), (28, 16, 2, mossD)] {
+        c.rect(x, y - h + 1, 1, h, col); c.px(x + 1, y, col)
+    }
+    let locks: [(Double, Double, Double, Double, Px)] = [
+        (16.5, 20.5, 13.5, 26, moss), (16.5, 23.5, 12.5, 30, mossD), (16.5, 27.5, 13.5, 32.5, moss),
+        (39.5, 20.5, 42, 25.5, moss), (39.5, 23.5, 42.5, 29.5, mossD), (39.5, 27.5, 41.5, 31.5, moss),
+    ]
+    for (x0, y0, x1, y1, col) in locks { m5Line(c, x0, y0, x1, y1, col, 0.6) }
+    for (x, y) in [(13, 25), (12, 29), (42, 25), (42, 29)] { c.px(x, y, mossL) }
+    if !seatedPose {
+        for (x, h) in [(21, 2), (22, 1), (26, 2), (27, 3), (28, 1), (29, 2), (33, 3), (34, 1)] {
+            c.rect(x, 38, 1, h, h == 3 ? mossD : moss)
+        }
+    }
 
     // The flower: a stem up out of the moss on his crown, a bud, then the open bloom, and back.
     if s > 0.04 && s < 0.96 {
@@ -287,8 +305,8 @@ private func m5Vine(_ c: PixelCanvas, _ p: Pose, angle a: Double, vine: Px, leaf
 // MARK: - Sy-Clawdne
 
 /// Sy-Clawdne: the Masters' whirlwind warrior. A blue suit, a red chest plate with a gold radar dish on it, red
-/// bracers and boots; a blue helmet with a red band, a black face mask with two pale-blue lenses, and a tall gold
-/// radar fin standing up off its crown, ribbed like a dish. His power is the wind: white arcs with a pale-blue glow
+/// bracers and boots; a blue helmet with a red band, a black face mask with two pale-blue lenses, and a broad gold
+/// radar fin fanned up off its crown, ribbed like a dish. His power is the wind: white arcs with a pale-blue glow
 /// pulsing out of his hand. Signature: his body spins like a top on his planted legs, faster and faster, front, side,
 /// back, side, with the wind whirling round him, then slows to a stop facing front.
 private func drawSyClawdne(_ c: PixelCanvas, _ p: Pose) {
@@ -371,19 +389,17 @@ private func m5SyFront(_ c: PixelCanvas, _ p: Pose, back: Bool) {
         c.glowLine(22.5, 29.5, 22.5, 29.5, core: C(0xC8ECFF, 0), glow: C(0x8EC8F0, 0.3), coreR: 0.1, glowR: 2.2)
         c.glowLine(34.5, 29.5, 34.5, 29.5, core: C(0xC8ECFF, 0), glow: C(0x8EC8F0, 0.3), coreR: 0.1, glowR: 2.2)
     }
-    // The radar fin: a tall gold blade standing up off his crown, seen edge on from the front, a groove down its
-    // middle and a red light at its tip.
-    c.pattern(25, 10, [
-        "..LL..",
-        ".hYYy.",
-        ".hyYy.",
-        ".hyYy.",
-        ".hyYy.",
-        ".hyYy.",
-        "hYyYYy",
-        "hYyYYy",
-        "hYyYYy",
-        "yyyyyy",
+    // The radar fin: a broad gold fan standing up off his crown, wider than it is tall, dark ribs spreading out from
+    // its root like a dish's, lit along its rim.
+    c.pattern(21, 12, [
+        "....hhhhYYy....",
+        "..hYYyYYYyYYy..",
+        ".hYyYYyYyYYyYy.",
+        "hYYyYYyYyYYyYYy",
+        "hYYYyYyYyYyYYYy",
+        ".hYYyYyYyYyYYy.",
+        "..hYYyyYyyYYy..",
+        "....yyyyyyy....",
     ], m5SyPal)
 }
 
@@ -578,7 +594,8 @@ private func drawSnoutSpout(_ c: PixelCanvas, _ p: Pose) {
 /// its middle and a silver rim, coming down over his ears; a short black beard all round his jaw; dark-red armour
 /// on his chest, ribbed and lit along the top, with a silver star on its plate, a black belt, red bracers and red
 /// boots over Clawd's orange. He fights with a silver laser pistol that fires violet bolts. Signature: a floating
-/// cosmic chair glimmers into being behind him, he rises and sits down on it in mid-air, a violet glow under it,
+/// cosmic chair glimmers into being behind him, he rises and sits down on it in mid-air, his four legs dangling
+/// apart over the front of the seat, a violet glow under it,
 /// sits a moment at his ease, then stands, and the chair fades away.
 private func drawZodac(_ c: PixelCanvas, _ p: Pose) {
     let helm = C(0x1E1E26), helmL = C(0x4A4C5E)
@@ -596,9 +613,11 @@ private func drawZodac(_ c: PixelCanvas, _ p: Pose) {
     if chair > 0 { m5CosmicChair(c, lift: lift + bob, alpha: chair, t: p.t) }
     c.oy -= lift + bob
     if sitting {
-        // His legs folded forward along the seat, red boots at their ends.
+        // His four legs dangling over the front of the seat, apart, each in its red boot, the seat showing between
+        // them, so they read as four and never merge into one band.
         for lx in [19, 23, 31, 35] {
-            c.rect(lx - 1, 38, 4, 2, clawdOrange); c.rect(lx + 2, 38, 1, 2, red); c.px(lx - 1, 39, clawdShade)
+            c.rect(lx, 38, 2, 6, clawdOrange); c.px(lx + 1, 38, clawdShade)
+            c.rect(lx, 41, 2, 3, red); c.px(lx, 41, redL); c.px(lx + 1, 43, redD)
         }
     } else {
         drawLegs(c, Look(), step: p.step)
@@ -716,7 +735,7 @@ private func m5CosmicChair(_ c: PixelCanvas, lift: Int, alpha: Double, t: Double
 private let m5GranamyrJaws: (x: Double, y: Double) = (59, 17)
 
 /// Granamyr: the ancient dragon of Darksmoke, wisest of his kind and tired of everyone. Grey-green scales lit along
-/// the top and banded with darker strokes, a pale belly, leathery wings folded flat over his back (beating wide open
+/// the top and banded with darker strokes, a pale belly of broad ridged plates, leathery wings folded flat over his back (beating wide open
 /// as he flies), a long tail curling round behind him to an arrow tip, and Clawd's four legs as stout dragon legs
 /// with ivory talons. A long neck up to an old, heavy head: two ivory horns sweeping back, half-shut, unimpressed
 /// eyes under a bony brow, and a long white beard hanging from his chin in strands. Not Marvel's Fin Fang Fume, who
@@ -725,7 +744,7 @@ private let m5GranamyrJaws: (x: Double, y: Double) = (59, 17)
 /// watches it, eyes half shut.
 private func drawGranamyr(_ c: PixelCanvas, _ p: Pose) {
     let scale = C(0x7A8A6E), scaleD = C(0x56644C), scaleL = C(0x9EB08E)
-    let belly = C(0xB4B49A), bellyD = C(0x8E8E74)
+    let belly = C(0xB4B49A), bellyD = C(0x7A7A60), bellyL = C(0xD8D6B8)
     let wing = C(0x4E5C46), wingD = C(0x38422F), bone = C(0x2E3628)
     let horn = C(0xE4D8B8), hornD = C(0xA89878)
     let s = p.signature ?? -1
@@ -766,8 +785,13 @@ private func drawGranamyr(_ c: PixelCanvas, _ p: Pose) {
     for y in stride(from: 28, through: 32, by: 2) {
         for x in stride(from: 19 + (y / 2) % 2 * 2, through: 35, by: 4) { c.rect(x, y, 2, 1, scaleD) }
     }
-    c.rect(19, 34, 18, 4, belly); c.rect(19, 37, 18, 1, bellyD)
-    for x in stride(from: 21, through: 35, by: 4) { c.rect(x, 35, 2, 1, bellyD) }
+    // The belly: a row of broad ridged plates, each lit along its top and on its left, a dark seam between them, the
+    // underside shaded.
+    c.rect(19, 34, 18, 4, belly); c.rect(19, 34, 18, 1, bellyL); c.rect(19, 37, 18, 1, bellyD)
+    for x in stride(from: 21, through: 35, by: 3) {
+        c.rect(x, 34, 1, 4, bellyD); c.rect(x + 1, 35, 1, 2, bellyL)
+    }
+    c.px(19, 33, bellyD); c.px(36, 33, bellyD)
     // The spines down his back, short and dark.
     for x in stride(from: 19, through: 33, by: 3) { c.px(x, 25 - swell, scaleD) }
 
@@ -794,6 +818,7 @@ private func drawGranamyr(_ c: PixelCanvas, _ p: Pose) {
     m5Line(c, 33, 27, 40, 19, scaleL, 0.5)
     m5Line(c, 38, 31, 44, 23, bellyD, 0.7)
     for (x, y) in [(36, 26), (39, 23), (42, 20)] { c.rect(x, y, 2, 1, scaleD) }
+    for (x, y) in [(39, 30), (41, 27), (43, 24)] { c.px(x, y, bellyL) }   // the belly plates going on up his throat
 
     // The head: long and heavy, the brow bony, the snout forward, the jaw dropping open when he breathes out.
     c.pattern(42, 10, [
@@ -915,9 +940,10 @@ private func m5DragonWing(_ c: PixelCanvas, up: Bool, far: Bool, wing: Px, bone:
 
 // MARK: - Gwildor
 
-/// Gwildor: the Thenorian locksmith from the film, who made the Cosmic Key. Small and stooped, his head sunk low
-/// between his shoulders: a wrinkled grey-brown face with a broad nose and bushy brows, wild red-brown hair sticking
-/// up and out in strands and a big bushy beard of it down his chest; long brown robes to the ground, a dark tool belt
+/// Gwildor: the Thenorian locksmith from the film, who made the Cosmic Key. Small, old and stooped, his back sloping
+/// down behind him and his head hanging forward, a knobbly walking stick in his back hand: a wrinkled grey-brown face
+/// under a bald, creased dome, big ears, bushy pale brows, tired eyes and a bulbous nose, a wild fringe of red-brown
+/// hair flying back from his temples and a big bushy beard of it with a drooping moustache; long brown robes to the ground, a dark tool belt
 /// with pouches and a little spanner. He doesn't fight. He carries the Cosmic Key in his hand: a dark casing rimmed
 /// in gold, short silver prongs on top and a row of big bright lights along it. Signature: he holds the Key up high
 /// and plays it, its lights blinking one after another along the row, a little run of music notes floating up from it.
@@ -951,40 +977,62 @@ private func drawGwildor(_ c: PixelCanvas, _ p: Pose) {
     c.rect(32, 36, 3, 2, C(0x4A3220)); c.px(32, 36, C(0x6A4A30))
     c.rect(24, 36, 1, 3, C(0xB8BCC8)); c.rect(23, 38, 3, 1, C(0xB8BCC8))
 
-    // The face: wrinkled, a creased brow, bushy brows, small eyes and a broad nose.
-    c.rect(19, 26, 18, 5, skin)
-    c.rect(20, 26, 15, 1, skinD); c.rect(23, 27, 2, 1, skinD); c.rect(30, 27, 3, 1, skinD)
-    c.rect(21, 28, 4, 1, hairD); c.rect(31, 28, 4, 1, hairD)
-    c.rect(22, 29, 2, 2, ink); c.rect(32, 29, 2, 2, ink); c.px(22, 29, C(0xF0E8C8)); c.px(32, 29, C(0xF0E8C8))
-    c.rect(26, 29, 4, 2, skinL); c.px(29, 30, skinD)
-    c.px(20, 30, skinD); c.px(35, 30, skinD)
-    // The beard: bushy and red-brown, from his jaw down over his chest in strands.
-    c.pattern(20, 31, [
-        "HHHHHHlHHHHHHHHH",
-        "HhHHhHHhHHhHHhHH",
-        ".hHHhHHhHHhHHhH.",
-        "..HHhHHhHHhHHh..",
-        "....h..h..h.....",
-    ], ["H": hair, "h": hairD, "l": hairL])
-    // The hair: a cap over his crown and wild strands sticking up and out of it all round.
-    c.pattern(17, 22, [
-        "....HHHlHHHHlHHHH....",
-        "..HHHlHHHHlHHHHHHHH..",
-        ".HHhHHHhHHHHhHHHhHHH.",
-        "HHHHhHHHHhHHHHhHHHhHH",
-        "HHh..............hHHH",
-        "Hh.................hH",
-    ], ["H": hair, "h": hairD, "l": hairL])
-    let strands: [(Double, Double, Double, Double, Px)] = [
-        (18.5, 24.5, 14.5, 21.5, hair), (21, 22.5, 18.5, 18.5, hairD), (25, 22, 24, 17.5, hair),
-        (30, 22, 31.5, 17.5, hairD), (34, 22.5, 36.5, 18.5, hair), (37, 24.5, 41, 21.5, hairD),
+    // The stoop: his robed back slopes from behind his head straight down to the hem, lit along the slope, so he leans
+    // forward over the Key like a bent old man.
+    for y in 25...38 {
+        let l = 19 - (y - 25) / 2
+        c.rect(l, y, 21 - l, 1, robe); c.px(l, y, robeL)
+        if y > 27 { c.px(l + 2, y, robeD) }
+    }
+    // His walking stick in his back hand: knobbly pale wood, planted on the ground in front of his back foot.
+    // His back arm reaches out to it in its sleeve, his hand on the knob, clear of his robe so it reads at a glance.
+    let stick = C(0xD8B070), stickD = C(0x9A7440)
+    let sunk = p.breathe + 3 + (seatedPose ? 4 : 0)   // how far the sprite is already pushed down
+    c.rect(10, 31, 2, 13 - sunk, stick); c.rect(11, 32, 1, 12 - sunk, stickD)
+    c.px(10, 35, stickD); c.px(10, 38, stickD)
+    c.rect(12, 32, 5, 2, robe); c.rect(12, 32, 5, 1, robeL)
+    c.rect(9, 30, 4, 2, skin); c.px(9, 30, skinL); c.px(12, 31, skinD)
+    // His head hangs forward and down off the hump, two pixels out in front and two lower.
+    c.ox += 2; c.oy += 2
+    // The hair, behind his head: a wild fringe round the back and sides of his bald crown, long strands hanging
+    // back over the hump and down past his ears, lit along the top, one tuft sticking up behind.
+    let strands: [(Double, Double, Double, Double, Px, Double)] = [
+        (19.5, 23.5, 16, 21.5, hair, 0.7), (19, 25, 14.5, 25.5, hair, 0.9), (19, 26.5, 14, 29, hairD, 0.9),
+        (19, 28.5, 15, 32, hair, 0.8), (18.5, 24.5, 15, 24, hairL, 0.45),
+        (37, 24.5, 40, 26.5, hair, 0.8), (37.5, 26.5, 40.5, 30, hairD, 0.8), (37, 25, 39.5, 25.5, hairL, 0.45),
     ]
-    for (x0, y0, x1, y1, col) in strands { m5Line(c, x0, y0, x1, y1, col, 0.8) }
+    for (x0, y0, x1, y1, col, r) in strands { m5Line(c, x0, y0, x1, y1, col, r) }
+    // The head: a bald dome over his brow, lit on the left, creased across the forehead.
+    c.pattern(19, 22, [
+        "....SSSSSSSSSS....",
+        "..SLLSSSSSSSSSSS..",
+        ".SLSSSSSSSSSSSSSD.",
+        "SSSSSSSSSSSSSSSSSD",
+    ], ["S": skin, "L": skinL, "D": skinD])
+    c.rect(18, 26, 20, 6, skin); c.rect(37, 26, 1, 6, skinD)
+    c.rect(21, 24, 5, 1, skinD); c.rect(29, 24, 6, 1, skinD); c.rect(23, 26, 10, 1, skinD)
+    // Big ears out at the sides.
+    c.rect(16, 27, 2, 3, skin); c.px(16, 27, skinL); c.px(17, 28, skinD)
+    c.rect(38, 27, 2, 3, skinD); c.px(38, 28, skin)
+    // Bushy pale brows jutting over small, tired eyes, bags under them, and a big bulbous nose.
+    c.rect(20, 27, 6, 1, hairL); c.rect(30, 27, 6, 1, hairL); c.px(20, 28, hairL); c.px(35, 28, hairL)
+    c.rect(22, 28, 2, 2, ink); c.rect(32, 28, 2, 2, ink); c.px(22, 28, C(0xF0E8C8)); c.px(32, 28, C(0xF0E8C8))
+    c.rect(21, 30, 4, 1, skinD); c.rect(31, 30, 4, 1, skinD)
+    c.pattern(26, 28, [".LS.", "LSSS", "SSSD", ".DD."], ["S": skinL, "L": C(0xC8B498), "D": skinD])
+    // The beard: bushy and red-brown, a drooping moustache under the nose, then down over his chest in strands.
+    c.pattern(19, 31, [
+        "..hHHhh....hhHHh..",
+        ".HHHHHHHllHHHHHHH.",
+        "HHhHHhHHhHHhHHhHHH",
+        ".hHHhHHhHHhHHhHH..",
+        "...h.hH..hH..h....",
+    ], ["H": hair, "h": hairD, "l": hairL])
+    c.ox -= 2; c.oy -= 2
 
     // His near arm, in its sleeve, and the Cosmic Key in his hand: at his side, or held up high and played.
-    let hx = 40, hy = 33 - raise
-    c.rect(38, hy, 3, 3, robe); c.rect(38, hy, 3, 1, robeL)
-    if raise > 3 { c.rect(38, hy + 3, 3, min(raise, 8), robe); c.rect(40, hy + 3, 1, min(raise, 8), robeD) }
+    let hx = 42, hy = 33 - raise
+    c.rect(38, hy, 5, 3, robe); c.rect(38, hy, 5, 1, robeL)
+    if raise > 3 { c.rect(40, hy + 3, 3, min(raise, 8), robe); c.rect(42, hy + 3, 1, min(raise, 8), robeD) }
     c.rect(hx + 1, hy + 1, 2, 2, skin)
     m5CosmicKey(c, x: hx, y: hy - 6, t: p.t, playing: playing)
     if playing {
