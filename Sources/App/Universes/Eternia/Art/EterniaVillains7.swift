@@ -11,7 +11,7 @@ let eterniaVillains7: [EterniaVillain: Persona] = [
                          magic: Magic(core: C(0xFFA83A), glow: C(0xB0101A)),
                          pivot: (43, 35), headTop: 20, signature: 3.2, draw: drawCountMarzo),
     .shokoti: Persona(name: "Shokoti", weapon: .lightning,
-                      magic: Magic(core: C(0xFFCC2A), glow: C(0x1A1206), jagged: false),
+                      magic: Magic(core: C(0xFFCC2A), glow: C(0xC0701A), jagged: false),
                       headTop: 12, signature: 3.6, draw: drawShokoti),
     .jitsu: Persona(name: "Jitsu", weapon: .saber, headTop: 17, signature: 3.4, draw: drawJitsu),
 ]
@@ -31,10 +31,10 @@ private func v7Line(_ c: PixelCanvas, _ a: (x: Double, y: Double), _ b: (x: Doub
 /// King Hiss: the ancient king of the Snake Men, hiding in a man's shape. A pale lilac human face with yellow slit
 /// eyes under slicked-back dark hair and a gold crown, a gold cobra rearing up from its front with ruby eyes; purple
 /// armour trimmed in gold, a gold belt, and a fringe of five green snake heads hanging from it all round his waist,
-/// red-eyed, their tongues flicking. His legs are green and scaly into purple boots. He fights with snake bites: a green
+/// red-eyed, their tongues flicking. His legs are plain dark purple greaves into purple boots. He fights with snake bites: a green
 /// snake coils round his forearm and strikes from his fist, jaws wide. Signature: his human face splits down the middle
-/// and peels away to either side, and three green snakes rise hissing out of the dark where it was, then the mask
-/// closes over them again.
+/// and its two halves peel back and curl up against the sides of his head (inside its outline, rolled pale lips, not
+/// flaps), and three green snakes rise hissing out of the dark where it was, then the mask closes over them again.
 private func drawKingHiss(_ c: PixelCanvas, _ p: Pose) {
     let purple = C(0x7A2E9E), purpleD = C(0x561E74), purpleL = C(0xA04EC4)
     let gold = C(0xE8B830), goldD = C(0xA87A18), goldL = C(0xFFE27A)
@@ -47,13 +47,13 @@ private func drawKingHiss(_ c: PixelCanvas, _ p: Pose) {
     let open = Int((peel * 7).rounded())
     let flick = Int(p.t * 6) % 3 == 0
 
-    // Green scaly legs into purple boots with a gold cuff, a lit scale stroke down each.
-    drawLegs(c, Look(leg: snakeD), step: p.step)
+    // Plain dark purple greaves into purple boots lit at the toe: kept quiet, so the green snakes hanging over them
+    // stand out.
+    drawLegs(c, Look(leg: purpleD), step: p.step)
     if !seatedPose {
         for (i, lx) in [19, 23, 31, 35].enumerated() {
             let bottom = p.step >= 0 && i % 2 == p.step ? 42 : 43
-            c.px(lx, bottom - 3, snake)
-            c.rect(lx, bottom - 2, 2, 3, purpleD); c.rect(lx, bottom - 2, 2, 1, gold); c.px(lx + 1, bottom, purple)
+            c.rect(lx, bottom - 1, 2, 2, purple); c.px(lx, bottom, purpleL)
         }
     }
     c.oy += p.breathe
@@ -101,25 +101,25 @@ private func drawKingHiss(_ c: PixelCanvas, _ p: Pose) {
         c.px(19, 27, skinL)
     } else {
         // The face peeled open on the dark inside him, three snakes rising hissing out of it, the mask's two halves
-        // folded away to either side.
+        // peeled back and curled up against the sides of his head, never past its edge.
         c.rect(18, 26, 20, 7, maw)
+        let w = max(2, 10 - open - 1)
+        // Each half: the pale skin narrowing as it rolls back, its inner edge a lit rolled lip, a torn notch in it.
+        c.rect(18, 26, w, 7, skin); c.rect(18, 26, 1, 7, skinD)
+        c.rect(18 + w - 1, 26, 1, 7, skinL); c.px(18 + w - 1, 29, skinD); c.px(18 + w - 1, 32, skinD)
+        c.rect(38 - w, 26, w, 7, skin); c.rect(37, 26, 1, 7, skinD)
+        c.rect(38 - w, 26, 1, 7, skinL); c.px(38 - w, 28, skinD); c.px(38 - w, 31, skinD)
+        if w >= 6 {
+            c.rect(22, 29, 2, 3, C(0xF0D040)); c.rect(23, 29, 1, 3, ink)
+            c.rect(32, 29, 2, 3, C(0xF0D040)); c.rect(33, 29, 1, 3, ink)
+        }
         let rise = Int((peel * 2).rounded())
-        for (k, hx) in [20, 26, 32].enumerated() {
+        for (k, hx) in [21, 26, 31].enumerated() {
             let top = (k == 1 ? 28 : 29) - rise
             c.rect(hx + 1, top + 3, 2, 33 - top - 3, snakeD)
             c.rect(hx, top, 4, 3, snake); c.rect(hx, top, 2, 1, snakeL); c.px(hx + 3, top + 2, snakeD)
             c.px(hx, top + 1, red); c.px(hx + 3, top + 1, red)
             if flick || k == 1 && Int(p.t * 5) % 2 == 0 { c.px(hx + 1, top - 1, tongue); c.px(hx + 2, top - 1, tongue) }
-        }
-        let w = 10 - open
-        if w > 0 {
-            let lx = 18 - open, rx = 28 + 2 * open
-            c.rect(lx, 26, w, 7, skin); c.rect(lx, 26, 1, 7, skinL); c.rect(lx + w - 1, 26, 1, 7, skinD)
-            c.rect(rx, 26, w, 7, skin); c.rect(rx, 26, 1, 7, skinD); c.rect(rx + w - 1, 26, 1, 7, skinD)
-            if w >= 6 {
-                c.rect(lx + 4, 29, 2, 3, C(0xF0D040)); c.rect(lx + 5, 29, 1, 3, ink)
-                c.rect(rx + 4, 29, 2, 3, C(0xF0D040)); c.rect(rx + 5, 29, 1, 3, ink)
-            }
         }
     }
 
@@ -177,16 +177,17 @@ private func hissSnake(_ c: PixelCanvas, at h: (x: Double, y: Double), angle a: 
 
 /// Count Marzo: the wicked old sorcerer of the pilot, made young by evil and turned back into a little old man by the
 /// end of it. A bald, wrinkled dome with a fringe of red hair round its sides, bushy red brows over beady eyes, a big
-/// nose and a great red beard and moustache spreading over his chest; a long plum-purple robe to the ground with gold
-/// cuffs and hem, and his amulet, a blood-orange stone in a gold setting, on its chain below his beard. When he casts
+/// nose and a great red beard and moustache spreading over his chest; a long wine-red robe to the ground (a red-purple
+/// well away from Evil-Lynn's violet) with black-edged gold cuffs and a black band above its gold hem, and his amulet, a blood-orange stone in a gold setting, on its chain below his beard. When he casts
 /// he holds the amulet out in front of him, and short crackling forks of orange and blood red jump out of it.
 /// Signature: he brings both hands in over the amulet and rubs them greedily, and it glows hot, sparks rising off it.
 private func drawCountMarzo(_ c: PixelCanvas, _ p: Pose) {
-    let robe = C(0x6A2A7E), robeD = C(0x48185A), robeL = C(0x8E4AA2)
+    let robe = C(0x7E1838), robeD = C(0x520C22), robeL = C(0xA8304E)
     let gold = C(0xD8A830), goldL = C(0xFFDC7A), goldD = C(0x9A7418)
     let skin = C(0xE8C0A0), skinD = C(0xC0906E), skinL = C(0xFFDCC0)
     let beard = C(0xC8401E), beardD = C(0x8A2A12), beardL = C(0xEA6E3A)
     let gem = C(0xFF7A1E), gemL = C(0xFFE0A0), gemD = C(0xB8301A)
+    let trim = C(0x1A0A10)
     let s = p.signature ?? -1
     let rub: Double = s > 0.06 && s < 0.94 ? habitArc((s - 0.06) / 0.88, hold: 0.6) : 0
     let raise = p.armRaise
@@ -196,7 +197,7 @@ private func drawCountMarzo(_ c: PixelCanvas, _ p: Pose) {
     c.oy += p.breathe
     drawBody(c, Look(body: skin, shade: skinD, arm: robe, eye: nil), armRight: raise)
 
-    // The robe: plum from the shoulders down, lit on the left; the long skirt flaring to a gold hem a row off the
+    // The robe: wine-red from the shoulders down, lit on the left; the long skirt flaring to a gold hem a row off the
     // ground, a shadow either side of each leg under it.
     c.rect(18, 33, 20, 5, robe); c.rect(18, 33, 1, 5, robeL); c.rect(37, 33, 1, 5, robeD)
     for y in 38...43 where y + c.oy <= 42 {
@@ -204,9 +205,11 @@ private func drawCountMarzo(_ c: PixelCanvas, _ p: Pose) {
         c.rect(18 - flare, y, 20 + 2 * flare, 1, robe)
         c.px(18 - flare, y, robeL); c.px(37 + flare, y, robeD)
         if y >= 39 { for x in [22, 25, 30, 33] { c.px(x, y, robeD) } }
+        if y + c.oy == 41 { c.rect(19 - flare, y, 18 + 2 * flare, 1, trim) }
         if y + c.oy == 42 { c.rect(19 - flare, y, 18 + 2 * flare, 1, gold); c.rect(19 - flare, y, 3, 1, goldL) }
     }
-    c.rect(15, 35, 3, 1, gold); c.rect(38, 35 - raise, 3, 1, gold)   // the gold cuffs
+    // the gold cuffs, edged in black
+    c.rect(15, 35, 3, 1, gold); c.rect(15, 36, 3, 1, trim); c.rect(38, 35 - raise, 3, 1, gold); c.rect(38, 36 - raise, 3, 1, trim)
 
     // The bald dome, wrinkled across the brow and shining on top, the fringe of red hair round its sides in strands.
     c.rect(23, 20, 10, 1, skin); c.rect(21, 21, 14, 1, skin); c.rect(19, 22, 18, 4, skin)
@@ -292,8 +295,9 @@ private func drawCountMarzo(_ c: PixelCanvas, _ p: Pose) {
 /// Shokoti: the evil priestess of the desert temple. A tall gold headdress fanned out round her head like a burst of
 /// rays, set on a gold band with a ruby at the brow; long black hair down either side of a pale face with dark-lined
 /// eyes; a long black robe to the ground under a broad gold collar, a gold panel down the front of the skirt and
-/// gold cuffs. Her magic is a wavering gold ray, its glow black. Signature: she raises both arms high, her long black
-/// sleeves falling back, and her headdress glows, its rays blazing white-gold.
+/// gold cuffs. Her magic is a wavering gold ray in a deep amber glow (the plan's black glow read as gaps on a dark
+/// desktop). Signature: she raises both arms high, her long black sleeves falling back, and her headdress blazes: the
+/// whole fan turns white-gold, a warm halo swells behind it and beams of light shoot out past its tips.
 private func drawShokoti(_ c: PixelCanvas, _ p: Pose) {
     let robe = C(0x1E1A24), robeL = C(0x3E3848), robeD = C(0x0E0C12)
     let gold = C(0xE8B830), goldD = C(0xA87A18), goldL = C(0xFFE58A)
@@ -304,10 +308,18 @@ private func drawShokoti(_ c: PixelCanvas, _ p: Pose) {
     let blaze = up > 0.6 ? (up - 0.6) / 0.4 * (0.8 + 0.2 * sin(p.t * 12)) : 0
     let raise = p.armRaise
 
-    // The headdress's glow while she raises her arms: see-through, behind it.
+    // The headdress's glow while she raises her arms: a warm see-through halo close behind it, and solid beams of
+    // gold light shooting out past the long rays' tips, flickering in turn, so it reads on any desktop.
     if blaze > 0 {
-        c.glowLine(27.5, 19, 27.5, 19, core: C(0xFFF6C0, 0), glow: C(0xFFE070), coreR: 0.2, glowR: 9,
-                   strength: blaze)
+        c.glowLine(27.5, 20, 27.5, 20, core: C(0xFFF6C0, 0), glow: C(0xFFD050), coreR: 0.2, glowR: 7,
+                   strength: 0.6 * blaze)
+        for k in 1..<8 {
+            let a = Double.pi + (Double(k) + 0.5) * .pi / 9
+            let long = (k + Int(p.t * 8)) % 2 == 0
+            let r1 = 13.5 + (long ? 3 : 2) * blaze
+            v7Line(c, (27.5 + cos(a) * 12.5, 25 + sin(a) * 12.5), (27.5 + cos(a) * r1, 25 + sin(a) * r1),
+                   long ? C(0xFFF4B8) : C(0xFFD050), r: 0.5)
+        }
     }
     drawLegs(c, Look(leg: robeD), step: p.step)
     c.oy += p.breathe
@@ -326,7 +338,8 @@ private func drawShokoti(_ c: PixelCanvas, _ p: Pose) {
             let lim = ray ? 13.2 : 10.2
             guard d <= lim else { continue }
             let tip = ray && d > lim - 1.6
-            c.px(x, y, tip ? (blaze > 0.3 ? C(0xFFFBE0) : goldL) : ray ? (blaze > 0.5 ? goldL : gold) : goldD)
+            let lit = blaze > 0.3
+            c.px(x, y, tip ? (lit ? C(0xFFFFF4) : goldL) : ray ? (lit ? C(0xFFF2B0) : gold) : (lit ? gold : goldD))
         }
     }
     // Her black hair over the crown, the gold band across her brow and the ruby set in it.
@@ -506,18 +519,35 @@ private func jitsuChop(_ s: Double) -> (angle: Double?, trail: [Double], broken:
 /// The shoulder Jitsu's arm swings from: Clawd's near arm nub.
 private let v7Shoulder = (x: 42.0, y: 34.5)
 
-/// Jitsu's gold hand swung at `angle` degrees from the shoulder: a black sleeve and an orange bracer, then the great
-/// flat hand, fingers together, its leading edge lit, the seams between the fingers along it and the thumb tucked in
-/// at its root. A fast swing leaves a smear.
-private func jitsuHand(_ c: PixelCanvas, angle a: Double, trail: [Double]) {
+/// An angle of Jitsu's arm kept off his head: raised up and back past straight up, the great hand would lean over
+/// his face, so the first 40 degrees back are squeezed into 8 (a chop raised high, an urgent wave), and the rest of a
+/// full swing round behind him stretches to meet it.
+private func jitsuClear(_ a: Double) -> Double {
+    var a = a.truncatingRemainder(dividingBy: 360)
+    if a > 180 { a -= 360 } else if a <= -180 { a += 360 }
+    if a < -90 && a >= -130 { return -90 + (a + 90) * 0.2 }
+    if a < -130 { return -98 + (a + 130) * 82 / 50 }
+    return a
+}
+
+/// Jitsu's gold hand swung at `angle` degrees: a black sleeve and an orange bracer, then the great flat hand, fingers
+/// together, its leading edge lit, the seams between the fingers along it and the thumb tucked in at its root. Raised,
+/// his elbow comes out to the side (as on guard), so the hand stands clear of his head. A fast swing leaves a smear.
+private func jitsuHand(_ c: PixelCanvas, angle raw: Double, trail: [Double]) {
     let gold = C(0xF0C030), goldD = C(0xA87A10), goldL = C(0xFFF2A8)
-    let h = v7Shoulder
-    for (i, t) in trail.enumerated() {
-        let p0 = eterniaReach(h, t, 6), p1 = eterniaReach(h, t, 16)
+    let a = jitsuClear(raw)
+    func root(_ a: Double) -> (x: Double, y: Double) {
+        let up = max(0, -sin(a * .pi / 180))
+        return (v7Shoulder.x + 3.5 * up, v7Shoulder.y - 1.5 * up)
+    }
+    let h = root(a)
+    for (i, t) in trail.map(jitsuClear).enumerated() {
+        let p0 = eterniaReach(root(t), t, 6), p1 = eterniaReach(root(t), t, 16)
         c.glowLine(p0.x, p0.y, p1.x, p1.y, core: C(0xFFF4D0), glow: C(0xFFE08A), coreR: 1.4, glowR: 2.8,
                    strength: 0.32 / Double(i + 1))
     }
-    eterniaBar(c, h, a, from: -3, to: 4.5, C(0x1E1C22), r: 1.3)
+    v7Line(c, (39.5, 34.5), h, C(0x1E1C22), r: 1.3)
+    eterniaBar(c, h, a, from: -1, to: 4.5, C(0x1E1C22), r: 1.3)
     eterniaBar(c, h, a, from: 3.5, to: 5.5, C(0xF08A1E), r: 1.5)
     eterniaBar(c, h, a, from: 6, to: 15, gold, r: 2.3)
     // The chopping edge, the side leading the swing down (the hand's little-finger side), lit.
