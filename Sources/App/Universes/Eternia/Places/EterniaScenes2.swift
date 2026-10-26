@@ -936,11 +936,12 @@ extension Scenes {
 
     /// Snake Mountain, Skeleclawd's lair and the evil mirror of Greyskull: a blood-red sky going black overhead, a
     /// swollen red moon low on the right (where Greyskull's sun sets on the left), soot clouds lit red from under,
-    /// black crags. The mountain is a crooked peak of dark basalt lit red down its right side, a giant stone snake
-    /// in poison green coiled three times round it, yellow belly under each coil. Its head is down at the foot,
-    /// facing us: a ridged crest of spines, bone horns swept back from a heavy brow knotted over slit eyes, and
-    /// jaws gaping on two long fangs. The maw is the door, a violet glow deep inside,
-    /// a causeway of black flagstones running out over the lower jaw, slits of yellow light dotted up the rock.
+    /// black crags. The mountain is a tall crooked peak of dark basalt lit red down its right side, and a giant
+    /// stone snake in poison green wraps it from the summit down, its tail at the top, four turns of its body round
+    /// the rock with the yellow belly under each, and its neck coming down out of the lowest turn into its head at
+    /// the foot. The head is a viper's, a wedge tapering to the snout, slit eyes glowing at its sides, and its jaws
+    /// gape on two long curved fangs: the maw is the door, a violet glow deep inside, the forked tongue lolling out
+    /// over a causeway of black flagstones, slits of yellow light dotted up the rock.
     /// On the screen saver the mountain stands three times the size and the sky goes up into the dark.
     static func eterniaSnakeMountain(_ c: PixelCanvas, _ g: Int) {
         let s = unit(g), f = eterniaSnakeFrame(c, g), q = f.q, tall = isTall(c)
@@ -981,13 +982,20 @@ extension Scenes {
         eterniaSnakeMountainPeak(m)
         eterniaBlowUp(c, m, f.x, f.y, q)
 
-        // The causeway out of the door: black flagstones widening as they come, fang-stones either side.
-        let dx0 = f.x + 52 * q, dw = 17 * q, top = base, bottom = g - s
+        // The causeway out of the door: black flagstones widening as they come.
+        let dx0 = f.x + 53 * q, dw = 15 * q, top = base, bottom = g - s
         for y in top..<max(top + 1, bottom) {
             let k = Double(y - top) / Double(max(1, bottom - top))
             let w = Int(Double(dw) * (1 + 0.8 * k)), x = dx0 + dw / 2 - w / 2
             c.rect(x, y, w, 1, (y - top) / max(1, q * 2) % 2 == 0 ? C(0x2E2228) : C(0x241A20))
             c.px(x, y, C(0x4A3236)); c.px(x + w - 1, y, C(0x4A3236))
+        }
+        // The forked tongue, lolling out of the maw down the middle of the causeway.
+        let tw = max(1, q / 2), tx = f.x + 60 * q + q / 2 - tw / 2, tl = max(2, (bottom - top) * 45 / 100)
+        c.rect(tx, f.foot, tw, top - f.foot + tl, C(0xB02848)); c.rect(tx, f.foot, max(1, tw / 2), top - f.foot + tl, C(0xD04A68))
+        for k in 1...2 {
+            c.rect(tx - k * tw, top + tl + (k - 1) * tw, tw, tw, C(0xB02848))
+            c.rect(tx + k * tw, top + tl + (k - 1) * tw, tw, tw, C(0xB02848))
         }
         // The near ledge: dark red-brown rock, plain where the crew stands.
         c.ground(g, C(0x3A2A2C), edge: C(0x5A403E), speck: C(0x2C2022), seed: 29)
@@ -1005,46 +1013,41 @@ extension Scenes {
         }
     }
 
-    /// The snake's head, reared up at the mountain's foot facing us, its open maw the door: a heavy brow knotted
-    /// down to the middle over two slit eyes, nostrils, the upper jaw's red gum with two long fangs hanging from
-    /// it, the black maw with a violet glow deep inside, and the lower jaw laid open along the ground, teeth up,
-    /// for the causeway to run out over. Drawn as its left half and mirrored. `E` marks the eyes and `P` their
-    /// pupils, which burn in the moving layer.
+    /// The snake's head, at the mountain's foot facing us, its open maw the door: a viper's wedge, widest at the
+    /// jaw hinges and tapering to the snout, the eyes at its sides under a low scaled ridge, nostril pits on the
+    /// snout, the pale gum of the upper jaw with two long fangs curving down from it, the black maw with a violet
+    /// glow deep inside, and the lower jaw below, banded pale belly scales under it. Drawn as its left half and
+    /// mirrored. `E` marks the eyes and `P` their slit pupils, which burn in the moving layer.
     static let eterniaSnakeHead: [String] = [
-        "........DDSSSSS",
-        "......DSSSSLSSS",
-        "....DSSSSSSLSSS",
-        "..DDSSSSSSSSLSS",
-        ".DSHHHSSSSSSLSS",
-        "DSBBBBHHHSSSSSS",
-        "DSSBBBBBBBHHSSS",
-        "DSSSEEBBBBBBBHS",
-        "DSSSSEEEPEBBBBB",
-        ".DSSSSSSEEEBBSS",
-        ".DSSSSSSSSSSSSS",
-        "..DSSSSSSSSSSSS",
-        "..DSSSSSSSSNNSS",
-        "..DjGGGGGGGGGGG",
-        "..DjFFFMMMMMMMM",
-        "..DjFFFMMMMMMMM",
-        "..DjjFFMMMMMMMM",
-        "..DjjFFMMMMMMMV",
-        ".DSjjFfMMMMMMVV",
-        ".DSjjMFMMMMMVVV",
-        ".DSjjMFMMMMVVVV",
-        "DSSjjMfMMMVVVVV",
-        "DSSjjMMMMVVVVVV",
-        "DSjGtGGtGGtGGtG",
-        "DjJJJJJJJJJJJJJ",
-        "DjjjjjjjjjjjjjJ",
+        "........DDS",
+        "......DSSLS",
+        "....DSSSSLS",
+        "..DSRRSSSLS",
+        ".DSERSSSSSS",
+        "DSEPESSSSSS",
+        ".DEPSSSSSSS",
+        "...DSSSSSSS",
+        ".....DSSNSS",
+        "......DSSSS",
+        ".....DGGGGG",
+        "....DjFGMMM",
+        "...DjjFMMMM",
+        "...DjjFMMMM",
+        "..DjjjMfMMV",
+        "..DjjMMMMVV",
+        ".DjjMMMMVVV",
+        "DjjMMMMVVVV",
+        "DjGGGGGGGGG",
+        "DJJJJJJJJJJ",
+        ".DKKKKKKKKK",
     ].map { $0 + String($0.dropLast().reversed()) }
     /// Where the head sits on the mountain's canvas: its jaw on the foot row, its middle on the peak's.
-    static let eterniaSnakeHeadAt = (x: 46, y: 30)
+    static let eterniaSnakeHeadAt = (x: 50, y: 35)
 
     /// Snake Mountain itself, one pixel to a unit on a 120×56 canvas, its foot on row 55: a tall crooked peak of
-    /// basalt with a spire either side (the tall one on the right, where Greyskull's tall tower is on the left),
-    /// the snake's body coiled three times down round the rock, and at the foot its head, crested and horned, its
-    /// open maw the door.
+    /// basalt rising nearly to the canvas's top, a spire either side (the tall one on the right, where Greyskull's
+    /// tall tower is on the left), and the snake wound round it from the summit down: the tail end hooked over the
+    /// top, four turns of its body, and its neck coming down out of the lowest turn into its head at the foot.
     static func eterniaSnakeMountainPeak(_ c: PixelCanvas) {
         let rock = [C(0x120A0E), C(0x1E1218), C(0x2A1A22), C(0x3A262E), C(0x4C323A), C(0x62424A)]
         let rim = C(0xF05A3A), rimD = C(0xA03A30)
@@ -1053,11 +1056,11 @@ extension Scenes {
         func bump(_ y: Int, _ at: Int, _ r: Int) -> Double { max(0, 1 - Double(abs(y - at)) / Double(r)) }
         /// How far the rock reaches out from the middle on `side` (-1 left, 1 right) at row `y`.
         func edge(_ y: Int, _ side: Int) -> Double {
-            if y < 10 { return -1 }
-            let foot = y > 42 ? pow(Double(y - 42), 2) / 9 : 0
-            let hw = 2 + Double(y - 10) * 0.6 + foot
+            if y < 2 { return -1 }
+            let foot = y > 44 ? pow(Double(y - 44), 2) / 8 : 0
+            let hw = 1.5 + Double(y - 2) * 0.52 + foot
             let crag = (noise(y / 2 * 13 + side * 77 + 5) - 0.5) * 3
-            let jut = side < 0 ? 4 * bump(y, 30, 4) : 4 * bump(y, 38, 4)
+            let jut = side < 0 ? 3 * bump(y, 20, 3) : 3 * bump(y, 31, 3)
             return hw + crag + jut
         }
         /// A crooked spire of rock standing from the foot to `top`, `w` wide at its base, leaning `lean` at its tip.
@@ -1071,11 +1074,11 @@ extension Scenes {
                 c.px(r, y, rim); c.px(l, y, rock[0])
             }
         }
-        spire(24, 12, 26, lean: -3)
-        spire(97, 14, 9, lean: 4)
-        spire(86, 8, 22, lean: 2)
+        spire(20, 12, 28, lean: -3)
+        spire(101, 14, 14, lean: 4)
+        spire(91, 8, 26, lean: 2)
         // The rock, lit red from the right where the moon is, gullies running down it.
-        for y in 10..<56 {
+        for y in 2..<56 {
             let l = 60 - edge(y, -1), r = 60 + edge(y, 1), hw = max(4, (r - l) / 2)
             for x in Int(l.rounded())...Int(r.rounded()) {
                 let k = (Double(x) - 60) / hw
@@ -1085,22 +1088,22 @@ extension Scenes {
             c.px(Int(l.rounded()), y, rock[0])
         }
         for x0 in [40, 48, 54, 67, 74, 82] {
-            for y in 14..<56 {
+            for y in 8..<56 {
                 let x = x0 + (y - 30) * (x0 - 60) / 50 + Int(noise(y / 2 + x0) * 2)
                 guard Double(abs(x - 60)) < edge(y, x < 60 ? -1 : 1) - 1 else { continue }
                 c.px(x, y, rock[0]); c.px(x + 1, y, rock[4])
             }
         }
         // Slits of yellow light, high windows in the rock and the spires.
-        for (x, y) in [(41, 49), (80, 50), (40, 45), (81, 45), (86, 45), (34, 52), (97, 30), (24, 44), (99, 40)] {
+        for (x, y) in [(42, 50), (38, 45), (46, 44), (79, 51), (83, 45), (74, 43), (101, 34), (20, 46), (103, 44), (91, 40)] {
             c.rect(x - 1, y - 1, 3, 4, rock[0]); c.rect(x, y, 1, 2, C(0xF0B040))
         }
 
-        // The coils, lowest first: each the front of one turn round the peak, rising to the right like a barber's
+        // The coils, lowest last: each the front of one turn round the peak, rising to the right like a barber's
         // pole, dipping in the middle, lit along its back and dark along its underside, turning away round the rock
         // at its ends, its yellow belly showing along the bottom.
         func coil(_ yc: Int, _ e: Double, _ th: Int) {
-            let r = Int(edge(yc, 1)) + 3
+            let r = Int(edge(yc, 1)) + 2
             for dx in -r...r {
                 let k = Double(dx) / Double(r)
                 let yb = Int((Double(yc) + e * (1 - k * k) - 0.2 * Double(dx)).rounded())
@@ -1123,46 +1126,45 @@ extension Scenes {
                 if dx > -r / 2 && dx < r - 2 { c.px(60 + dx, yb - tk / 2, C(0x8AB050)) }
             }
         }
-        coil(41, 2, 7)
-        coil(25, 1.5, 6)
-        coil(15, 1, 5)
-
-        // A ridged crest of spines along the crown of the head, tallest in the middle, and two horns of bone
-        // swept back from the ends of the brow.
-        for (o, h) in [(-9, 3), (-6, 5), (-3, 6), (0, 7), (3, 6), (6, 5), (9, 3)] {
-            let x = 60 + o, base = abs(o) > 7 ? 31 : 30
-            for j in 0..<h {
-                let w = j < h / 2 ? 3 : 1, y = base - 1 - j
-                c.rect(x - w / 2, y, w, 1, j < h / 2 ? C(0x0C1408) : scale[0])
-            }
-            c.px(x, base - 1 - h, C(0x8A2A24))
+        // The tail end, tapering up over the summit.
+        for st in 0...16 {
+            let k = Double(st) / 16
+            let x = Int((57 + 4 * k).rounded()), y = Int((5 - 4.5 * k).rounded())
+            c.px(x, y, scale[0]); c.px(x, y + 1, scale[0])
+            if k < 0.6 { c.px(x - 1, y, scale[3]); c.px(x - 1, y + 1, scale[0]); c.px(x, y, scale[4]) }
         }
-        let bone = C(0xC8BCA0), boneD = C(0x7E7262)
-        for (k, (x, y)) in [(46, 35), (45, 34), (44, 33), (43, 32), (42, 31), (41, 30), (40, 28), (39, 27)].enumerated() {
-            let w = k < 6 ? 2 : 1
-            for hx in [x, 120 - x - w] {
-                c.rect(hx, y - 1, w, 1, C(0x0A1206)); c.rect(hx, y, w, 1, bone); c.rect(hx, y + 1, w, 1, k < 5 ? boneD : C(0x0A1206))
-            }
+        coil(6, 0.5, 3)
+        coil(13, 1, 4)
+        coil(20, 1.5, 4)
+        coil(28, 1.5, 5)
+        // The neck, out of the lowest turn's left end and down round the front of the rock into the back of the
+        // head: scaled like the rest of the body, belly plates along its underside.
+        for st in 0...60 {
+            let k = Double(st) / 60, m = 1 - k
+            let x = m * m * 44 + 2 * m * k * 45 + k * k * 57, y = m * m * 31 + 2 * m * k * 42 + k * k * 37
+            let ix = Int(x.rounded()), iy = Int(y.rounded())
+            c.circle(ix, iy, 2, scale[0]); c.circle(ix, iy, 1, scale[3])
+            c.px(ix - 1, iy - 1, scale[5]); if st % 5 == 0 { c.px(ix + 1, iy, scale[1]) }
+            c.px(ix + 1, iy + 1, st % 4 < 2 ? belly : bellyD)
         }
 
-        // The head, then its shading: the face lighter on top and to the right where the moon catches it and
-        // mottled, the glow deep in the maw brightest low in the middle, the belly scales of the lower jaw.
-        let at = eterniaSnakeHeadAt, head = eterniaSnakeHead
+        // The head, then its shading: the scales lighter on top and to the right where the moon catches it and
+        // laid in the body's pattern, the glow deep in the maw brightest low in the middle, the belly bands.
+        let at = eterniaSnakeHeadAt, head = eterniaSnakeHead, mid = head[0].count / 2
         c.pattern(at.x, at.y, head,
-                  ["S": scale[3], "L": scale[5], "H": scale[4], "B": C(0x0C1408), "D": C(0x0A1206), "E": C(0xC08A20),
-                   "P": C(0x2A1A08), "N": deep, "j": scale[1], "G": C(0x6A0E18), "F": C(0xEEE6CC), "f": C(0x9E9480),
-                   "t": C(0xEEE6CC), "J": bellyD, "M": deep, "V": deep])
+                  ["S": scale[3], "L": scale[5], "R": scale[4], "D": C(0x0A1206), "E": C(0xC08A20), "P": C(0x2A1A08),
+                   "N": deep, "j": scale[1], "G": C(0x9A5A64), "F": C(0xEEE6CC), "f": C(0x9E9480), "J": belly, "K": bellyD, "M": deep,
+                   "V": deep])
         for (r, row) in head.enumerated() {
             for (k, ch) in row.enumerated() {
                 let x = at.x + k, y = at.y + r
                 switch ch {
                 case "S":
-                    c.px(x, y, eterniaDither(scale, 0.66 - Double(r) * 0.018 + Double(k - 14) / 28 * 0.25, x, y, grain: 0.3))
+                    let mark = abs((k - mid + r + 300) % 6 - 3) + abs((k - mid - r + 300) % 6 - 3) <= 1
+                    c.px(x, y, mark ? scale[1] : eterniaDither(scale, 0.68 - Double(r) * 0.03 + Double(k - mid) / 21 * 0.25, x, y, grain: 0.2))
                 case "V":
-                    let d = (pow(Double(k - 14) / 9, 2) + pow(Double(r - 25) / 8, 2)).squareRoot()
+                    let d = (pow(Double(k - mid) / 7, 2) + pow(Double(r - 18) / 7, 2)).squareRoot()
                     c.px(x, y, lerp(C(0x7A3AA8), deep, min(1, d)))
-                case "J":
-                    c.px(x, y, k % 3 == 0 ? bellyD : belly)
                 default: break
                 }
             }
@@ -1189,7 +1191,7 @@ extension Scenes {
                 }
                 guard n > 0 else { continue }
                 let px = f.x + Int((Double(at.x) + sx / n) * Double(q)), py = f.y + Int((Double(at.y) + sy / n) * Double(q))
-                c.circle(px, py, 5 * q, C(0xF0A020, 0.10)); c.circle(px, py, 3 * q, C(0xF8F060, 0.20))
+                c.circle(px, py, 2 * q, C(0xF8F060, 0.22))
             }
             for (r, row) in head.enumerated() {
                 for (k, ch) in row.enumerated() where ch == "E" || ch == "P" {
