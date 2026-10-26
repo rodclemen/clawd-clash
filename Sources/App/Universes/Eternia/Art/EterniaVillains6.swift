@@ -11,7 +11,7 @@ let eterniaVillains6: [EterniaVillain: Persona] = [
     .vultak: Persona(name: "Vultak", weapon: .saber, motion: .fly, headTop: 21, signature: 3.4, draw: drawVultak),
     .hordePrime: Persona(name: "Horde Prime", weapon: .lightning, motion: .hover,
                          magic: Magic(core: C(0xB4FF2A), glow: C(0x14200A)),
-                         canSit: false, pivot: (57, 28.5), headTop: 13, signature: 3.6, draw: drawHordePrime),
+                         canSit: false, pivot: (59, 28.5), headTop: 13, signature: 3.6, draw: drawHordePrime),
 ]
 
 // MARK: - Shared bits
@@ -81,10 +81,10 @@ private func octaviaTentacle(_ c: PixelCanvas, from b: (x: Double, y: Double), a
 }
 
 /// Octavia: the Horde's octopus woman. Blue skin, a great domed octopus mantle for a head, leaning back and dappled
-/// with darker spots, a steel Horde circlet across her brow with the red bat on it, big yellow octopus eyes with a
-/// bar of a pupil, a steel chest plate, and four blue tentacles, suckers and all: two behind her, curling up, one
-/// hanging at her front and the one she fights with, lashing from her near shoulder. Signature: she lifts all four
-/// tentacles and waves them about.
+/// with darker spots, a steel Horde circlet across her brow with the red bat on it, big round yellow octopus eyes, wide
+/// open, with a square black pupil, a steel chest plate, and four blue tentacles, suckers and all: two behind her,
+/// curling up, one hanging at her front and the one she fights with, lashing from her near shoulder. Signature: she
+/// lifts all four tentacles and waves them about.
 private func drawOctavia(_ c: PixelCanvas, _ p: Pose) {
     let skin = C(0x3C7ED8), skinD = C(0x2A58A8), skinL = C(0x78B2F6), rim = C(0x1A3474), spot = C(0x2A5EB4)
     let sucker = C(0xF6C8DC), eyeY = C(0xFFD84A), eyeL = C(0xFFF2A8), boot = C(0x2A2240), bootL = C(0x4A4068)
@@ -105,19 +105,20 @@ private func drawOctavia(_ c: PixelCanvas, _ p: Pose) {
     }
     c.oy += p.breathe
 
-    // The two tentacles behind her, curling up off her back; waving, they rise and thrash.
+    // The two tentacles behind her, curling up off her back; waving, they swing up beside her mantle, their tips
+    // curling over towards it, and thrash there (up, not out to the side).
     let lit = skinL
-    octaviaTentacle(c, from: (17, 30), angle: 190 + 65 * wave + 18 * w * wave + 4 * drift,
-                    curl: 15 - 28 * wave + 8 * w * wave,
+    octaviaTentacle(c, from: (17, 30), angle: 190 + 65 * wave + 10 * w * wave + 4 * drift,
+                    curl: 15 - 11 * wave + 6 * w * wave,
                     skin: skinD, rim: rim, lit: skin, sucker: sucker)
-    octaviaTentacle(c, from: (17, 35), angle: 165 + 60 * wave - 18 * w2 * wave - 3 * drift, curl: 17 - 30 * wave,
+    octaviaTentacle(c, from: (17, 35), angle: 165 + 50 * wave - 10 * w2 * wave - 3 * drift, curl: 17 - 12 * wave,
                     skin: skin, rim: rim, lit: lit, sucker: sucker)
 
     drawBody(c, Look(body: skin, shade: skinD, arm: skin, eye: nil))
     c.rect(18, 26, 1, 7, skinL)
 
     // The mantle: a great bulb of a dome rising off her head, wider than her face and pinched in above the brow,
-    // leaning back, lit at the top left, dappled with spots.
+    // leaning back, lit at the top left, and three soft spots across it, a shade darker than her skin.
     for y in 13...25 {
         let t = max(0, (19.5 - Double(y)) / 7)
         let hw = y >= 20 ? 11.5 - Double(y - 20) * 0.3 : 11.5 * (1 - t * t).squareRoot()
@@ -127,8 +128,8 @@ private func drawOctavia(_ c: PixelCanvas, _ p: Pose) {
         c.px(x0, y, skinL); c.px(x1 - 1, y, skinD)
     }
     c.rect(22, 14, 4, 1, skinL); c.rect(20, 15, 3, 1, skinL); c.px(19, 16, skinL); c.px(18, 17, skinL)
-    for (x, y) in [(24, 16), (30, 15), (34, 18), (21, 19), (28, 18), (32, 21), (25, 20)] {
-        c.rect(x, y, 2, 1, spot); c.px(x, y + 1, spot)
+    for (x, y) in [(23, 17), (30, 16), (33, 20)] {
+        c.rect(x + 1, y, 2, 1, spot); c.rect(x, y + 1, 3, 1, spot)
     }
 
     // The thin steel circlet across her brow, the red bat standing up off it.
@@ -136,12 +137,12 @@ private func drawOctavia(_ c: PixelCanvas, _ p: Pose) {
     h6Bat(c, 23, 21, red: red, redD: redD)
     c.px(27, 25, red)
 
-    // Big yellow octopus eyes, each with a black bar of a pupil, under a heavy lid with lashes flicked out.
-    for ex in [21, 31] {
-        c.rect(ex, 28, 3, 3, eyeY); c.px(ex, 28, eyeL); c.rect(ex, 29, 3, 1, ink)
-        c.rect(ex - 1, 27, 5, 1, ink)
+    // Big round yellow octopus eyes, wide open, a glint at the top and a square black pupil looking ahead in each,
+    // yellow all round it (no lid across them), a lash flicked out at the outer corner.
+    for ex in [20, 31] {
+        c.pattern(ex, 27, [".LYY.", "YYYKY", "YYKKY", ".YYY."], ["Y": eyeY, "L": eyeL, "K": ink])
     }
-    c.px(19, 26, ink); c.px(35, 26, ink)
+    c.px(19, 27, ink); c.px(36, 27, ink)
 
     // A steel Horde chest plate on a dark belt.
     h6Plate(c, plate: steel, plateD: steelD, plateL: steelL)
@@ -366,8 +367,8 @@ private func drawTungLashor(_ c: PixelCanvas, _ p: Pose) {
 /// lit grey strokes between the long flight feathers and a pale edge along the top, so it reads against the night.
 private func vultakWing(_ c: PixelCanvas, _ sh: (Double, Double), _ a: (Double, Double), _ b: (Double, Double),
                         bow: Double, dim: Bool) {
-    let feather = dim ? C(0x1C1A24) : C(0x2A2834), stroke = dim ? C(0x3E3C50) : C(0x5C5A74)
-    let edge = dim ? C(0x6A6880) : C(0x9A98B4)
+    let feather = dim ? C(0x2C2A38) : C(0x3E3C4E), stroke = dim ? C(0x56546E) : C(0x7C7A98)
+    let edge = dim ? C(0x8A88A4) : C(0xC4C2DA)
     for k in 0...16 {
         let t = Double(k) / 16
         let tip = (a.0 + (b.0 - a.0) * t, a.1 + (b.1 - a.1) * t - bow * sin(t * .pi))
@@ -376,13 +377,14 @@ private func vultakWing(_ c: PixelCanvas, _ sh: (Double, Double), _ a: (Double, 
     c.glowLine(sh.0, sh.1 - 0.5, b.0, b.1, core: edge, glow: C(0, 0), coreR: 0.5, glowR: 0.6)
 }
 
-/// Vultak: the Horde's vulture. A bald pink head, wrinkled across the crown, angry yellow eyes under a heavy pink
-/// brow and a big hooked yellow beak; a ruff of grey-white feathers round his neck, black plumage scalloped in grey
-/// below it, great black wings folded down his back (spread and beating in flight), and grey vulture's legs with black
+/// Vultak: the Horde's vulture. A bald pink head, wrinkled across the crown, angry yellow eyes under a heavy pink brow
+/// and a big hooked yellow beak; a narrow ruff of grey-white feathers down the back of his head and neck (never under
+/// his face, where it reads as a beard), black plumage scalloped in grey, rimmed in pale grey so he reads on a dark
+/// desktop, great black wings folded down his back (spread and beating in flight), and grey vulture's legs with black
 /// talons. He fights with the talons of his near foot-like hand. Signature: he hunches, wings mantled up round his
 /// shoulders, and croaks, his beak gaping and the croaks rolling out.
 private func drawVultak(_ c: PixelCanvas, _ p: Pose) {
-    let feather = C(0x2A2834), featherD = C(0x16141C), featherL = C(0x5C5A74), edge = C(0x9A98B4)
+    let feather = C(0x3E3C4E), featherD = C(0x26242F), featherL = C(0x7C7A98), edge = C(0xC4C2DA)
     let head = C(0xE88A9A), headD = C(0xB45A6E), headL = C(0xFFB8C4)
     let ruff = C(0xE2DED6), ruffD = C(0xA8A49C)
     let beak = C(0xECD47A), beakD = C(0xAC944A), beakL = C(0xFFF2B8), mawC = C(0x7A1A2A)
@@ -432,11 +434,14 @@ private func drawVultak(_ c: PixelCanvas, _ p: Pose) {
     }
 
     drawBody(c, Look(body: feather, shade: featherD, arm: feather, eye: nil))
-    // Black plumage scalloped in grey, lit down the left.
-    for y in stride(from: 34, through: 36, by: 2) {
-        for x in stride(from: 20 + (y / 2) % 2 * 2, to: 37, by: 4) { c.rect(x, y, 2, 1, featherL) }
+    // Black plumage scalloped in grey, a pale rim down the left and a lit line under the chin.
+    for y in stride(from: 33, through: 36, by: 1) {
+        for x in stride(from: 20 + (y % 2) * 2, to: 37, by: 4) {
+            c.px(x, y, featherL)
+            if y % 2 == 1 { c.px(x + 1, y, featherL) }
+        }
     }
-    c.rect(18, 33, 1, 4, featherL)
+    c.rect(18, 32, 1, 5, edge); c.rect(19, 32, 18, 1, featherL)
 
     // The bald pink head: the top of his face and a smooth dome over it, lit on the left, a couple of wrinkles at the
     // back of his neck, and the angry brows sloping down to the beak.
@@ -447,18 +452,13 @@ private func drawVultak(_ c: PixelCanvas, _ p: Pose) {
     c.pattern(20, 27, ["DD...........DD", "..DD.......DD.."], ["D": ink])
     for ex in [21, 31] { c.rect(ex, 29, 3, 2, eyeC); c.rect(ex + 1, 29, 2, 2, ink) }
 
-    // The ruff round his neck: grey-white feathers in tufts, ragged along the bottom.
-    c.rect(17, 31, 22, 2, ruff)
-    for x in stride(from: 17, to: 39, by: 2) { c.px(x, 33, x % 4 == 1 ? ruff : ruffD) }
-    for x in stride(from: 19, to: 38, by: 3) { c.px(x, 32, ruffD) }
-    c.px(17, 31, white); c.rect(38, 31, 1, 2, ruffD)
-
-    // The far wing folded behind him, its long flight feathers trailing back, a pale edge along the top.
+    // The far wing folded behind him, its long flight feathers trailing back, a pale edge along the top, tucked
+    // behind his head (it starts below his face, so no dark block sits beside it).
     if up == nil && hunch == 0 {
         c.pattern(9, 29, [
-            "........EEEEEE",
-            ".....EEEFFFFFF",
-            "...EEFFFFsFFFF",
+            "........E.....",
+            ".....EEEF.....",
+            "...EEFFFF.....",
             ".EEFFFsFFFFFFF",
             "EFFFsFFFFFFFFF",
             "FFsFFFFFsFFFFF",
@@ -466,6 +466,19 @@ private func drawVultak(_ c: PixelCanvas, _ p: Pose) {
             "..F.F.FF.FF...",
         ], ["E": edge, "F": feather, "s": featherL])
     }
+
+    // The ruff: a narrow collar of grey-white feathers down the back of his head and neck, tufted along its back
+    // edge, over the root of his wings. Nothing under his face: there it reads as a beard.
+    c.pattern(14, 26, [
+        "..Rr",
+        ".RRr",
+        "RRrR",
+        ".RRr",
+        "RRrR",
+        ".RRr",
+        "RRrR",
+        ".R.R",
+    ], ["R": ruff, "r": ruffD])
 
     // The beak: hooked and shut, or gaping as he croaks.
     if croaking && Int(p.t * 6) % 3 != 2 {
@@ -543,8 +556,8 @@ private func primePuff(_ c: PixelCanvas, _ cx: Double, _ cy: Double, _ r: Double
 /// Horde Prime: the Horde's dread master, who is never seen. A hooded cloak of billowing grey-violet smoke, its puffs
 /// rolling, the Horde's red bat on its brow, inside it a black void with two slanted acid-green eyes, and four smoke
 /// legs trailing away to wisps. Out of the smoke comes his one huge green hand, dark-nailed, its fingers flexing; he
-/// points it to cast, and acid-green bolts crack out of the smoke round it. Signature: the hand reaches out of the
-/// smoke and points, his eyes flaring.
+/// points it to cast (the forefinger out, jointed, the thumb under it and three knuckles curled below), and acid-green
+/// bolts crack out of the smoke round it. Signature: the hand reaches out of the smoke and points, his eyes flaring.
 private func drawHordePrime(_ c: PixelCanvas, _ p: Pose) {
     let smoke = C(0x6A6482), smokeD = C(0x48425C), smokeL = C(0x9C96B4), back = C(0x524C66), backL = C(0x7A7494)
     let hand = C(0x6CCC34), handD = C(0x3E8A1C), handL = C(0xA8EE6A), nail = C(0x1A2A10)
@@ -603,27 +616,33 @@ private func drawHordePrime(_ c: PixelCanvas, _ p: Pose) {
     if pointing {
         // The smoke wreathing his wrist, behind the fist.
         primePuff(c, 39.5, 35 + roll(12) * 0.3, 2.4, base: smoke, lit: smokeL, dark: smokeD)
-        // The pointing hand: a fist, the thumb over it, and the long forefinger out ahead, its nail dark.
-        c.pattern(39, 25, [
-            "...LLLL..........",
-            "..LGGGGL.........",
-            ".LGGGGGGLLLLLLLL.",
-            "LGGGGGGGGGGGGGGGN",
-            "GGGGGGGGGGGGGGGNN",
-            "GGGGGGGGddddddd..",
-            "GGGGGGGGd........",
-            "GdGGGdGGGd.......",
-            "GGGGGGGGGd.......",
-            "GdGGGdGGGd.......",
-            "GGGGGGGGd........",
-            ".dddddddd........",
-        ], ["G": hand, "L": handL, "d": handD, "N": nail])
+        // The pointing hand, seen from the side: the broad back of the hand, the forefinger out ahead, thick at the
+        // root and jointed (a crease at each knuckle), its dark nail at the tip; the thumb laid along under it with a
+        // nail of its own, and the other three fingers curled into the palm, three rounded knuckles stacked down the
+        // front with their nails tucked under. Wider than it is tall, and no straight grip under it, so it reads as
+        // a great hand and not a pistol.
+        c.pattern(37, 24, [
+            "...LLLLL.............",
+            ".LLGGGGGLL...........",
+            "LGGGGGGGGGLLLLLLLLL..",
+            "GGGGGGGGGGGGdGGGGdGL.",
+            "GGGGGGGGGGGGdGGGGdGGN",
+            "GGGGGGGGGGddddddddGNN",
+            "GGGGGGGLLLLLLLn......",
+            "GGGGGGGGddddddGd.....",
+            "GGGGGGGGGGGGGGd......",
+            "GGGGGGGGGGdddd.......",
+            "GGGGGGGGGGGGGd.......",
+            "dGGGGGGGGGddd........",
+            ".GGGGGGGGGGd.........",
+            "..ddddddddd..........",
+        ], ["G": hand, "L": handL, "d": handD, "N": nail, "n": nail])
         if p.zap == false || flare {   // a crackle of acid green round the fingertip
             let k = Int(p.t * 20)
             for j in 0..<3 {
                 let ang = noise(k * 3 + j) * 2 * .pi
-                let x = 56.5 + cos(ang) * 2.2, y = 28.5 + sin(ang) * 2.2
-                c.glowLine(56.5, 28.5, x, y, core: C(0xEAFFB0, 0.9), glow: C(0x6ACC1A, 0.5), coreR: 0.35, glowR: 1.2)
+                let x = 58.5 + cos(ang) * 2.2, y = 28.5 + sin(ang) * 2.2
+                c.glowLine(58.5, 28.5, x, y, core: C(0xEAFFB0, 0.9), glow: C(0x6ACC1A, 0.5), coreR: 0.35, glowR: 1.2)
             }
         }
     } else {

@@ -9,7 +9,7 @@ import Foundation
 let eterniaVillains8: [EterniaVillain: Persona] = [
     .blade: Persona(name: "Blade", weapon: .saber, headTop: 20, signature: 3.4, draw: drawBlade),
     .saurod: Persona(name: "Saurod", weapon: .blaster, shot: .energy(core: C(0xFFF2A0), glow: C(0xFF8A1A)),
-                     armoured: true, muzzle: (46, 31.5), handGun: false, headTop: 18, signature: 3.0, draw: drawSaurod),
+                     armoured: true, muzzle: (46, 30.5), handGun: false, headTop: 18, signature: 3.0, draw: drawSaurod),
     .karg: Persona(name: "Karg", weapon: .saber, headTop: 12, signature: 3.0, draw: drawKarg),
     .darkTrooper: Persona(name: "Dark Trooper", weapon: .blaster, shot: .energy(core: C(0xFFD8D0), glow: C(0xE8281E)),
                           armoured: true, muzzle: (53, 33), headTop: 19, signature: 3.2, draw: drawDarkTrooper),
@@ -38,9 +38,11 @@ private func v8Swing(_ s: Double, seconds: Double, _ at: (Double) -> Double) -> 
 
 // MARK: - Blade
 
-/// Blade: the mercenary swordsman. Black hair slicked straight back off a high brow, the comb lines lit along it, and
-/// hanging long down the back of his neck; a pale scar down his cheek beside his front eye. Black armour trimmed in silver: a
-/// silver gorget over a black breastplate with a ridge down it and a few silver rivets, a belt of silver studs, black
+/// Blade: the mercenary swordsman. Black hair swept up off his brow in a slick quiff and combed straight back, the comb
+/// lines lit in long strands running back and down, with a widow's peak dipping onto his forehead and the ends hanging
+/// loose down his nape: hair, not a helmet, because his forehead shows under it and its edge is ragged with strands. A
+/// red scar down his cheek beside his front eye, crossed by pale stitch marks. Black armour trimmed in silver: a silver
+/// gorget over a black breastplate with a ridge down it and a few silver rivets, a belt of silver studs, black
 /// gauntlets with silver cuffs, black legs and boots. His long sword hangs in a black scabbard at his hip, banded and
 /// tipped in silver, its silver hilt forward. Signature: a fencing salute, the hilt brought up to his chin with the
 /// blade straight up in front of his face, held; then the blade snaps down and he whirls it twice round in a quick
@@ -49,18 +51,21 @@ private func drawBlade(_ c: PixelCanvas, _ p: Pose) {
     let black = C(0x24242C), blackD = C(0x131318), blackL = C(0x42444F)
     let silver = C(0xB8BCC8), silverD = C(0x7C808E), silverL = C(0xEEF0F6)
     let hair = C(0x15151B), hairM = C(0x2E3140), hairL = C(0x6E7896)
-    let leg = C(0x2E2E38), scar = C(0xF6C2A8)
+    let leg = C(0x2E2E38), scar = C(0x9A2226), stitch = C(0xFBDCC8)
     let s = p.signature ?? -1
     let sig: (angle: Double, trail: [Double], raise: Int)? = s > 0.05 && s < 0.95 ? bladeSalute(s) : nil
     let raise = sig?.raise ?? 0
     let drawn = p.melee != nil || sig != nil
 
-    // The scabbard, behind him: from his hip back and down past his back legs, banded and tipped in silver.
+    // The scabbard, behind him: from his hip back and down past his back legs, banded and tipped in silver. Sitting,
+    // it lies back along the ground behind him instead of poking down through it.
     if !drawn {
-        v8Line(c, (19, 36), (6.5, 42), black, r: 0.95)
-        v8Line(c, (18.5, 35.5), (7, 41), blackL, r: 0.35)
-        c.rect(6, 41, 2, 2, silver); c.px(6, 41, silverL)
-        c.rect(12, 38, 1, 3, silver); c.px(12, 38, silverL)
+        let tip: (x: Double, y: Double) = seatedPose ? (6.5, 37.5) : (6.5, 42)
+        let band = seatedPose ? (x: 12, y: 36) : (x: 12, y: 38)
+        v8Line(c, (19, 36), tip, black, r: 0.95)
+        v8Line(c, (18.5, 35.5), (tip.x + 0.5, tip.y - 1), blackL, r: 0.35)
+        c.rect(Int(tip.x) - 0, Int(tip.y) - 1, 2, 2, silver); c.px(Int(tip.x), Int(tip.y) - 1, silverL)
+        c.rect(band.x, band.y, 1, 2, silver); c.px(band.x, band.y, silverL)
     }
 
     // Black legs, and black boots with a silver band round the top.
@@ -78,28 +83,39 @@ private func drawBlade(_ c: PixelCanvas, _ p: Pose) {
     c.rect(15, 35, 3, 1, silver); c.px(15, 35, silverL)                      // the cuffs
     c.rect(38, 35 - raise, 3, 1, silver); c.px(38, 35 - raise, silverL)
 
-    // The face: his eyes under straight black brows, and the scar down his cheek beside the front one.
+    // The face: his eyes under straight black brows slanting down to the middle, and the scar: a red line down his
+    // cheek beside the front eye, crossed twice by pale stitch marks.
     c.rect(22, 29, 2, 3, ink); c.rect(32, 29, 2, 3, ink)
-    c.rect(22, 28, 2, 1, hair); c.rect(31, 28, 3, 1, hair)
-    c.px(36, 27, scar); c.px(35, 28, scar); c.px(35, 29, scar); c.px(34, 30, scar); c.px(35, 31, scar)
+    c.rect(22, 28, 2, 1, hair); c.rect(31, 28, 3, 1, hair); c.px(34, 27, hair)
+    for (x, y) in [(36, 27), (35, 28), (35, 29), (35, 30), (35, 31), (34, 32)] { c.px(x, y, scar) }
+    for (x, y) in [(34, 28), (36, 28), (34, 30), (36, 30)] { c.px(x, y, stitch) }
 
-    // The hair: slicked straight back off a high brow with a widow's peak, the comb lines lit, and hanging long
-    // down his nape behind his face, its ends loose.
-    c.pattern(12, 20, [
-        "...........HHHHHHHH.......",
-        "........HHHlllllHHHHH.....",
-        "......HHHHHHHHHHHHlllHH...",
-        "....HHHlllllllHHHHHHHHHH..",
-        "...HHHHHHHHHHHmmmmHHHHHHH.",
-        "..HHHHmmmHHlllllHHHHHHHHm.",
-        ".HHHHHHHHHHHHmmH..HHH.....",
-        ".HHlHHHHHH.........H......",
-        "HHHHHHH...................",
-        "HHmHHH....................",
-        "HHHHH.....................",
-        ".HmHH.....................",
-        "H.HH......................",
-        "H..H......................",
+    // The hair: combed straight back off a high brow, its front edge sloping back as it rises, a slick quiff on top,
+    // long lit strands running back and down it, and the ends hanging loose and parted down his nape behind his
+    // face. His high forehead shows under the front of it (his head is a little taller there than a bare Clawd's),
+    // so it reads as hair and not a cap or a helmet.
+    for (y, x0) in [(22, 35), (23, 33), (24, 32), (25, 29)] {
+        c.rect(x0, y, 37 - x0, 1, clawdOrange); c.px(37, y, clawdShade)
+    }
+    c.rect(36, 19, 2, 1, hair); c.px(38, 20, hair); c.px(37, 19, hairL)   // the quiff's tip, flicked forward
+    c.pattern(12, 17, [
+        "..............HHHHHH......",
+        "...........HHHHlllHHHHHH..",
+        ".........HHHlllHHHHHlHHH..",
+        ".......HHHllHHHHlllHHHHHH.",
+        "......HHllHHHHlllHHHHHHmHH",
+        ".....HlHHHHlllHHHHHHmmHHH.",
+        "....HlHHHlllHHHHHHmHHH....",
+        "...HlHHHllHHHHHHmHHHH.....",
+        "...HlHHlHHHHHmHHH.........",
+        "..HlHHlHHHHHmH............",
+        "..HlH.lHHH................",
+        ".HlHH.HlH.................",
+        ".HlH.HHl..................",
+        "HlHH.HlH..................",
+        "HlH..Hl...................",
+        "H.H...H...................",
+        "H.....H...................",
     ], ["H": hair, "m": hairM, "l": hairL])
 
     // The armour: a silver gorget under his chin, then a black breastplate with a lit ridge down its middle and a
@@ -150,12 +166,13 @@ private func bladeSalute(_ s: Double) -> (angle: Double, trail: [Double], raise:
 
 // MARK: - Saurod
 
-/// Saurod: the armoured lizard man. Grey-green scales, lit in short strokes, a blunt snout jutting out in front with a
-/// nostril and a row of teeth along the jaw, and red eyes under a heavy brow; a silver helm over his crown with a
-/// crest down the middle, and silver plate on his chest, wrists and shins, riveted and lit along the top, over a dark
-/// belt. No fins, no hood: the helm and the plate are what keep him apart from the other scaly greens. He spits his
-/// shots, orange-yellow sparks out of his jaws, and his jaw drops as each one goes. Signature: he opens his jaws wide
-/// and a shower of sparks sprays out of them, arcing down in front of him.
+/// Saurod: the armoured lizard man. Grey-green scales, each a little rounded one (a dark curve under a lit top), set in
+/// staggered rows, a blunt snout jutting out in front at eye level with a nostril and a row of teeth along the jaw,
+/// kept short and high so his fighting arm shows under it, and red eyes under a heavy brow; a silver helm over his
+/// crown with a crest down the middle, and silver plate on his chest, wrists and shins, riveted and lit along the top,
+/// over a dark belt. No fins, no hood: the helm and the plate are what keep him apart from the other scaly greens. He
+/// spits his shots, orange-yellow sparks out of his jaws, and his jaw drops as each one goes. Signature: he opens his
+/// jaws wide and a shower of sparks sprays out of them, arcing down in front of him.
 private func drawSaurod(_ c: PixelCanvas, _ p: Pose) {
     let scale = C(0x7E9C7A), scaleD = C(0x58725A), scaleL = C(0xA8C4A2)
     let silver = C(0xC4C8D2), silverD = C(0x868A98), silverL = C(0xF0F2F8)
@@ -176,12 +193,10 @@ private func drawSaurod(_ c: PixelCanvas, _ p: Pose) {
     c.oy += p.breathe
     drawBody(c, Look(body: scale, shade: scaleD, arm: scale, eye: nil))
 
-    // Scales: short dark strokes in staggered rows over his face, a lit run down his left side.
-    for y in stride(from: 26, through: 32, by: 2) {
-        let off = (y / 2) % 2 == 0 ? 0 : 2
-        for x in stride(from: 20 + off, through: 34, by: 4) where !(y == 28 && (x >= 21 && x <= 24 || x >= 31)) {
-            c.rect(x, y, 2, 1, scaleD)
-        }
+    // Scales: little rounded ones in staggered rows over his face and neck, each a dark curve under a lit top (a
+    // curve, not a block, so they read as scales and not as brickwork), and a lit run down his left side.
+    for (x, y) in [(20, 31), (26, 31), (32, 31), (23, 32), (29, 32), (27, 27)] {
+        c.px(x, y, scaleD); c.px(x + 1, y + 1, scaleD); c.px(x + 2, y, scaleD); c.px(x + 1, y, scaleL)
     }
     c.rect(18, 26, 1, 7, scaleL)
 
@@ -216,22 +231,22 @@ private func drawSaurod(_ c: PixelCanvas, _ p: Pose) {
     c.rect(15, 34, 3, 1, silver); c.px(15, 34, silverL)
     c.rect(38, 34, 3, 1, silver); c.px(38, 34, silverL)
 
-    // The snout, jutting out in front of his face over his fighting arm: the upper jaw with its nostril and its row
-    // of teeth, and the lower jaw under it dropping open (`open`) on a dark mouth.
+    // The snout, jutting out in front of his face at eye level, short and high so his fighting arm shows under it:
+    // the upper jaw with its nostril and its row of teeth, and the slim lower jaw under it, hinged at the back, its
+    // front dropping open (`open`) on a dark mouth.
     c.pattern(36, 27, [
         "SSSSSS....",
         "SSSSSSSSL.",
         "SSSdSSSSSn",
-        "SSSSSSSSSS",
         "TdTdTdTdT.",
     ], ["S": scale, "L": scaleL, "d": scaleD, "n": ink, "T": white])
-    c.rect(36, 27, 6, 1, scaleL); c.px(43, 29, ink)
-    if open > 0 { c.rect(36, 32, 8, open, mouth) }
-    c.pattern(36, 32 + open, [
-        "TdTdTdT.",
-        "SSSSSSSd",
-        "dddddd..",
-    ], ["S": scale, "d": scaleD, "T": white])
+    c.rect(36, 27, 6, 1, scaleL)
+    for i in 0..<8 {
+        let x = 36 + i, drop = open * i / 7
+        if drop > 0 { c.rect(x, 31, 1, drop, mouth) }
+        c.px(x, 31 + drop, i == 7 ? scaleD : i % 2 == 0 ? white : scaleD)
+        c.px(x, 32 + drop, i == 7 ? scaleD : scale)
+    }
 
     if spray { saurodSparks(c, (s - 0.1) * 3.0, open: open) }
 }
@@ -240,7 +255,7 @@ private func drawSaurod(_ c: PixelCanvas, _ p: Pose) {
 /// a little, falling as it goes and fading, a short bright streak along its path. Each is drawn only while it's well
 /// inside the frame.
 private func saurodSparks(_ c: PixelCanvas, _ tt: Double, open: Int) {
-    let mx = 44.0, my = 32.0 + Double(open) / 2
+    let mx = 44.0, my = 31.0 + Double(open) / 2
     c.glowLine(mx, my, mx, my, core: C(0xFFF6C0, 0.9), glow: C(0xFF9A2A), coreR: 0.8, glowR: 2.4, strength: 0.8)
     for i in 0..<44 {
         let age = tt - Double(i) * 0.05
@@ -262,12 +277,14 @@ private func saurodSparks(_ c: PixelCanvas, _ tt: Double, open: Int) {
 
 // MARK: - Karg
 
-/// Karg: the hook-handed mercenary, Skeleclawd's tracker. A wild white mane standing out all round his head in
-/// strands, grey at the tips and shaded in strokes, round a pale face with heavy black brows and a grim mouth; a black
-/// fur cloak hanging down his back with a ragged collar of it over his shoulders, and bronze armour on his chest with
-/// a dark belt; black sleeves, a bronze bracer, dark legs and bronze-capped boots. His sword hand is a steel hook, and
-/// it's what he fights with. Nothing about him is a skull: the mane and the hook carry him. Signature: he draws the
-/// hook back over his head, slashes it down through the air in a pale streak, and bares his teeth.
+/// Karg: the hook-handed mercenary, Skeleclawd's tracker. A wild white mane standing out all round his head in strands,
+/// grey at the tips and shaded in strokes, round a pale face with heavy black brows and a grim mouth; a black fur cloak
+/// hanging down his back with a ragged collar of it over his shoulders, and bronze armour on his chest with a dark
+/// belt; black sleeves, a bronze bracer, dark legs and bronze-capped boots. A sword hangs at his back hip over the
+/// cloak, its bronze hilt standing up by his back arm and its brown leather scabbard slanting down behind him, but he
+/// never draws it: his sword hand is a steel hook, outlined dark so it still reads against his white mane when he
+/// raises it, and it's what he fights with. Nothing about him is a skull: the mane and the hook carry him. Signature:
+/// he draws the hook back over his head, slashes it down through the air in a pale streak, and bares his teeth.
 private func drawKarg(_ c: PixelCanvas, _ p: Pose) {
     let mane = C(0xDCDCE4), maneD = C(0x9C9EAA), maneL = C(0xFAFAFC), maneT = C(0xB8BAC6)
     let face = C(0xE2CDBE), faceD = C(0xB8A090)
@@ -290,6 +307,7 @@ private func drawKarg(_ c: PixelCanvas, _ p: Pose) {
         c.rect(x, 37 + (x % 4 == 1 ? 0 : 1), 1, 4, cloakD)
     }
     if c.oy <= 0 { for x in stride(from: 12, through: 20, by: 3) { c.px(x, 43, cloakD) } }
+
     c.oy -= p.breathe
 
     drawLegs(c, Look(leg: leg), step: p.step)
@@ -349,6 +367,18 @@ private func drawKarg(_ c: PixelCanvas, _ p: Pose) {
     c.rect(27, 34, 1, 2, bronzeD); c.px(21, 35, bronzeD); c.px(33, 35, bronzeD)
     c.rect(18, 36, 20, 1, C(0x2A1E18)); c.rect(27, 36, 2, 1, bronzeL)
     eterniaFur(c, 18, 37, 20, 1, base: cloak, dark: cloakD, light: cloakL)
+    // The sword at his side, hanging from his belt at the back hip over the cloak: a bronze pommel and a dark
+    // leather grip standing up beside his back arm, a bronze crossguard, and the brown leather scabbard slanting down
+    // and back to a bronze chape. Sitting, it lies back along the ground.
+    let leather = C(0x6A4024), leatherD = C(0x2E1A0E), leatherL = C(0x9C6A40)
+    let tip: (x: Double, y: Double) = seatedPose ? (5.5, 37.5) : (9.5, 42.5)
+    v8Line(c, (11.5, 35.5), tip, leatherD, r: 1.2)
+    v8Line(c, (11.5, 35.5), tip, leather, r: 0.7)
+    c.px(11, 35, leatherL)
+    c.rect(Int(tip.x) - 1, Int(tip.y) - 1, 2, 2, bronze); c.px(Int(tip.x) - 1, Int(tip.y) - 1, bronzeL)
+    c.rect(9, 34, 5, 1, bronze); c.px(9, 34, bronzeL); c.px(13, 34, bronzeD)          // the crossguard
+    c.rect(11, 32, 1, 2, leatherL)                                                     // the grip
+    c.rect(10, 30, 2, 2, bronze); c.px(10, 30, bronzeL); c.px(11, 31, bronzeD)        // the pommel
 
     // The hook: held out on the fighting arm, swung when he fights or slashes, hanging down in front of him when
     // he doesn't.
@@ -366,7 +396,7 @@ private func drawKarg(_ c: PixelCanvas, _ p: Pose) {
 /// Karg's hook from the cuff at `h`, pointing along `angle`: a steel cuff, a straight shank, then a curve turning
 /// back on itself to a sharp point, lit along its outer edge. The curve opens upward when he holds it out.
 private func kargHook(_ c: PixelCanvas, at h: (x: Double, y: Double), angle a: Double) {
-    let steel = C(0x9AA2B4), steelD = C(0x5A5E6C), steelL = C(0xF0F2F8)
+    let steel = C(0xA4ACC0), steelD = C(0x5A5E6C), steelL = C(0xF0F2F8), rim = C(0x22242E)
     let r = 2.6
     let base = eterniaReach(h, a, 6.5)
     let centre = eterniaReach(base, a - 90, r)
@@ -376,6 +406,10 @@ private func kargHook(_ c: PixelCanvas, at h: (x: Double, y: Double), angle a: D
         pts.append(eterniaReach(centre, th, r))
     }
     let tip = eterniaReach(pts[pts.count - 1], a + 180, 1.6)
+    // A dark rim round all of it first, so the steel parts from his white mane when he raises it over his head.
+    eterniaBar(c, h, a, from: 1.2, to: 6.5, rim, r: 1.35)
+    for i in 1..<pts.count { v8Line(c, pts[i - 1], pts[i], rim, r: 1.3) }
+    v8Line(c, pts[pts.count - 1], tip, rim, r: 1.15)
     eterniaBar(c, h, a, from: 1.2, to: 6.5, steel, r: 0.75)
     for i in 1..<pts.count { v8Line(c, pts[i - 1], pts[i], steel, r: 0.7) }
     v8Line(c, pts[pts.count - 1], tip, steel, r: 0.55)
