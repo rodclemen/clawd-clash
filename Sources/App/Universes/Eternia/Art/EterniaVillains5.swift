@@ -226,12 +226,9 @@ private func drawGrizzlor(_ c: PixelCanvas, _ p: Pose) {
 
     // The far paw: at his side, or up on his chest, thumping it.
     if beat == 1 && thump < 0.55 {
-        c.rect(20, 33, 5, 4, fur); c.rect(20, 33, 5, 1, furL); c.rect(19, 33, 1, 4, plate)
-        c.px(25, 33, claw); c.px(25, 35, claw)
+        grizzlorPaw(c, x: 19, y: 32, chest: true, right: true)
     } else {
-        let wind = beat == 0 ? 2 : 0
-        c.rect(15, 33 - wind, 3, 3, fur); c.px(15, 33 - wind, furL); c.rect(17, 33 - wind, 1, 3, plate)
-        c.px(14, 33 - wind, claw); c.px(14, 35 - wind, claw)
+        grizzlorPaw(c, x: 9, y: 32 - (beat == 0 ? 2 : 0), chest: false, right: false)
     }
 
     if let a = p.melee {
@@ -246,16 +243,15 @@ private func drawGrizzlor(_ c: PixelCanvas, _ p: Pose) {
         }
         prop(c, at: eterniaHand, angle: a) { q in
             q.rect(15, 19, 2, 3, plate)
-            q.rect(17, 18, 4, 5, fur); q.rect(17, 18, 4, 1, furL); q.rect(17, 22, 4, 1, furD)
-            q.rect(21, 18, 3, 1, claw); q.rect(21, 20, 4, 1, claw); q.rect(21, 22, 3, 1, claw)
+            q.rect(17, 17, 5, 7, fur); q.rect(17, 17, 5, 1, furL); q.rect(17, 23, 5, 1, furD)
+            q.rect(18, 19, 4, 1, furD); q.rect(18, 21, 4, 1, furD)
+            q.rect(22, 18, 3, 1, claw); q.rect(22, 20, 4, 1, claw); q.rect(22, 22, 3, 1, claw)
+            q.px(25, 19, claw); q.px(26, 21, claw); q.px(25, 23, claw)
         }
     } else if beat == 0 && thump < 0.55 {
-        c.rect(31, 33, 5, 4, fur); c.rect(31, 33, 5, 1, furL); c.rect(36, 33, 1, 4, plate)
-        c.px(30, 33, claw); c.px(30, 35, claw)
+        grizzlorPaw(c, x: 27, y: 32, chest: true, right: false)
     } else {
-        let wind = beat == 1 ? 2 : 0
-        c.rect(38, 33 - wind, 3, 3, fur); c.px(38, 33 - wind, furL); c.rect(38, 33 - wind, 1, 3, plate)
-        c.px(41, 33 - wind, claw); c.px(41, 35 - wind, claw); c.px(40, 36 - wind, claw)
+        grizzlorPaw(c, x: 38, y: 32 - (beat == 1 ? 2 : 0), chest: false, right: true)
     }
 
     // The thump: dust shaken out of his fur either side of the paw.
@@ -272,6 +268,31 @@ private func drawGrizzlor(_ c: PixelCanvas, _ p: Pose) {
             for dy in -2...2 { c.px(x + (abs(dy) == 2 ? 0 : 1), 31 + dy, col) }
         }
     }
+}
+
+/// One of Grizzlor's great paws: three thick shaggy fingers, a lighter brown than his fur so they stand off it, lit
+/// along the top with dark seams between them, a big white claw hooked off each, and his purple wrist band. Flat on
+/// his chest (`chest`), the fingers point across it; at his side they point forward or back. `right`: the claws point
+/// right.
+private func grizzlorPaw(_ c: PixelCanvas, x: Int, y: Int, chest: Bool, right: Bool) {
+    let rows = chest ? [
+        "P.LFLFL...",
+        "PFFFFFFWWW",
+        "PFFFdddd.W",
+        "PFFFFFFWWW",
+        "PFFFdddd.W",
+        "PFFFFFFWWW",
+    ] : [
+        "PLFLFL..",
+        "PFFFFFWWW",
+        "PFdddd.W",
+        "PFFFFFWWW",
+        "PFdddd.W",
+        "PFFFFFWW.",
+    ]
+    let w = rows.map(\.count).max() ?? 0
+    c.pattern(x, y, right ? rows : rows.map { String($0.padding(toLength: w, withPad: ".", startingAt: 0).reversed()) },
+              ["F": C(0x7E5A3C), "L": C(0xAC845C), "d": C(0x2C1C12), "P": C(0x46206A), "W": C(0xF4EEDE)])
 }
 
 // MARK: - Modulok
@@ -405,21 +426,27 @@ private func drawMultiBot(_ c: PixelCanvas, _ p: Pose) {
 
     // The necks, and the two heads on them, each turned to its own frame.
     c.rect(21, 24, 2, 2, dark); c.rect(33, 24, 2, 2, dark)
+    // Face on: the visor and both eyes. Side on: the head narrower, the visor jutting out past it with one eye, and a
+    // round purple ear bolt where the side of the head shows. From behind: no eyes at all, a purple hatch slatted
+    // across with vents where the face was. Each turn changes the head's outline, not just its antenna.
     let looks: [[String]] = [
         [".SSSSSS.", "SLSSSSSd", "SKKKKKKd", "SKYKKYKd", "SKKKKKKd", "SSSSSSSd", "SSgSgSSd", ".dddddd."],
-        [".SSSSSS.", "SLSSSSSd", "SSSSSKKd", "SSSSSKYd", "SSSSSKKd", "SSSSSSSd", "SSSSSSgd", ".dddddd."],
-        [".SSSSSS.", "SLSSSSSd", "SSbSSbSd", "SSSSSSSd", "SSSddSSd", "SSSddSSd", "SSbSSbSd", ".dddddd."],
-        [".SSSSSS.", "SLSSSSSd", "SKKSSSSd", "SYKSSSSd", "SKKSSSSd", "SSSSSSSd", "SgSSSSSd", ".dddddd."],
+        ["..SSSSS..", ".SLSSSSd.", ".SSSSKKKK", ".SjJSKKYK", ".SJJSKKKK", ".SSSSSSd.", ".SSSSSgd.", "..dddd..."],
+        [".SSSSSS.", "SLSSSSSd", "SjJJJJJd", "SJggggJd", "SJJJJJJd", "SJggggJd", "SbSSSSbd", ".dddddd."],
+        ["..SSSSS..", ".SLSSSSd.", "KKKKSSSd.", "KYKKSjJd.", "KKKKSJJd.", "..SSSSSd.", "..gSSSSd.", "...dddd.."],
     ]
     for (n, x0) in [18, 30].enumerated() {
         let f = frames[n]
-        c.pattern(x0, 16, looks[f], ["S": steel, "L": steelL, "d": steelD, "K": dark, "Y": lamp, "g": darkL,
-                                     "b": steelD])
+        let ox = f == 3 ? x0 - 1 : x0   // side on, the visor juts a pixel out past the head's usual box
+        c.pattern(ox, 16, looks[f], ["S": steel, "L": steelL, "d": steelD, "K": dark, "Y": lamp, "g": darkL,
+                                     "b": steelD, "J": joint, "j": jointL])
         let ax = x0 + [3, 5, 4, 2][f]
         c.rect(ax, 14, 1, 2, darkL); c.px(ax, 13, lamp)
-        if spin {   // a whirr of motion either side of the spinning head
-            let a = 0.5
-            c.px(x0 - 1, 18 + (k + n) % 3, C(0xE8ECF4, a)); c.px(x0 + 8, 19 + (k + n + 1) % 3, C(0xE8ECF4, a))
+        if spin {   // a whirr of motion either side of the spinning head: bright arcs sweeping round it
+            let a = 0.8
+            let up = (k + n) % 2
+            c.rect(x0 - 2, 17 + up, 1, 3, C(0xE8ECF4, a)); c.px(x0 - 1, 16 + up, C(0xE8ECF4, a * 0.6))
+            c.rect(x0 + 9, 19 - up, 1, 3, C(0xE8ECF4, a)); c.px(x0 + 8, 22 - up, C(0xE8ECF4, a * 0.6))
         }
     }
 
@@ -445,12 +472,12 @@ private func drawMultiBot(_ c: PixelCanvas, _ p: Pose) {
 
 // MARK: - Entrapta
 
-/// Entrapta: the Horde's inventor, whose hair does her fighting. A golden cap of hair parted in the middle, a ragged
-/// fringe, and two great golden braids, plaited, tied in purple, hanging to the floor; a purple
-/// bodysuit lit along the shoulders, a gold belt and gold cuffs, purple boots with gold tops. The two braids keep her
-/// apart from She-Clawd's long loose hair and winged tiara. She fights with her near braid, gripping it and lashing it
-/// out like a rope. Signature: both braids lash out at once, one forward and one back, rippling like whips, crack at
-/// their tips, and coil back.
+/// Entrapta: the Horde's inventor, whose hair does her fighting. A big unruly golden mop parted in the middle, wisps
+/// sticking up off it, a ragged fringe, and two great golden braids, plaited, tied in purple, hanging to the floor; a
+/// purple bodysuit lit along the shoulders, a gold belt and gold cuffs, purple boots with gold tops. The two braids
+/// keep her apart from She-Clawd's long loose hair and winged tiara. She fights with her near braid, gripping it and
+/// lashing it out like a rope. Signature: both braids lash out at once, one forward and one back, rippling like whips,
+/// crack at their tips, and coil back.
 private func drawEntrapta(_ c: PixelCanvas, _ p: Pose) {
     let suit = C(0x7E3EAE), suitD = C(0x58267E), suitL = C(0xA466D2), tights = C(0x4A2470)
     let hair = C(0xF0C440), hairD = C(0xB8862A), hairL = C(0xFFE68A)
@@ -466,6 +493,7 @@ private func drawEntrapta(_ c: PixelCanvas, _ p: Pose) {
             if y % 2 == 0 { c.px(x, y, hairL); c.px(x + 1, y, hair); c.px(x + 2, y, hairD) }
             else { c.px(x, y, hair); c.px(x + 1, y, hairD); c.px(x + 2, y, hair) }
         }
+        c.rect(x, y0 + 3, 3, 1, suit)   // the tie where the lock off her head becomes the braid
         c.rect(x, y1 + 1, 3, 1, suit)
         c.pattern(x - 1, y1 + 2, ["HhHhH", "H.h.H"], ["H": hair, "h": hairD])
     }
@@ -523,21 +551,27 @@ private func drawEntrapta(_ c: PixelCanvas, _ p: Pose) {
     // Gold cuffs at her wrists.
     c.rect(15, 35 - armUp, 3, 1, gold); c.rect(38, 35 - armUp, 3, 1, gold)
 
-    // Her hair: a golden cap parted in the middle, combed in strands, a ragged fringe.
-    c.pattern(17, 18, [
-        "......HHHHHHHHHH......",
-        "....HHHlHHpHHHlHHH....",
-        "..HHHlHHHHpHHHHHlHHH..",
-        ".HHHlHHHHHpHHHHHHlHHH.",
-        ".HHlHHHHHHpHHHHHHHlHH.",
-        "HHHlHHHHHHHHHHHHHHHlHH",
-        "HHlHHmHHHHmHHHHmHHHlHH",
-        "HHHlHmHHHmHHHHmHHmHlHH",
-        "HHHmH.H.mH.HHm.H.mHHHH",
-        "HHH................HHH",
+    // Her hair: a big unruly golden mop parted in the middle, combed out in strands that sweep down and away from the
+    // parting, stray wisps sticking up off the top, a long ragged fringe, and locks falling down past her cheeks into
+    // the braids. The uneven outline and the strands running all the way down keep it from reading as a helmet.
+    c.pattern(16, 15, [
+        "........l....m..H.......",
+        ".....H..lH..Hm.Hm..H....",
+        "....HlHHlHHHpHHmHHmH....",
+        "...HlHHlHHHHpHHHmHHmH...",
+        "..HlHHlHHHHmpHHHHmHHmH..",
+        ".HHlHHlHHHmHpHmHHHmHHmH.",
+        ".HlHHlHHHmHHpHHmHHHmHHm.",
+        "HHlHHlHHmHHHpHHHmHHHmHHH",
+        "HlHHlHHmHHHmHmHHHmHHHmHH",
+        "HlHHlHmHHHmHHHmHHHmHHmHm",
+        "HlHHlmHHmHHmHHHmHHmHHmHm",
+        "HlHHmH.HmH.Hm.mH.HmH.HmH",
+        "HlHHm..m...m....m...m.mH",
+        "HlHH................HHmH",
+        ".lHm................HmH.",
+        "..H..................m..",
     ], ["H": hair, "l": hairL, "m": hairD, "p": hairD])
-    // The braids' purple ties at the roots, either side of her head.
-    c.rect(16, 26, 3, 1, suit); c.rect(37, 26, 3, 1, suit)
 
     // The near braid: hanging down in front of her shoulder, flung out forward, or gripped and lashed at `a`.
     if let a = p.melee {

@@ -44,8 +44,8 @@ private func hordeBat(_ c: PixelCanvas, _ x: Int, _ y: Int, red: Px, redD: Px) {
 // MARK: - Hordakk
 
 /// Hordakk: the ruthless leader of the Evil Horde, Skeleclawd's old teacher. A white face like a mask, its red eyes
-/// glaring under heavy brows, an upturned pig's snout and a grim black mouth, all inside a bony grey cowl ribbed
-/// across the crown with two bat-ear points on top; a dark navy suit, the Horde's red bat on a steel chest plate,
+/// glaring under heavy brows, an upturned pig's snout and a grim black mouth, all inside a smooth bony grey cowl with a
+/// keel fin down the crown and two bat-ear points on top; a dark navy suit, the Horde's red bat on a steel chest plate,
 /// bone-grey bracers and boot cuffs. No skull, no teeth and no purple, so he never reads as Skeleclawd. He fights with
 /// his own right arm, which turns into a steel cannon to fire white and crimson bolts. Signature: the arm turns into
 /// the cannon and back while he snorts with laughter, puffs of breath out of his snout.
@@ -91,16 +91,19 @@ private func drawHordakk(_ c: PixelCanvas, _ p: Pose) {
         ".WWWdKKKKKKdWWd.",
     ], ["W": mask, "L": maskL, "d": maskD, "K": ink, "R": glare, "r": glareL, "S": snout])
 
-    // The bony cowl: the hood round his face, ribbed across the crown, a ridge down the middle, and the two bat-ear
-    // points standing up off the top.
+    // The bony cowl: one smooth shell of bone round his face, polished to a shine on the dome and shaded down the far
+    // side, a raised keel down the middle that stands up off the crown as a fin, a dark rim where it meets the mask,
+    // and the two bat-ear points standing up off the top. No ribs across it: lines across a grey hood read as hair.
     drawHood(c, bone, boneD)
-    c.rect(22, 19, 8, 1, boneL); c.px(17, 22, boneL); c.px(16, 24, boneL)
-    c.rect(21, 21, 14, 1, boneD); c.rect(19, 23, 18, 1, boneD)
-    c.rect(27, 19, 1, 6, boneL); c.rect(28, 19, 1, 6, boneD)
+    c.rect(22, 19, 5, 1, boneL); c.rect(20, 20, 4, 1, boneL); c.rect(19, 21, 2, 2, boneL); c.px(18, 23, boneL)
+    c.rect(16, 25, 1, 5, boneL); c.px(17, 24, boneL)
+    c.rect(36, 21, 1, 3, boneD); c.rect(37, 22, 1, 9, boneD); c.rect(38, 25, 1, 7, boneD); c.px(39, 29, boneD)
+    c.rect(19, 24, 18, 1, boneD); c.rect(19, 25, 1, 7, boneD); c.rect(36, 25, 1, 7, boneD)
+    c.pattern(26, 16, [".LD.", "LLDD", "LLDD", ".LD.", ".LD.", ".LD.", ".LD."], ["L": boneL, "D": boneD])
     c.px(20, 16, bone); c.rect(20, 17, 2, 1, bone); c.rect(20, 18, 3, 1, bone); c.px(20, 17, boneL)
     c.px(35, 16, bone); c.rect(34, 17, 2, 1, bone); c.rect(33, 18, 3, 1, bone); c.px(35, 17, boneD)
-    // The Horde's red bat on the cowl's brow, like a crest, on a dark patch so it stands off the bone.
-    c.rect(22, 20, 11, 5, boneD)
+    // The Horde's red bat on the cowl's brow, like a crest, on a dark plate so it stands off the bone.
+    c.pattern(22, 20, [".DDDDDDDDD.", "DDDDDDDDDDD", "DDDDDDDDDDD", ".DDDDDDDDD."], ["D": boneD])
     hordeBat(c, 23, 20, red: red, redD: redD)
 
     // The right arm: a plain gauntleted fist, or, as it changes, a steel cannon growing out of it, red bands round the
@@ -352,17 +355,39 @@ private func drawScorpia(_ c: PixelCanvas, _ p: Pose) {
     let tx = Int((35 + f).rounded())
     c.pattern(tx, 14, ["SS.", "sSS", "..S", "..s"], ["S": sting, "s": stingD])
 
+    // The far pincer, raised up and out behind her past the tail, the near one's twin: a fat palm angled up off her
+    // wrist, two curved jaws with black tips, clacking with the near one's. A black rim all round parts it from the red
+    // tail behind it.
+    let g = Double(open == 0 ? 0 : open == 1 ? 1 : 2)
+    let jaws: [[(Double, Double)]] = [
+        [(11, 28), (8.5, 25), (6.5 + g * 0.3, 22.5 - g * 0.7), (5 + g * 0.5, 22 - g)],          // the upper jaw
+        [(9.5, 30.5), (6.5, 29.5 + g * 0.3), (4.5 - g * 0.3, 28 + g * 0.5), (3.5 - g * 0.4, 26.5 + g * 0.6)],
+    ]
+    func farPincer(_ grow: Double, _ col: Px?) {
+        func seg(_ a: (Double, Double), _ b: (Double, Double), _ r: Double, _ k: Px) {
+            c.glowLine(a.0, a.1, b.0, b.1, core: col ?? k, glow: C(0, 0), coreR: r + grow, glowR: r + grow + 0.1)
+        }
+        seg((16, 33.5), (11, 29.5), 2.0, shell)                                    // the wrist and palm
+        for (n, j) in jaws.enumerated() {
+            for k in 1..<j.count { seg(j[k - 1], j[k], k == 1 ? 1.3 : 0.75, n == 0 ? shell : shellD) }
+        }
+    }
+    farPincer(1, black)
+    farPincer(0, nil)
+    c.glowLine(15, 31.5, 11, 28, core: shellL, glow: C(0, 0), coreR: 0.45, glowR: 0.5)   // lit along the top
+    c.glowLine(9, 26, 7.5, 24, core: shellL, glow: C(0, 0), coreR: 0.4, glowR: 0.5)
+    for j in jaws {   // the black tips
+        let t = j[j.count - 1]
+        c.px(Int(t.0.rounded()), Int(t.1.rounded()), black)
+    }
+
     drawBody(c, Look())
     // The shell over her chest: lit along the top, banded in black, shaded on the far side.
     c.rect(18, 32, 20, 6, shell); c.rect(18, 32, 20, 1, shellL); c.rect(37, 32, 1, 6, shellD)
     c.rect(18, 34, 20, 1, black); c.rect(18, 36, 20, 1, black)
     c.px(27, 33, shellL); c.px(27, 35, shellL)
-
-    // The far pincer, held up behind her, its jaws clacking with the near one's.
-    let bo = open > 1 ? 1 : 0
-    c.pattern(12 - bo, 28, ["K....K", "SS..SS", "SSSSSS", ".SSSS."], ["S": shell, "K": black])
-    if bo > 0 { c.px(17, 28, black); c.px(17, 29, shell) }
-    c.rect(14, 32, 3, 4, shell); c.px(14, 32, shellL)
+    // The far pincer's wrist, over the arm.
+    c.rect(14, 32, 4, 3, shell); c.px(14, 32, shellL); c.rect(14, 34, 4, 1, shellD)
 
     // Short black hair: a round cap combed in strokes, a fringe, and down a little over her ears.
     c.pattern(17, 20, [
@@ -420,9 +445,16 @@ private func drawMantenna(_ c: PixelCanvas, _ p: Pose) {
     c.rect(25, 24, 4, 1, shellL); c.rect(22, 25, 3, 1, shellL); c.px(20, 26, shellL); c.px(19, 27, shellL)
     c.rect(18, 28, 1, 5, shellL); c.rect(21, 27, 1, 5, shellD)
     c.rect(15, 33, 3, 3, shell); c.rect(38, 33, 3, 3, shell)   // his arms
-    // The belly in curved plates, a dark line between each.
-    c.rect(21, 33, 14, 4, belly); c.rect(20, 34, 16, 2, belly)
-    c.rect(22, 34, 12, 1, bellyD); c.rect(22, 36, 12, 1, bellyD); c.px(35, 34, bellyD); c.px(35, 35, bellyD)
+    // The belly: a bug's underside in overlapping plates, each one bowed down in the middle like a smile, lit along
+    // its top edge and shaded under, narrowing as they go down, a dark seam down the middle where they meet.
+    c.pattern(20, 33, [
+        "..LLLLLLLLLLLL..",
+        ".dBBBBBBBBBBBBd.",
+        "..ddLLLLLLLLdd..",
+        "...dBBBBBBBBd...",
+        "....ddLLLLdd....",
+    ], ["B": belly, "L": C(0xE8CC98), "d": bellyD])
+    c.px(28, 34, bellyD); c.px(27, 36, bellyD)
     // The feelers, curling forward off the front of his shell.
     c.px(36, 25, shellD); c.px(37, 24, shellD); c.px(38, 23, shellD); c.px(39, 23, shellD); c.px(40, 24, shellD)
     // The mouth: wide and black, a fang at each end, and hooked mandibles at the front.
