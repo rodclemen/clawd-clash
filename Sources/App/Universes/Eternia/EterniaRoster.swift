@@ -36,35 +36,43 @@ extension Location {
     /// ask for each new case.
     static func eterniaHome(of villain: EterniaVillain) -> Location {
         switch villain {
-        case .skeleclawd, .evilLynn, .beastClawd, .trapClawd, .triClawdps, .merClawd, .clawdful, .screeech:
-            return .eterniaSnakeMountain   // Mer-Clawd and Beast Clawd until their own realms are built
-        case .kobraKhan: return .eterniaVineJungle
-        case .webstor, .whiplash, .spikor, .twoBad, .faker, .panthor, .stinkor, .kingHiss, .countMarzo, .shokoti, .jitsu,
-             .blade, .saurod, .karg, .darkTrooper:
-            return .eterniaSnakeMountain   // until their own places are built
-        case .leach, .grizzlor, .modulok, .multiBot, .entrapta, .octavia, .rattlor, .tungLashor, .vultak, .hordePrime:
+        case .skeleclawd, .evilLynn, .trapClawd, .triClawdps, .clawdful, .screeech, .webstor, .whiplash, .spikor, .twoBad,
+             .faker, .stinkor, .jitsu:
+            return .eterniaSnakeMountain
+        case .merClawd: return .eterniaUndersea
+        case .beastClawd, .panthor: return .eterniaBeastIsland
+        case .kobraKhan, .kingHiss: return .eterniaVineJungle
+        case .countMarzo, .shokoti: return .eterniaTemple
+        case .hordakk, .shadowWeaver, .katra, .scorpia, .mantenna, .imp, .hordeTrooper, .leach, .grizzlor, .modulok,
+             .multiBot, .entrapta, .octavia, .rattlor, .tungLashor, .vultak, .hordePrime:
             return .eterniaFrightZone
-        case .hordakk, .shadowWeaver, .katra, .scorpia, .mantenna, .imp, .hordeTrooper: return .eterniaFrightZone
+        case .blade, .saurod, .karg, .darkTrooper: return .eterniaEarthTown   // sent after Gwildor's key
         }
     }
 
     static func eterniaHome(of hero: EterniaHero) -> Location {
         switch hero {
-        case .heClawd, .sorceress, .battleKat, .hem: return .eterniaGreyskull
+        case .heClawd, .battleKat, .hem: return .eterniaGreyskull
+        case .sorceress: return .eterniaChamber
+        // The court, and the Masters with no realm of their own. Orkko counts Trolla as home too, Marlena the Earth
+        // town, but the palace is where they live now.
         case .kingRandor, .queenMarlena, .princeAddam, .cringer, .teelah, .orkko, .ramClawd, .manEClawds, .mekaneck:
             return .eterniaPalace
-        case .stratos, .buzzOff: return .eterniaPalace   // until Avion and Andreenos are built
-        case .manAtClawds: return .eterniaWorkshop
-        case .clawdfist: return .eterniaVineJungle
-        case .adorra, .spirit, .bow, .madameRazz, .kowl: return .eterniaWhisperingWoods
-        case .glimmer: return .eterniaWhisperingWoods   // until Bright Moon is built
-        case .sheClawd, .swiftWind: return .eterniaCrystalCastle
-        case .roboto, .snoutSpout: return .eterniaWorkshop
-        case .mossClawd: return .eterniaVineJungle
-        case .syClawdne, .zodac, .granamyr, .gwildor: return .eterniaPalace   // until their own places are built
-        case .queenAngella, .clawdstaspella, .frosta, .mermista: return .eterniaWhisperingWoods   // the same
-        case .seaHawk, .perfuma, .peekablue, .netossa, .flutterina, .stonedar, .looKee: return .eterniaWhisperingWoods
-        case .lightHope: return .eterniaCrystalCastle
+        case .manAtClawds, .roboto, .snoutSpout: return .eterniaWorkshop
+        case .stratos: return .eterniaAvion
+        case .buzzOff: return .eterniaAndreenos
+        case .granamyr: return .eterniaDarksmoke
+        case .clawdfist, .mossClawd: return .eterniaVineJungle
+        case .zodac, .syClawdne: return .eterniaMysticMountains
+        case .adorra, .spirit, .bow, .madameRazz, .kowl, .seaHawk, .perfuma, .peekablue, .netossa, .flutterina, .stonedar,
+             .looKee:
+            return .eterniaWhisperingWoods   // Sea Hawk's ship moors on the coast
+        case .glimmer, .queenAngella: return .eterniaBrightMoon
+        case .sheClawd, .swiftWind, .lightHope: return .eterniaCrystalCastle
+        case .clawdstaspella: return .eterniaMystacor
+        case .frosta: return .eterniaCastleChill
+        case .mermista: return .eterniaUndersea
+        case .gwildor: return .eterniaEarthTown
         }
     }
 }
@@ -117,8 +125,11 @@ let eterniaTheme = Theme(
     heroes: EterniaHero.allCases.map(\.persona),
     // Every place, in menu order. The first is the default: where the crew stands when nobody's home is known. A full
     // universe has about 20.
-    places: [.eterniaGreyskull, .eterniaPalace, .eterniaWorkshop, .eterniaSnakeMountain, .eterniaVineJungle,
-             .eterniaFrightZone, .eterniaWhisperingWoods, .eterniaCrystalCastle],
+    places: [.eterniaGreyskull, .eterniaChamber, .eterniaPalace, .eterniaWorkshop, .eterniaSnakeMountain,
+             .eterniaVineJungle, .eterniaMysticMountains, .eterniaAvion, .eterniaAndreenos, .eterniaDarksmoke,
+             .eterniaTrolla, .eterniaUndersea, .eterniaBeastIsland, .eterniaTemple, .eterniaFrightZone,
+             .eterniaBrightMoon, .eterniaWhisperingWoods, .eterniaCrystalCastle, .eterniaMystacor, .eterniaCastleChill,
+             .eterniaEarthTown],
     home: { c in
         c.isDark ? .eterniaHome(of: EterniaVillain(rawValue: c.index) ?? .skeleclawd)
                  : .eterniaHome(of: EterniaHero(rawValue: c.index) ?? .heClawd)
