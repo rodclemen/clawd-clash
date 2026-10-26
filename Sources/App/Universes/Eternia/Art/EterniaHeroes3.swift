@@ -7,7 +7,7 @@ import Foundation
 let eterniaHeroes3: [EterniaHero: Persona] = [
     .kingRandor: Persona(name: "King Randor", weapon: .saber, headTop: 18, signature: 3.4, draw: drawKingRandor),
     .queenMarlena: Persona(name: "Queen Marlena", headTop: 19, signature: 4.2, draw: drawQueenMarlena),
-    .stratos: Persona(name: "Stratos", weapon: .saber, motion: .fly, headTop: 21, signature: 3.6, draw: drawStratos),
+    .stratos: Persona(name: "Stratos", weapon: .saber, motion: .fly, headTop: 15, signature: 3.6, draw: drawStratos),
     .ramClawd: Persona(name: "Ram Clawd", weapon: .saber, pivot: h3RamHand, bulk: 3, headTop: 22, signature: 2.8,
                        draw: drawRamClawd),
     .manEClawds: Persona(name: "Man-E-Clawds", weapon: .saber, headTop: 19, signature: 4.0, draw: drawManEClawds),
@@ -359,16 +359,21 @@ private func drawStratos(_ c: PixelCanvas, _ p: Pose) {
         ".WWdWWWWdWW.",
         "...WWlWWW...",
     ], ["W": hair, "d": hairD, "l": hairL])
-    // His hair: a white shock swept back off his brow into spikes behind him, in strands.
-    c.pattern(13, 20, [
-        "...........WWWWWW......",
-        "WW......WWWWlWWWWWWW...",
-        ".WWW..WWWWWlWWWWWWWWW..",
-        "..WWWWWWdWWWWWWdWWWWWW.",
-        "WWWWWWWdWWWWWdWWWWWWdWW",
-        "..WWWdWWWWdWWWWWdWWWWWW",
-        ".....WWdWWWWdWWWWWWdWWW",
-    ], ["W": hair, "d": hairD, "l": hairL])
+    // His hair: a white shock swept back off his brow in four locks, the back one first, each thick at his crown
+    // and streaking back to a point behind his head, a dark parting under each and a lit run along its top. The
+    // points fan apart, so the outline behind him is spiky and it reads as windswept hair, not a cap.
+    for (root, tip) in [((21.0, 26.0), (7.5, 25.0)), ((25.0, 25.5), (8.0, 20.0)), ((30.0, 25.5), (11.5, 16.0)),
+                        ((35.0, 26.0), (19.0, 15.5))] {
+        for k in 0..<10 {
+            let u0 = Double(k) / 10, u1 = Double(k + 1) / 10
+            let x0 = root.0 + (tip.0 - root.0) * u0, y0 = root.1 + (tip.1 - root.1) * u0
+            let x1 = root.0 + (tip.0 - root.0) * u1, y1 = root.1 + (tip.1 - root.1) * u1
+            let w = 1.8 - 1.5 * u0
+            h3Line(c, x0, y0 + 0.7, x1, y1 + 0.7, hairD, w)
+            h3Line(c, x0, y0, x1, y1, hair, w * 0.85)
+            if u0 < 0.8 { h3Line(c, x0, y0 - w * 0.6, x1, y1 - w * 0.6, hairL, 0.3) }
+        }
+    }
     // The goggles: a black strap round his head, a rim round each eye, the lens amber.
     c.rect(18, 28, 20, 1, C(0x2A2A33))
     for gx in [21, 31] {
@@ -517,25 +522,44 @@ private func drawRamClawd(_ c: PixelCanvas, _ p: Pose) {
         "...dddddddddrrddddddddd...",
         "...ddd..............ddd...",
     ], ["H": helm, "L": helmL, "D": helmD, "d": helmD, "r": helmL])
-    // The horns: a thick curl either side, round from the top of the helmet, down past his cheek and forward.
-    let hornRows = [
-        "...lHHHH",
-        ".HHHhHHH",
-        "HHh.....",
-        "HH......",
-        "Hh..HH..",
-        "HH.hlH..",
-        ".HhHHh..",
-        "..hhh...",
-    ]
-    c.pattern(10, 21, hornRows, ["H": horn, "h": hornD, "l": hornL])
-    c.pattern(38, 21, hornRows.map { String($0.reversed()) }, ["H": horn, "h": hornD, "l": hornL])
+    // The horns: one either side, growing thick out of the top of the helmet, sweeping up, out and down round a
+    // full turn and tapering to a point, ridged across all the way like a real ram's horn.
+    h3RamHorn(c, centre: (12, 24), side: -1, horn: horn, hornD: hornD, hornL: hornL)
+    h3RamHorn(c, centre: (43, 24), side: 1, horn: horn, hornD: hornD, hornL: hornL)
     c.rect(22, 28, 2, 1, helmD); c.rect(32, 28, 2, 1, helmD)   // the helmet's shadow on his brow
 
     if let a = p.melee {
         c.ox -= lean
         h3Axe(c, p, angle: a, at: h3RamHand, haft: belt, haftL: C(0x7A5232), head: C(0x9AA0AC), headD: C(0x6A707C),
               edge: C(0xF0F2F8), length: 10)
+    }
+}
+
+/// One of Ram Clawd's horns: a spiral round `centre`, `side` -1 for the left one and 1 for the right. It starts at
+/// the helmet's crown, thick, curls up and outwards, down round the outside and back in under itself, thinning as it
+/// goes and ending in a point; a dark ridge crosses it every couple of pixels, and its outer rim is lit at the top.
+private func h3RamHorn(_ c: PixelCanvas, centre: (x: Double, y: Double), side: Double, horn: Px, hornD: Px, hornL: Px) {
+    let steps = 72
+    func at(_ u: Double, out: Double = 0) -> (x: Double, y: Double) {
+        // From up and in (at the crown), back over the top, out, down round the outside and forward under itself.
+        let a = (-20 - u * 300) * .pi / 180
+        let r = 6.4 - 3.4 * u + out
+        return (centre.x - side * cos(a) * r, centre.y + sin(a) * r)
+    }
+    var prev = at(0)
+    for i in 1...steps {
+        let u = Double(i) / Double(steps)
+        let q = at(u)
+        let w = 2.1 - 1.8 * u
+        let ridge = i % 6 == 0 && u < 0.85
+        c.glowLine(prev.x, prev.y, q.x, q.y, core: ridge ? hornD : horn, glow: h3None, coreR: w, glowR: w + 0.1)
+        prev = q
+    }
+    // The lit run along the top of the curl, where the light catches it, and the shade along its underside.
+    for i in 4...30 where i % 6 != 0 {
+        let u = Double(i) / Double(steps)
+        let q = at(u, out: 2.1 - 1.8 * u - 0.6)
+        c.px(Int(q.x), Int(q.y), hornL)
     }
 }
 
@@ -555,7 +579,7 @@ private func drawManEClawds(_ c: PixelCanvas, _ p: Pose) {
         let turns: [Double] = [0.12, 0.42, 0.72]
         for (i, t0) in turns.enumerated() {
             if s >= t0 + 0.12 { from = i + 1 }
-            else if s >= t0 { from = i; offset = Int(((s - t0) / 0.12 * 15).rounded()) }
+            else if s >= t0 { from = i; offset = Int(((s - t0) / 0.12 * 17).rounded()) }
         }
         if from >= 3 { from = 0; offset = 0 }
     }
@@ -587,58 +611,63 @@ private func drawManEClawds(_ c: PixelCanvas, _ p: Pose) {
         "...DHLHHHHHrrHHHHHHD..",
         "...DHLHHHHHrrHHHHHHD..",
         "..DHHHHHHHHrrHHHHHHHD.",
-        "..DHHHHHHHHrrHHHHHHHD.",
-        ".DHHHHHHHHHHHHHHHHHHHD",
-        ".HHHddddddddddddddHHHD",
-        ".HHd..............dHHD",
-        ".HHd..............dHHD",
-        ".HHd..............dHHD",
-        ".HHd..............dHHD",
-        ".HHd..............dHHD",
-        ".HHHddddddddddddddHHHD",
+        ".DHHHHHHHHHrrHHHHHHHHD",
+        ".HHddddddddddddddddHHD",
+        ".HH................HHD",
+        ".HH................HHD",
+        ".HH................HHD",
+        ".HH................HHD",
+        ".HH................HHD",
+        ".HH................HHD",
+        ".HHddddddddddddddddHHD",
     ], ["H": red, "L": redL, "D": redD, "d": redD, "r": redL])
-    // The drum in the window: one face, or two as it turns, with a dark seam between them, shaded towards its
-    // ends so it reads as round.
+    // The drum in the window, as wide as Clawd's face: one face, or two as it turns, with a dark seam between them,
+    // shaded towards its ends so it reads as round.
     let faces: [[String]] = [h3ManFace, h3RobotFace, h3MonsterFace]
     let a = faces[from % 3], b = faces[(from + 1) % 3]
     var rows: [String] = []
-    for r in 0..<5 {
+    for r in 0..<6 {
         let joined = Array(a[r] + "s" + b[r])
-        rows.append(String(joined[offset..<(offset + 14)]))
+        rows.append(String(joined[offset..<(offset + 16)]))
     }
-    c.pattern(21, 28, rows, h3FacePalette)
-    for y in 28...32 { c.px(21, y, C(0x000000, 0.3)); c.px(34, y, C(0x000000, 0.35)) }
+    c.pattern(20, 27, rows, h3FacePalette)
+    for y in 27...32 { c.px(20, y, C(0x000000, 0.3)); c.px(35, y, C(0x000000, 0.35)) }
 
     if let a = p.melee {
         h3Fist(c, angle: a, trail: p.trail, sleeve: clawdOrange, cuff: red)
     }
 }
 
-/// The three faces on Man-E-Clawds's drum, 14 by 5, each filling the helmet's window.
+/// The three faces on Man-E-Clawds's drum, 16 by 6, each filling the helmet's window and drawn bold so each one
+/// reads at a glance: his own Clawd face with its brows and a grin; the robot's black visor with two long red eye
+/// slits and a grille for a mouth; the monster's heavy brow, slanted yellow eyes and a dark mouth with white fangs.
 private let h3ManFace = [
-    "oooooooooooooo",
-    "obbooooooobboo",
-    "oKKoooooooKKoo",
-    "oKKoooooooKKoo",
-    "oooooooooooooO",
+    "oooooooooooooooO",
+    "obbboooooooobbbO",
+    "ooKKooooooooKKoO",
+    "ooKKooooooooKKoO",
+    "ooKKoobooobooooO",
+    "ooooooobbboooooO",
 ]
 private let h3RobotFace = [
-    "gggggggggggggG",
-    "gVVVVVVVVVVVVG",
-    "gVRRVVVVVVRRVG",
-    "gVVVVVVVVVVVVG",
-    "gggkgkgkgkgggG",
+    "gggggggggggggggG",
+    "gVVVVVVVVVVVVVVG",
+    "gVRrRRVVVVRrRRVG",
+    "gVVVVVVVVVVVVVVG",
+    "gkgkgkgkgkgkgkgG",
+    "gggggggggggggggG",
 ]
 private let h3MonsterFace = [
-    "mmMmmmmmmmmMmm",
-    "MMMMmmmmmmMMMM",
-    "mYYKmmmmmmYYKm",
-    "mYYYmmmmmmYYYm",
-    "mWMWMWMMWMWMWm",
+    "MmmmmmmmmmmmmmmM",
+    "MMMMmmmmmmmmMMMM",
+    "mYYYKmmmmmmKYYYm",
+    "mmYYYmmmmmmYYYmm",
+    "mKWKKKKKKKKKKWKm",
+    "mmWmmmmmmmmmmWmm",
 ]
 private let h3FacePalette: [Character: Px] = [
-    "o": clawdOrange, "O": clawdShade, "K": ink, "b": C(0xA04A30),
-    "g": C(0x9AA0AC), "G": C(0x6A707C), "V": C(0x2A2A33), "R": C(0xFF4A3A), "k": C(0x3A3E48),
+    "o": clawdOrange, "O": clawdShade, "K": ink, "b": C(0x8A3A22),
+    "g": C(0x9AA0AC), "G": C(0x6A707C), "V": C(0x1E1E26), "R": C(0xFF3A2A), "r": C(0xFFB0A0), "k": C(0x3A3E48),
     "m": C(0x6AB040), "M": C(0x3E7A24), "Y": C(0xFFE040), "W": C(0xFFFFFF),
     "s": C(0x1A1A20),
 ]
@@ -869,8 +898,8 @@ private func h3BeeWings(_ c: PixelCanvas, up: Bool?, alpha: Double) {
 
 // MARK: - Clawdfist
 
-/// Clawdfist: the Masters' heavy-handed brawler. A huge fist of polished silver on his right arm, as big as his head,
-/// its knuckles lined and lit; short black hair, a big black beard down over his chest in strands, a blue chest plate
+/// Clawdfist: the Masters' heavy-handed brawler. A huge fist of polished silver on his right arm, as big as his head
+/// and held up on guard before his chest, its knuckles lined and lit; short black hair, a big black beard down over his chest in strands, a blue chest plate
 /// with a red trim and red shoulder guards, a red belt, blue boots. He fights with the fist. Signature: he brings his
 /// open hand up in front of him and thumps the metal fist into it three times, a flash at each thump.
 private func drawClawdfist(_ c: PixelCanvas, _ p: Pose) {
@@ -930,46 +959,54 @@ private func drawClawdfist(_ c: PixelCanvas, _ p: Pose) {
     c.rect(21, 28, 3, 1, beard); c.rect(32, 28, 3, 1, beard)
 
     if palm > 0 {
-        // His open hand across in front of him, palm up, the fist above it coming down onto it.
-        let px = 31 + Int((palm * 4).rounded())
+        // His open hand out in front of him, palm up, the great fist above it coming down onto it.
+        let px = 31 + Int((palm * 7).rounded())
         h3Line(c, 17, 34.5, Double(px), 34.5, clawdOrange, 1.2)
-        c.rect(px, 33, 5, 2, clawdOrange); c.rect(px, 35, 5, 1, clawdShade); c.px(px + 4, 32, clawdOrange)
-        let fy = 26 + Int((thump * 3).rounded())
-        h3SilverFist(c, x: px, y: fy, silver, silverD, silverL)
+        c.rect(px, 33, 7, 2, clawdOrange); c.rect(px, 35, 7, 1, clawdShade); c.px(px + 6, 32, clawdOrange)
+        let fy = 19 + Int((thump * 4).rounded())
+        h3SilverFist(c, x: px - 1, y: fy, silver, silverD, silverL)
         if hit {
-            for (dx, dy) in [(-3.0, -1.0), (8, -1), (-2, 2), (7, 2)] {
-                let x0 = Double(px) + 2.5, y0 = 32.5
+            for (dx, dy) in [(-4.0, -1.0), (10, -1), (-3, 2), (9, 2)] {
+                let x0 = Double(px) + 3.5, y0 = 32.5
                 c.glowLine(x0, y0, x0 + dx, y0 + dy, core: C(0xFFFFFF, 0.9), glow: C(0xC8DCFF, 0.5), coreR: 0.3, glowR: 1.1)
             }
         }
         return
     }
     if let a = p.melee {
-        // The punch: the silver forearm out from the shoulder and the great fist at its end.
-        let e = eterniaReach(h3Shoulder, a, 7)
+        // The punch: the silver forearm out from the shoulder and the great fist at its end, a broad smear behind it.
+        let e = eterniaReach(h3Shoulder, a, 9)
         for (i, t) in p.trail.enumerated() {
-            let q = eterniaReach(h3Shoulder, t, 7)
-            c.glowLine(q.x, q.y, e.x, e.y, core: C(0xF0F4FF), glow: C(0xF0F4FF), coreR: 1.2, glowR: 2.6,
+            let q = eterniaReach(h3Shoulder, t, 9)
+            c.glowLine(q.x, q.y, e.x, e.y, core: C(0xF0F4FF), glow: C(0xF0F4FF), coreR: 2.6, glowR: 4.2,
                        strength: 0.3 / Double(i + 1))
         }
-        h3Line(c, h3Shoulder.x - 1, h3Shoulder.y - 0.5, e.x, e.y, silverD, 1.6)
-        h3SilverFist(c, x: Int(e.x.rounded()) - 2, y: Int(e.y.rounded()) - 3, silver, silverD, silverL)
+        h3Line(c, h3Shoulder.x - 1, h3Shoulder.y - 0.5, e.x, e.y, silverD, 1.7)
+        h3Line(c, h3Shoulder.x - 1, h3Shoulder.y - 1, e.x, e.y - 0.5, silver, 0.6)
+        h3SilverFist(c, x: Int(e.x.rounded()) - 5, y: Int(e.y.rounded()) - 5, silver, silverD, silverL)
     } else {
-        // At his side, resting: the forearm down from the shoulder and the fist by his hip.
-        c.rect(38, 32, 3, 3, silverD); c.px(38, 32, silver)
-        h3SilverFist(c, x: 38, y: 33, silver, silverD, silverL)
+        // On guard, held up before his chest like a boxer: the silver forearm out from the shoulder and the great
+        // fist standing in front of him, as big as his head.
+        c.rect(38, 32, 3, 4, silverD); c.rect(38, 32, 3, 1, silver)
+        h3SilverFist(c, x: 40, y: 26, silver, silverD, silverL)
     }
 }
 
-/// Clawdfist's silver fist, 6 by 6 with its top-left at (x, y): lit along the top and left, three knuckle lines, the
-/// thumb wrapped across the front.
+/// Clawdfist's silver fist, 10 by 10 with its top-left at (x, y), round as a ball: lit along the top and the back,
+/// the back of the hand plain, the four curled fingers stacked down its front with dark creases between them and a
+/// lit knuckle on each, the thumb wrapped across, a steel cuff at the wrist. Jitsu's gold hand is flat and open, with
+/// straight seams; this one is round and shut.
 private func h3SilverFist(_ c: PixelCanvas, x: Int, y: Int, _ base: Px, _ dark: Px, _ light: Px) {
     c.pattern(x, y, [
-        ".LLLL.",
-        "LBdBdB",
-        "LBdBdD",
-        "LBBBBD",
-        "LTTTBD",
-        ".DDDD.",
-    ], ["B": base, "d": dark, "D": dark, "L": light, "T": C(0xA8ACB8)])
+        "..LLLLLL..",
+        ".LlBBBBlL.",
+        "LlBBBBkBBl",
+        "LBBBBBkllB",
+        "LBBBBBkkkD",
+        "LTTTTTkllB",
+        "LBTTTTkkkD",
+        "LBBBBBkllB",
+        ".DBBBBkBD.",
+        "..DDDDDD..",
+    ], ["B": base, "k": C(0x50545E), "D": dark, "L": light, "l": C(0xFFFFFF), "T": C(0x9A9EAA)])
 }

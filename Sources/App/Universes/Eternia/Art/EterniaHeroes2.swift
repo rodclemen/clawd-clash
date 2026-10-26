@@ -129,31 +129,19 @@ private func drawAddam(_ c: PixelCanvas, _ p: Pose) {
 /// brow.
 private func drawKat(_ c: PixelCanvas, _ p: Pose, battle: Bool) {
     let rear = battle ? eterniaRamp(p.signature ?? -1, 0.05, 0.25, 0.8, 0.95) : 0
-    guard rear > 0.01 else { katArt(c, p, battle: battle, rearing: false); return }
-    // Rearing: drawn on a canvas of its own, then each column lifted the further forward it is, so his front rises
-    // off the ground in clean steps while his back feet stay put.
-    let up = PixelCanvas(Sprite.width, Sprite.height)
-    katArt(up, p, battle: true, rearing: true)
-    for x in 0..<up.w {
-        let dy = -Int((Double(max(0, x - 22)) * 0.3 * rear).rounded())
-        for y in 0..<up.h {
-            let i = (y * up.w + x) * 4, a = up.buf[i + 3]
-            guard a > 0 else { continue }
-            let m = 255 / Double(a)
-            c.px(x, y + dy, Px(r: UInt8(min(255, Double(up.buf[i]) * m)), g: UInt8(min(255, Double(up.buf[i + 1]) * m)),
-                               b: UInt8(min(255, Double(up.buf[i + 2]) * m)), a: a))
-        }
-    }
+    katArt(c, p, battle: battle, rise: Int((rear * 4).rounded()))
 }
 
-/// The tiger itself, upright; `rearing`: the front paw up high, claws out, the front feet off the ground.
-private func katArt(_ c: PixelCanvas, _ p: Pose, battle: Bool, rearing: Bool) {
+/// The tiger itself. `rise`: how far he's reared up (0 standing): his body lifts, level, on his stretched back legs,
+/// the front legs fold up off the ground and the front paw goes up high, claws out. The body stays square, so its
+/// edges stay clean instead of stepping.
+private func katArt(_ c: PixelCanvas, _ p: Pose, battle: Bool, rise: Int) {
     let fur = C(0x5E9E3A), furD = C(0x3E7426), furL = C(0x86C25A)
     let stripe = C(0xE8862A), stripeD = C(0xB45E1A)
     let muz = C(0xDCE4A4), muzD = C(0xB0BA78), nose = C(0xE86A8A)
     let red = C(0xC8302A), redD = C(0x8A1E1A), redL = C(0xE8584A), gold = C(0xE0B040)
     let s = p.signature ?? -1
-    let lift = rearing ? 1 : 0
+    let rearing = rise > 0
     let roar = battle && s > 0.3 && s < 0.78
     let cower = battle ? 0 : eterniaRamp(s, 0.05, 0.15, 0.85, 0.95)
     let hide = cower > 0.5
@@ -161,24 +149,29 @@ private func katArt(_ c: PixelCanvas, _ p: Pose, battle: Bool, rearing: Bool) {
     c.ox += shake
     let top = battle ? 24 : 26
 
-    // The legs: Clawd's four, in striped green fur, pale paws. Rearing, the back legs stretch and the front pair
-    // leave the ground.
+    // The legs: Clawd's four, in striped green fur, pale paws. Rearing, the back legs stretch up to his lifted body
+    // and the front pair fold up under it, off the ground.
     if seatedPose {
         drawLegs(c, Look(leg: fur), step: p.step)
         for lx in [19, 23, 31, 35] { c.rect(lx + 1, 38, 2, 2, muz) }
     } else {
         for (i, lx) in [19, 23, 31, 35].enumerated() {
-            let lifted = p.step >= 0 && i % 2 == p.step
+            let lifted = p.step >= 0 && i % 2 == p.step && !rearing
             let front = i >= 2
-            let y0 = 36
-            let bottom = (lifted ? 42 : 43) - (front ? 2 * lift : 0)
+            let y0 = 36 - rise
+            let bottom = front && rearing ? 40 - rise : (lifted ? 42 : 43)
             c.rect(lx, y0, 2, bottom - y0 + 1, fur)
             c.px(lx + 1, y0, furD)
-            c.rect(lx, bottom - 1, 2, 2, muz); c.px(lx + 1, bottom, muzD)
-            if !front { c.px(lx, 39, stripe) }   // a stripe round each back leg
+            if front && rearing {
+                // Folded up under him, the paw tucked forward, its pale toes showing.
+                c.rect(lx + 1, bottom - 1, 2, 2, muz); c.px(lx + 2, bottom, muzD)
+            } else {
+                c.rect(lx, bottom - 1, 2, 2, muz); c.px(lx + 1, bottom, muzD)
+            }
+            if !front { c.px(lx, 39, stripe); if rise > 2 { c.px(lx, 37 - rise, stripe) } }   // stripes round the back legs
         }
     }
-    c.oy += p.breathe
+    c.oy += p.breathe - rise
 
     // The tail: Battle Kat's curling up behind him, Cringer's hanging limp to the ground; ringed in orange.
     if battle {
@@ -211,10 +204,17 @@ private func katArt(_ c: PixelCanvas, _ p: Pose, battle: Bool, rearing: Bool) {
         ].prefix(max(0, 43 - c.oy - 30 + 1)).map { $0 }, ["T": fur, "O": stripe])
     }
 
-    // The haunch behind the block, rounded on top, stripes down it.
-    c.rect(12, top + 3, 6, 38 - top - 3, fur); c.rect(13, top + 2, 5, 1, fur)
-    c.rect(12, 37, 6, 1, furD); c.rect(13, top + 2, 4, 1, furL)
-    for x in [13, 16] { c.rect(x, top + 3, 1, 3, stripe); c.px(x, top + 6, stripeD) }
+    // The haunch behind the block: a round rump, its back edge curving in smoothly at the top and the bottom, lit
+    // along the top and shaded underneath, stripes down it.
+    for y in (top + 2)...37 {
+        let fromTop = y - top - 2, fromBottom = 37 - y
+        let x0 = fromTop == 0 ? 13 : fromTop == 1 ? 11 : fromBottom == 0 ? 12 : fromBottom == 1 ? 11 : 10
+        c.rect(x0, y, 18 - x0, 1, fur)
+        c.px(x0, y, fromTop <= 1 ? furL : y > 33 ? furD : fur)
+    }
+    c.rect(13, top + 2, 5, 1, furL); c.rect(12, 37, 6, 1, furD)
+    for x in [12, 15] { c.rect(x, top + 3, 1, 3, stripe); c.px(x, top + 6, stripeD) }
+    for x in [11, 16] where battle { c.rect(x, 32, 1, 2, stripe) }   // below the saddle cloth
 
     // The block: green fur, lit on top and the left, shaded under and on the right, its pale belly.
     c.rect(18, top, 20, 38 - top, fur)
@@ -285,11 +285,25 @@ private func katArt(_ c: PixelCanvas, _ p: Pose, battle: Bool, rearing: Bool) {
         c.rect(27, top + 3, 2, 4, red); c.px(27, top + 3, redL); c.px(28, top + 6, redD)
         c.rect(27, top - 1, 2, 1, redL)
         for x in [20, 24, 31, 35] { c.px(x, top + 2, gold) }
-        // The saddle on his back: a seat with a high cantle behind, gold trim, the girth strap round his middle.
-        c.rect(11, top - 1, 2, 3, red); c.px(11, top - 1, redL)
-        c.rect(11, top + 2, 9, 2, red); c.rect(11, top + 2, 9, 1, redL); c.rect(11, top + 4, 9, 1, gold)
-        c.rect(15, top + 5, 2, 37 - top - 5, redD); c.px(15, top + 5, red)
-        c.rect(14, 33, 4, 2, gold); c.rect(15, 33, 2, 1, C(0x5A3A1A))   // the stirrup on its strap
+        // The saddle on his back, big enough to ride: a high cantle behind and a pommel in front, both capped in
+        // gold, the seat dipping between them, a red saddle cloth hanging down his side bordered in gold, and the
+        // stirrup on its strap below it.
+        c.pattern(9, top - 3, [
+            "LR........",
+            "RRr.....LR",
+            "RRRrrrrrRr",
+            ".RRRRRRRRr",
+            ".RRRRRRRRr",
+            ".RrRRRRrRr",
+            ".RrRRRRrRr",
+            "..RrRRrRr.",
+            "..gGGGGGg.",
+            "...gGGGg..",
+        ], ["R": red, "r": redD, "L": redL, "g": C(0xFFE08A), "G": gold])
+        c.rect(11, top, 7, 1, redL)
+        c.px(13, top + 3, gold); c.px(17, top + 3, gold)   // studs on the cloth
+        c.rect(14, top + 7, 2, 34 - top - 7, C(0x5A3A1A))
+        c.pattern(12, 34, ["GGGGGG", "G....G", "GGGGGG"], ["G": gold])
     }
 
     // The front paw: at rest, a pale-toed paw; swiping, his paw on its foreleg, claws out; rearing, up high.
@@ -321,14 +335,24 @@ private func katArt(_ c: PixelCanvas, _ p: Pose, battle: Bool, rearing: Bool) {
         c.glowLine(39.5, 34.5, 34.5, 31.5, core: furL, glow: C(0, 0), coreR: 1.1, glowR: 1.2)
         // Shivers either side of him.
         for (x, y) in [(10, 26), (9, 29), (44, 26), (45, 29)] where shake == 1 { c.rect(x, y, 2, 1, C(0xFFFFFF, 0.7)) }
-        for x in [20, 31] {
-            c.pattern(x, 27, [".PPP.", "PPPPP", "PdPdP", "PPPPP", ".PPP."], ["P": muz, "d": muzD])
+        // The paws themselves, backs to us: green fur at the wrist, then the pale paw, its four toes bumping up
+        // along the top with short creases between them, so it reads as a paw and not a pad.
+        for x in [18, 30] {
+            c.pattern(x, 26, [
+                "TT.TT.TT",
+                "TTtTTtTT",
+                "TTtTTtTT",
+                "TTTTTTTt",
+                "dTTTTTtd",
+                ".FFFFFF.",
+                ".FfFFfF.",
+            ], ["T": muz, "t": muzD, "d": furD, "F": fur, "f": furD])
         }
         c.px(37, 26, C(0x9AD8FF)); c.px(37, 27, C(0x9AD8FF)); c.px(36, 27, C(0xD8F0FF))
     } else {
         let px0 = Int(paw.x.rounded()) - 1, py0 = Int(paw.y.rounded()) - 1
         c.rect(px0, py0, 3, 3, fur); c.rect(px0, py0 + 2, 3, 1, muz)
-        if p.melee != nil || lift > 0 { for y in [py0, py0 + 2] { c.px(px0 + 3, y, C(0xFAFAF0)) } }
+        if p.melee != nil || rearing { for y in [py0, py0 + 2] { c.px(px0 + 3, y, C(0xFAFAF0)) } }
     }
     if !battle && cower > 0 && !hide {
         c.px(37, 26, C(0x9AD8FF))
@@ -469,7 +493,7 @@ private func drawManAtClawds(_ c: PixelCanvas, _ p: Pose) {
     let tache = C(0x6A3A1A), tacheL = C(0x8E5630), steel = C(0xB4B8C4), steelD = C(0x7E8290), steelL = C(0xE2E4EC)
     let s = p.signature ?? -1
     let tinker = eterniaRamp(s, 0.05, 0.18, 0.85, 0.95)
-    let raise = Int((tinker * 4).rounded())
+    let raise = Int((tinker * 6).rounded())
     let working = s > 0.2 && s < 0.84
 
     drawLegs(c, Look(leg: green), step: p.step)
@@ -517,19 +541,33 @@ private func drawManAtClawds(_ c: PixelCanvas, _ p: Pose) {
     c.rect(22, 28, 2, 1, tache); c.rect(32, 28, 2, 1, tache)   // brows
 
     if working {
-        // The spanner, worked against the raised gauntlet: a steel bar from below, its jaw at the wrist, and sparks.
-        let wob = sin(p.t * 18) * 0.8
-        let jaw = (x: 39.0, y: 33.0 - Double(raise) + wob * 0.4)
-        c.glowLine(33, 36, jaw.x - 1, jaw.y + 1, core: steel, glow: C(0, 0), coreR: 0.6, glowR: 0.7)
-        c.rect(Int(jaw.x) - 2, Int(jaw.y) - 1, 3, 1, steelL); c.px(Int(jaw.x) - 2, Int(jaw.y), steelL)
-        c.rect(32, 35, 2, 2, clawdOrange)   // his other hand on the spanner
+        // The spanner, worked against the raised gauntlet. A big steel nut on the gauntlet's front, out in the clear
+        // past his wrist; the spanner's open jaw round it, mid-grey steel lit along the top so it doesn't fade into
+        // the white outline; its handle running down to his other hand at his chest, edged in dark where it crosses
+        // his arm; and sparks jumping up off the nut as he turns it.
+        let gy = 34 - raise
+        c.rect(41, gy, 2, 2, steelD); c.px(41, gy, steelL)   // the nut
+        c.glowLine(44, Double(gy) + 4, 33, 37.2, core: C(0x2E2A30), glow: C(0, 0), coreR: 1.25, glowR: 1.3)
+        c.glowLine(44, Double(gy) + 3.5, 33, 36.7, core: steel, glow: C(0, 0), coreR: 0.75, glowR: 0.8)
+        c.glowLine(44, Double(gy) + 3, 34, 36, core: steelL, glow: C(0, 0), coreR: 0.25, glowR: 0.3)
+        c.pattern(41, gy - 2, [
+            ".LLSS.",
+            "SSSSSd",
+            "...SSd",
+            "...SSd",
+            "SSSSSd",
+            ".dddd.",
+        ], ["S": steel, "d": steelD, "L": steelL])
+        c.rect(31, 35, 3, 3, clawdOrange); c.px(33, 37, clawdShade)   // his other hand on the spanner
         if Int(p.t * 9) % 3 != 0 {
+            // The sparks fly up and out past the jaw, clear of his helmet.
             let seed = Int(p.t * 9)
-            for k in 0..<4 {
-                let a = -150 + noise(seed * 7 + k) * 120
-                let d = 2 + noise(seed * 3 + k) * 4
-                let e = eterniaReach(jaw, a, d)
-                c.glowLine(jaw.x, jaw.y, e.x, e.y, core: C(0xFFF6C0), glow: C(0xFFB030, 0.6), coreR: 0.35, glowR: 1)
+            let nut = (x: 45.5, y: Double(gy) - 2.5)
+            for k in 0..<3 {
+                let a = -95 + noise(seed * 7 + k) * 75
+                let d = 2 + noise(seed * 3 + k) * 3
+                let e = eterniaReach(nut, a, d)
+                c.glowLine(nut.x, nut.y, e.x, e.y, core: C(0xFFF6C0), glow: C(0xFFB030, 0.6), coreR: 0.35, glowR: 1)
             }
         }
         return
@@ -569,6 +607,33 @@ private func eterniaWing(_ c: PixelCanvas, root: (x: Double, y: Double), a0: Dou
     }
 }
 
+/// The Sorceress's great wing folded down her back: its bend standing up behind her shoulder, a row of short covert
+/// feathers, then the long flight feathers hanging in strokes to her heels, tipped in sky blue. Its back edge is sky
+/// blue all the way down and the seams between the feathers a cool grey-blue, so the white wing keeps its shape inside
+/// the white outline.
+private func sorceressFoldedWing(_ c: PixelCanvas, white: Px, light: Px, tip: Px) {
+    c.pattern(8, 21, [
+        "....LWW...",
+        "..BLWWWWW.",
+        ".BWWWWWWWW",
+        ".BWWsWWsWW",
+        "BWWsWWsWWs",
+        "BWWWWWWWWW",
+        "BWsWsWsWsW",
+        "BWsWsWsWsW",
+        "BWsWsWsWsW",
+        "BWsWsWsWsW",
+        "BWsWsWsWsW",
+        ".BsWsWsWsW",
+        ".BsWsWsWsW",
+        ".BsWsWsWsW",
+        ".BsBsWsWsW",
+        "..BBsBsWsW",
+        "...BBsBsBs",
+        "....BBBBB.",
+    ], ["W": white, "L": light, "s": C(0x98AACA), "B": tip])
+}
+
 /// The Sorceress of Greyskull: the guardian of the castle's secrets, in Zoar's feathers. A white falcon headdress with
 /// a gold hooked beak over her brow, the falcon's dark eyes above it and little feathered wings sweeping up either
 /// side; a white feathered bodice with a sky-blue gem at its middle, a skirt of white feathers tipped in blue, pale
@@ -595,9 +660,14 @@ private func drawSorceress(_ c: PixelCanvas, _ p: Pose) {
             }
         }
         c.oy += p.breathe
-        // The back wing: folded down her back at rest, swept up and out when she spreads it.
-        let a0 = 100 + (-175 - 100) * spread, a1 = 130 + (-105 - 130) * spread
-        eterniaWing(c, root: (18, 28), a0: a0, a1: a1, length: 11 + 5 * spread, white: wht, shade: whtD, tip: sky)
+        // The back wing: folded down her back at rest, its bend standing up behind her shoulder and its long
+        // feathers hanging to her heels; swept up and out when she spreads it.
+        if spread < 0.15 {
+            sorceressFoldedWing(c, white: wht, light: whtL, tip: sky)
+        } else {
+            let a0 = 100 + (-175 - 100) * spread, a1 = 130 + (-105 - 130) * spread
+            eterniaWing(c, root: (18, 28), a0: a0, a1: a1, length: 11 + 5 * spread, white: wht, shade: whtD, tip: sky)
+        }
         drawBody(c, Look(arm: wht), armRight: p.armRaise)
         // The bodice: white feathers in rows, the sky-blue gem at the middle, lit on the left.
         c.rect(18, 33, 20, 5, wht); c.rect(36, 33, 2, 5, whtD); c.rect(18, 33, 1, 5, whtL)
