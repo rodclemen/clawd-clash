@@ -63,7 +63,10 @@ struct EterniaUniverse: UniverseModule {
     /// What Tools/Preview needs: the batch names for the art files (`eterniaHeroes1`, `eterniaVillains1`, one per
     /// file, in order; add each new file to its list) and the characters by enum case name.
     var preview: PreviewInfo {
-        .of(.eternia, heroes: "eterniaHeroes", [eterniaHeroes1], villains: "eterniaVillains", [eterniaVillains1])
+        .of(.eternia, heroes: "eterniaHeroes", [eterniaHeroes1, eterniaHeroes2, eterniaHeroes3, eterniaHeroes4, eterniaHeroes5,
+                                                eterniaHeroes6, eterniaHeroes7],
+            villains: "eterniaVillains", [eterniaVillains1, eterniaVillains2, eterniaVillains3, eterniaVillains4,
+                                          eterniaVillains5, eterniaVillains6, eterniaVillains7, eterniaVillains8])
     }
     /// The trips between places (EterniaWipes.swift): `pick` chooses the next, `every` lists one of each kind for
     /// Tools/Transitions. nil would leave plain edge and clock wipes, as only Star Clawds keeps.

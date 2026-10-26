@@ -19,10 +19,13 @@ extension EterniaVillain {
 
 /// Every hero's persona, from the Art/EterniaHeroes*.swift files (8 to 10 a file), and HEM's, who the engine draws
 /// in this universe's costume (EterniaHem.swift). Add each new art file to the list.
-let eterniaHeroPersonas: [EterniaHero: Persona] = [eterniaHeroes1, eterniaHeroes2, eterniaHeroes3, eterniaHeroes4]
+let eterniaHeroPersonas: [EterniaHero: Persona] = [eterniaHeroes1, eterniaHeroes2, eterniaHeroes3, eterniaHeroes4,
+                                                     eterniaHeroes5, eterniaHeroes6, eterniaHeroes7]
     .reduce([.hem: hemPersona(.eternia)]) { $0.merging($1) { a, _ in a } }
 /// Every villain's persona, from the Art/EterniaVillains*.swift files.
-let eterniaVillainPersonas: [EterniaVillain: Persona] = [eterniaVillains1, eterniaVillains2, eterniaVillains3]
+let eterniaVillainPersonas: [EterniaVillain: Persona] = [eterniaVillains1, eterniaVillains2, eterniaVillains3,
+                                                           eterniaVillains4, eterniaVillains5, eterniaVillains6,
+                                                           eterniaVillains7, eterniaVillains8]
     .reduce([:]) { $0.merging($1) { a, _ in a } }
 
 // MARK: - Homes
@@ -36,6 +39,11 @@ extension Location {
         case .skeleclawd, .evilLynn, .beastClawd, .trapClawd, .triClawdps, .merClawd, .clawdful, .screeech:
             return .eterniaSnakeMountain   // Mer-Clawd and Beast Clawd until their own realms are built
         case .kobraKhan: return .eterniaVineJungle
+        case .webstor, .whiplash, .spikor, .twoBad, .faker, .panthor, .stinkor, .kingHiss, .countMarzo, .shokoti, .jitsu,
+             .blade, .saurod, .karg, .darkTrooper:
+            return .eterniaSnakeMountain   // until their own places are built
+        case .leach, .grizzlor, .modulok, .multiBot, .entrapta, .octavia, .rattlor, .tungLashor, .vultak, .hordePrime:
+            return .eterniaFrightZone
         case .hordakk, .shadowWeaver, .katra, .scorpia, .mantenna, .imp, .hordeTrooper: return .eterniaFrightZone
         }
     }
@@ -51,6 +59,12 @@ extension Location {
         case .adorra, .spirit, .bow, .madameRazz, .kowl: return .eterniaWhisperingWoods
         case .glimmer: return .eterniaWhisperingWoods   // until Bright Moon is built
         case .sheClawd, .swiftWind: return .eterniaCrystalCastle
+        case .roboto, .snoutSpout: return .eterniaWorkshop
+        case .mossClawd: return .eterniaVineJungle
+        case .syClawdne, .zodac, .granamyr, .gwildor: return .eterniaPalace   // until their own places are built
+        case .queenAngella, .clawdstaspella, .frosta, .mermista: return .eterniaWhisperingWoods   // the same
+        case .seaHawk, .perfuma, .peekablue, .netossa, .flutterina, .stonedar, .looKee: return .eterniaWhisperingWoods
+        case .lightHope: return .eterniaCrystalCastle
         }
     }
 }
@@ -76,6 +90,25 @@ private let eterniaNemeses: [(EterniaHero, EterniaVillain)] = [
     (.mekaneck, .triClawdps),
     (.ramClawd, .clawdful),
     (.bow, .mantenna),
+    (.battleKat, .panthor),
+    (.orkko, .countMarzo),
+    (.sorceress, .shokoti),
+    (.manEClawds, .faker),
+    (.buzzOff, .webstor),
+    (.clawdfist, .jitsu),          // the fist and the chopping hand: their toys were sold as rivals
+    (.mossClawd, .stinkor),        // the toys shared a mould
+    (.roboto, .multiBot),
+    (.kingRandor, .kingHiss),
+    (.stratos, .vultak),
+    (.mermista, .merClawd),
+    (.seaHawk, .octavia),
+    (.clawdstaspella, .shadowWeaver),   // once friends
+    (.frosta, .scorpia),
+    (.glimmer, .entrapta),
+    (.lightHope, .hordePrime),
+    (.gwildor, .karg),             // Karg leads the hunt for the Cosmic Key
+    (.snoutSpout, .saurod),        // the fire-fighter and the spark-spitter
+    (.stonedar, .blade),           // a sword is no use against stone
 ]
 
 let eterniaTheme = Theme(
@@ -115,9 +148,23 @@ extension Location {
     static let eterniaFrightZone = Location("eterniaFrightZone")
     static let eterniaWhisperingWoods = Location("eterniaWhisperingWoods")
     static let eterniaCrystalCastle = Location("eterniaCrystalCastle")
+    static let eterniaChamber = Location("eterniaChamber")       // the Sorceress's chamber inside Greyskull
+    static let eterniaMysticMountains = Location("eterniaMysticMountains")
+    static let eterniaAvion = Location("eterniaAvion")           // Stratos's city of the bird people
+    static let eterniaAndreenos = Location("eterniaAndreenos")   // the bee people's hive
+    static let eterniaDarksmoke = Location("eterniaDarksmoke")   // Granamyr's cliffs
+    static let eterniaTrolla = Location("eterniaTrolla")         // Orkko's home moon
+    static let eterniaUndersea = Location("eterniaUndersea")     // Mer-Clawd's undersea kingdom
+    static let eterniaBeastIsland = Location("eterniaBeastIsland")
+    static let eterniaTemple = Location("eterniaTemple")         // the Temple of Shokoti
+    static let eterniaBrightMoon = Location("eterniaBrightMoon")
+    static let eterniaMystacor = Location("eterniaMystacor")
+    static let eterniaCastleChill = Location("eterniaCastleChill")
+    static let eterniaEarthTown = Location("eterniaEarthTown")   // the 1987 film's small Earth town at night
 }
 
 /// Every place's drawing, from the Places/EterniaScenes*.swift files (a few places a file). Add each new file to the
 /// list.
-let eterniaPlaces: [Location: Place] = [eterniaScenes1, eterniaScenes2, eterniaScenes3]
+let eterniaPlaces: [Location: Place] = [eterniaScenes1, eterniaScenes2, eterniaScenes3, eterniaScenes4, eterniaScenes5,
+                                                eterniaScenes6, eterniaScenes7, eterniaScenes8]
     .reduce([:]) { $0.merging($1) { a, _ in a } }
