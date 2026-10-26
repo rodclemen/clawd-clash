@@ -3,7 +3,7 @@ import Foundation
 // More places on Eternia: Mer-Clawd's undersea kingdom, Beast Island and the Temple of Shokoti, drawn the same way as
 // EterniaScenes1.swift. Each landmark (the sunken arch and its drowned palace, the volcano, the pyramid and its idol)
 // is drawn once at one pixel to a unit and blown up `q` times, so it's the whole picture on the screen saver and still
-// fits the window's strip; the things round it (kelp and coral, twisted trees, obelisks) stand out to the sides.
+// fits the window's strip; the things round it (kelp and coral, twisted trees, stelae and braziers) stand out to the sides.
 // Three palettes far apart: the sea's blues with coral pinks and violets, the island's fog greens and lava, and the
 // desert's dusk, mauve shadow under an amber sky, with the idol in gold.
 
@@ -46,6 +46,20 @@ extension Scenes {
                                               _ pal: [Character: Px]) {
         for (r, row) in rows.enumerated() {
             for (k, ch) in row.enumerated() { if let col = pal[ch] { c.rect(x + k * b, y + r * b, b, b, col) } }
+        }
+    }
+
+    /// A soft round glow: `col` at `peak` opacity in the middle, fading smoothly out to nothing at `r`, each pixel
+    /// worked out on its own and dithered a little, so it never steps in rings.
+    private static func eterniaPlaces6Glow(_ c: PixelCanvas, _ cx: Int, _ cy: Int, _ r: Int, _ col: Px, peak: Double) {
+        guard r > 0 else { return }
+        for y in max(0, cy - r)..<min(c.h, cy + r + 1) {
+            for x in max(0, cx - r)..<min(c.w, cx + r + 1) {
+                let dx = Double(x - cx), dy = Double(y - cy), k = (dx * dx + dy * dy).squareRoot() / Double(r)
+                guard k < 1 else { continue }
+                let a = peak * pow(1 - k, 1.8) + (noise(x * 13 + y * 7919) - 0.5) * 0.01
+                if a > 0.003 { c.px(x, y, col.alpha(a)) }
+            }
         }
     }
 
@@ -114,13 +128,12 @@ extension Scenes {
         c.dunes(base: f.floor - (tall ? 8 : 3) * s, amp: Double(2 * s), freq: 0.07 / Double(s), phase: 2.6, bottom: f.floor,
                 C(0x123A52), shade: C(0x1C4E66))
 
-        // Kelp behind the arch, the far stalks darker.
-        for (i, frac) in [0.15, 0.55, 0.85].enumerated() {
-            for left in [true, false] {
-                let x = eterniaPlaces6Side(c, f.x, q, frac, left: left)
-                eterniaKelp(c, x, f.floor, (f.floor * (55 + Int(noise(i * 3 + (left ? 0 : 1) + 600) * 30))) / 100, q,
-                            seed: i * 2 + (left ? 0 : 1), far: true)
-            }
+        // Kelp behind the arch, the far stalks darker, in clumps and alone at uneven gaps, each its own height.
+        let farKelp: [(frac: Double, left: Bool, h: Int)] = [(0.07, true, 64), (0.13, true, 46), (0.46, true, 82),
+                                                             (0.8, true, 56), (0.18, false, 74), (0.25, false, 50),
+                                                             (0.6, false, 88), (0.93, false, 58)]
+        for (i, k) in farKelp.enumerated() {
+            eterniaKelp(c, eterniaPlaces6Side(c, f.x, q, k.frac, left: k.left), f.floor, f.floor * k.h / 100, q, seed: i, far: true)
         }
 
         // The arch and the palace, blown up to size.
@@ -134,20 +147,17 @@ extension Scenes {
             let x = k * 12 * q + Int(noise(k + 620) * Double(6 * q)), y = f.floor + Int(noise(k + 621) * Double(max(1, g - f.floor - q)))
             c.rect(x, y, 5 * q, max(1, q / 2), C(0x4E6E7A))
         }
-        // Coral and kelp in front at the sides, framing it.
-        for (i, frac) in [0.3, 0.7].enumerated() {
-            for left in [true, false] {
-                let reef = PixelCanvas(40, 26)
-                eterniaCoral(reef, seed: i * 2 + (left ? 0 : 1))
-                let x = eterniaPlaces6Side(c, f.x, q, frac, left: left)
-                eterniaPlaces6Blit(c, reef, x - 20 * q, f.floor + 2 * q - 26 * q, q, flip: !left)
-            }
+        // Coral and kelp in front at the sides, framing it: each reef a different mix, none at the same spot either side.
+        let reefs: [(frac: Double, left: Bool, seed: Int)] = [(0.24, true, 0), (0.72, true, 1), (0.4, false, 2), (0.86, false, 3)]
+        for r in reefs {
+            let reef = PixelCanvas(40, 26)
+            eterniaCoral(reef, seed: r.seed)
+            let x = eterniaPlaces6Side(c, f.x, q, r.frac, left: r.left)
+            eterniaPlaces6Blit(c, reef, x - 20 * q, f.floor + 2 * q - 26 * q, q, flip: r.seed % 2 == 1)
         }
-        for (i, frac) in [0.05, 0.95].enumerated() {
-            for left in [true, false] {
-                let x = eterniaPlaces6Side(c, f.x, q, frac, left: left)
-                eterniaKelp(c, x, g, (g * (70 + Int(noise(i * 5 + (left ? 0 : 1) + 640) * 25))) / 100, q, seed: 9 + i * 2 + (left ? 0 : 1), far: false)
-            }
+        let nearKelp: [(frac: Double, left: Bool, h: Int)] = [(0.03, true, 92), (0.1, true, 68), (0.95, false, 80)]
+        for (i, k) in nearKelp.enumerated() {
+            eterniaKelp(c, eterniaPlaces6Side(c, f.x, q, k.frac, left: k.left), g, g * k.h / 100, q, seed: 9 + i * 2, far: false)
         }
         c.ground(g, C(0x2E4652), edge: C(0x4A6874), speck: C(0x243A46), seed: 37)
     }
@@ -178,48 +188,79 @@ extension Scenes {
         c.rect(tx, foot - h - q, 2 * q, q, leaf); c.rect(tx + q, foot - h, 2 * q, q, leafL)
     }
 
-    /// A reef, one pixel to a unit on a 40×26 canvas, its foot on row 25: a sea fan, a mound of brain coral, violet
-    /// tubes and branches of pale staghorn on a ledge of rock. Pinks, mauves and violets, never orange, so a Clawd in
-    /// front still stands out.
+    /// A reef, one pixel to a unit on a 40×26 canvas, its foot on row 25: a ledge of rock and on it four of a sea fan
+    /// (F), a mound of brain coral (B), violet tubes (T), branches of pale staghorn (S) and a sea anemone (A). Which
+    /// four, in what order, how big and in which shades are all set by `seed`, so no two reefs look alike. Pinks,
+    /// mauves and violets, never orange, so a Clawd in front still stands out.
     private static func eterniaCoral(_ a: PixelCanvas, seed: Int) {
-        // The rock it grows on.
+        // The rock it grows on, higher or lower.
+        let ledge = 19 + seed % 3
         for x in 1..<39 {
-            let top = 20 + Int(noise(seed * 40 + x) * 2.5) + (x < 4 || x > 35 ? 2 : 0)
+            let top = ledge + Int(noise(seed * 40 + x) * 2.5) + (x < 4 || x > 35 ? 2 : 0)
             a.rect(x, top, 1, 26 - top, C(0x1E3644)); a.px(x, top, C(0x34525E))
         }
-        // The sea fan: a magenta lattice spreading up from its root.
-        let fx = 9 + seed % 2 * 3, fan = C(0xC8408E), fanL = C(0xF07AC0), reach = 11 + seed % 3 * 3
-        for d in stride(from: -60, through: 60, by: 12) {
-            let ang = Double(d) * .pi / 180
-            for r in 0..<reach { a.px(fx + Int(sin(ang) * Double(r)), 21 - Int(cos(ang) * Double(r) * 0.95), d < 0 ? fanL : fan) }
-        }
-        for r in [6, 10, 14] where r < reach {
-            for d in -60...60 {
-                let ang = Double(d) * .pi / 180
-                a.px(fx + Int(sin(ang) * Double(r)), 21 - Int(cos(ang) * Double(r) * 0.95), d < 0 ? fanL : fan)
-            }
-        }
-        // The brain coral: a mauve mound, grooves winding over it, lit on top.
-        let bx = 23 - seed % 2 * 3, by = 19 + seed % 3 / 2
-        a.ellipse(bx, by, 7, 5, C(0x8A4E8E))
-        a.ellipse(bx - 2, by - 2, 4, 2, C(0xB27AB4))
-        for x in (bx - 6)...(bx + 6) {
-            for row in [-2, 1] { a.px(x, by + row + Int(sin(Double(x) * 1.3 + Double(row)) * 1.2), C(0x5E3066)) }
-        }
-        a.px(bx - 4, by - 4, C(0xDCA8DC)); a.px(bx - 3, by - 4, C(0xDCA8DC))
-        // The tubes: violet, lit down their left, open at the top.
-        for (i, (x, top)) in [(31, 9 + seed % 3 * 2), (34, 12 - seed % 2 * 3), (28, 13), (36, 15)].enumerated() where i < 2 + seed % 3 {
-            a.rect(x, top, 2, 22 - top, C(0x6448A8)); a.rect(x, top, 1, 22 - top, C(0x9478D4))
-            a.rect(x - (i % 2), top - 1, 3, 1, C(0xC4B0F0)); a.px(x, top, C(0x281C48))
-        }
-        // Staghorn: pale pink branches forking up on the far left.
-        let stag = C(0xF0B4C4), stagD = C(0xB87890)
-        for (x0, lean) in [(3, 1), (5, -1)] {
-            var x = x0
-            for y in stride(from: 21, to: 10, by: -1) {
-                if y % 3 == 0 { x += lean }
-                a.px(x, y, stag); a.px(x + 1, y, stagD)
-                if y == 16 { a.px(x - lean, y - 1, stag); a.px(x - 2 * lean, y - 2, stag) }
+        let base = ledge + 1
+        let layouts = ["SFBT", "TBFA", "BFSA", "FTAB", "ASTF", "SFBT"]
+        let slots = [5, 13, 23, 32]
+        let fans = [(C(0xC8408E), C(0xF07AC0)), (C(0x9A40C0), C(0xCA7AF0)), (C(0xD84C78), C(0xFF96B4))]
+        let brains = [(C(0x8A4E8E), C(0xB27AB4), C(0x5E3066)), (C(0x6A5AA8), C(0x9A8AD0), C(0x443878)),
+                      (C(0xA05070), C(0xCC8AA2), C(0x6A2E48))]
+        for (i, kind) in layouts[seed % layouts.count].enumerated() {
+            let x0 = slots[i] + Int(noise(seed * 7 + i) * 3) - 1, v = seed + i
+            switch kind {
+            case "F":
+                // The sea fan: a lattice spreading up from its root.
+                let (fan, fanL) = fans[v % fans.count], reach = 8 + (seed * 5 + i) % 7
+                for d in stride(from: -60, through: 60, by: 12) {
+                    let ang = Double(d) * .pi / 180
+                    for r in 0..<reach { a.px(x0 + Int(sin(ang) * Double(r)), base - Int(cos(ang) * Double(r) * 0.95), d < 0 ? fanL : fan) }
+                }
+                for r in [5, 9, 13] where r < reach {
+                    for d in -60...60 {
+                        let ang = Double(d) * .pi / 180
+                        a.px(x0 + Int(sin(ang) * Double(r)), base - Int(cos(ang) * Double(r) * 0.95), d < 0 ? fanL : fan)
+                    }
+                }
+            case "B":
+                // The brain coral: a mound, grooves winding over it, lit on top.
+                let (col, lit, groove) = brains[v % brains.count], rx = 5 + v % 3, ry = 3 + v % 2 * 2
+                let by = base - ry + 1
+                a.ellipse(x0, by, rx, ry, col)
+                a.ellipse(x0 - 2, by - ry / 2, rx / 2 + 1, max(1, ry / 2), lit)
+                for x in (x0 - rx + 1)...(x0 + rx - 1) {
+                    for row in [-1, 1] where ry > 3 || row == 1 {
+                        a.px(x, by + row + Int(sin(Double(x) * 1.3 + Double(row + seed)) * 1.2), groove)
+                    }
+                }
+                a.px(x0 - 3, by - ry + 1, C(0xDCC0E8))
+            case "T":
+                // The tubes: violet, lit down their left, open at the top.
+                for k in 0..<(2 + v % 3) {
+                    let x = x0 - 2 + k * 3, top = base - 8 - Int(noise(seed * 11 + k) * 8)
+                    a.rect(x, top, 2, base + 1 - top, C(0x6448A8)); a.rect(x, top, 1, base + 1 - top, C(0x9478D4))
+                    a.rect(x - (k % 2), top - 1, 3, 1, C(0xC4B0F0)); a.px(x, top, C(0x281C48))
+                }
+            case "S":
+                // Staghorn: pale pink branches forking up.
+                let stag = C(0xF0B4C4), stagD = C(0xB87890)
+                for (dx, lean) in [(-1, 1), (1, -1), (3, 1)].prefix(2 + seed % 2) {
+                    var x = x0 + dx
+                    for y in stride(from: base, to: base - 10 - seed % 3, by: -1) {
+                        if y % 3 == 0 { x += lean }
+                        a.px(x, y, stag); a.px(x + 1, y, stagD)
+                        if y == base - 5 { a.px(x - lean, y - 1, stag); a.px(x - 2 * lean, y - 2, stag) }
+                    }
+                }
+            default:
+                // A sea anemone: a squat column, a crown of tentacles splaying out, their tips bright.
+                let col = C(0xC86AA8), colL = C(0xE8A0CC), tip = C(0xFFE0F4)
+                a.rect(x0 - 2, base - 3, 5, 4, col); a.rect(x0 - 2, base - 3, 1, 4, colL)
+                for k in -3...3 {
+                    for r in 1...5 {
+                        let x = x0 + k * r / 3 + (r > 3 ? k.signum() : 0), y = base - 3 - r + abs(k) / 2
+                        a.px(x, y, r == 5 ? tip : r % 2 == 0 ? colL : col)
+                    }
+                }
             }
         }
     }
@@ -387,21 +428,36 @@ extension Scenes {
                     c.rect(x0 + y / 4, y, (5 + y / (12 * s)) * s, 1, C(0xE8FFF8, a * (1 - Double(y) / Double(f.floor))))
                 }
             }
-            // Jellyfish drifting up, their bells pulsing, trailing tentacles.
+            // Jellyfish drifting up, their bells pulsing, frilled arms under them and long tentacles trailing, sized to
+            // the arch so they read on a big screen: the biggest bell about as wide as a Clawd.
             for j in 0..<3 {
                 let ph = (t * 0.02 + Double(j) * 0.33).truncatingRemainder(dividingBy: 1)
-                let x = Int(noise(j + 720) * Double(c.w)) + Int(sin(t * 0.4 + Double(j)) * Double(10 * s))
-                let y = f.floor - Int(ph * Double(f.floor + 20 * s)) + 10 * s
-                let pulse = 0.85 + 0.15 * sin(t * 2.4 + Double(j))
-                let r = Int(Double(5 * s) * pulse)
-                for k in 0..<4 {
-                    for i in 0..<(10 * s) {
-                        c.px(x - r + r * 2 * k / 3 + Int(sin(Double(i) * 0.4 / Double(s) + t * 2 + Double(k)) * Double(s)), y + i,
-                             C(0xF0B0F0, 0.5 * (1 - Double(i) / Double(10 * s))))
+                let x = Int(noise(j + 720) * Double(c.w)) + Int(sin(t * 0.4 + Double(j)) * Double(4 * q))
+                let y = f.floor - Int(ph * Double(f.floor + 30 * q)) + 10 * q
+                let size = [7, 5, 6][j], pulse = 0.88 + 0.12 * sin(t * 2.4 + Double(j))
+                let r = Int(Double(size * q) * pulse), ry = r * 3 / 4, long = size * 3 * q, w = max(1, q / 2)
+                // The tentacles, thin and long, fading as they go.
+                for k in 0..<5 {
+                    for i in 0..<long {
+                        let wob = Int(sin(Double(i) * 0.25 / Double(q) + t * 2 + Double(k)) * Double(q))
+                        c.rect(x - r * 3 / 4 + r * 3 * k / 8 + wob, y + i, w, 1, C(0xF4B8F4, 0.6 * (1 - Double(i) / Double(long))))
                     }
                 }
-                c.ellipse(x, y, r, r * 2 / 3, C(0xD890E8, 0.55)); c.ellipse(x - r / 4, y - r / 4, r / 2, r / 4, C(0xFFE0FF, 0.6))
-                c.rect(x - r, y, 2 * r + 1, max(1, s / 2), C(0xF4C8FA, 0.7))
+                // The frilled arms, shorter and thicker, down the middle.
+                for k in [-1, 1] {
+                    for i in 0..<(r * 3 / 2) {
+                        let wob = Int(sin(Double(i) * 0.3 / Double(q) + t * 1.5 + Double(k)) * Double(q))
+                        c.rect(x + k * r / 4 + wob - q / 2, y + i, q, 1, C(0xE890E0, 0.7 * (1 - Double(i) / Double(r * 2))))
+                    }
+                }
+                // The bell: a dome, paler inside its rim, lit at its crown, its rim scalloped and bright.
+                for dy in -ry...0 {
+                    let half = Int((Double(r) * (1 - Double(dy * dy) / Double(ry * ry)).squareRoot()).rounded())
+                    c.rect(x - half, y + dy, 2 * half + 1, 1, C(0xD890E8, 0.72))
+                    if half > q { c.rect(x - half + q, y + dy, 2 * (half - q) + 1, 1, C(0xF0B8F8, 0.3)) }
+                }
+                c.ellipse(x - r / 3, y - ry / 2, max(1, r / 3), max(1, ry / 5), C(0xFFE8FF, 0.8))
+                for k in 0..<5 { c.ellipse(x - r + r * k / 2, y + q / 2, max(1, r / 5), max(1, q / 2 + 1), C(0xF8D0FC, 0.8)) }
             }
         }
         // Bubbles: each vent lets a string of them go, wobbling up and growing a little.
@@ -482,8 +538,8 @@ extension Scenes {
             c.circle(mx, my, mr * 2, C(0xD8E0B0, 0.06)); c.circle(mx, my, mr, C(0xC8D0A4))
             c.circle(mx + mr / 3, my + mr / 4, mr * 3 / 4, C(0xB4BC92)); c.circle(mx - mr / 3, my - mr / 3, mr / 4, C(0xA0A884))
         }
-        // The volcano's glow reddening the air round its top.
-        for (k, a) in [(5, 0.06), (3, 0.08), (2, 0.10)] { c.circle(f.crater.x, f.crater.y, k * 10 * q, C(0xE0602A, a)) }
+        // The volcano's glow reddening the air round its top, strongest at the crater and fading smoothly out.
+        eterniaPlaces6Glow(c, f.crater.x, f.crater.y, 54 * q, C(0xE0602A), peak: 0.34)
         // Ash across the sky in long bands, lit dull orange underneath.
         let banks: [(x: Int, y: Int, len: Int)] = tall
             ? [(30, 12, 36), (66, 22, 40), (6, 34, 30), (44, 46, 34), (80, 56, 26), (14, 64, 30)]
@@ -712,51 +768,38 @@ extension Scenes {
         return (q, base, c.w / 2 - 60 * q, base - 56 * q)
     }
 
-    /// The gold idol of Shokoti: a seated priestess in a headdress striped black and gold, its lappets falling to her
-    /// shoulders and a cobra rearing from its crown, a stern face under a heavy brow, a black and gold collar, arms
-    /// crossed, legs folded on a plinth. `E` marks the eyes, which glow in the moving layer.
-    static let eterniaShokotiIdol = [
-        "..........R..........",
-        ".........RRR.........",
-        "......DGGGRGGGD......",
-        ".....DGLLLLLLLGD.....",
-        "....DGLLLLLLLLLGD....",
-        "....DHHBBBBBBBHHD....",
-        "...DGGHFFFFFFFHGGD...",
-        "...DHHHFEEFEEFHHHD...",
-        "...DGGHFFFNFFFHGGD...",
-        "..DHHHHFFFFFFFHHHHD..",
-        "..DGGGHFFMMMFFHGGGD..",
-        "..DHHHHHFFFFFHHHHHD..",
-        ".DGGGGHHHFFFHHHGGGGD.",
-        ".DHHHHDKKKKKKKDHHHHD.",
-        ".DGLLLGLLLLLLLGLLLGD.",
-        "DGLLDDGGGGGGGGGDDLLGD",
-        "DGLLGGDDDDDDDDDGGLLGD",
-        "DGGLLLLLLLLLLLLLLLGGD",
-        "DGGGGGGGGGGGGGGGGGGGD",
-        "DDDDDDDDDDDDDDDDDDDDD",
-    ]
-    /// Where the idol sits on the temple's canvas.
-    static let eterniaShokotiIdolAt = (x: 50, y: 0)
+    /// The idol's eyes, in temple units: the left end of each, two units wide. They glow in the moving layer.
+    private static let eterniaShokotiIdolEyes: [(x: Int, y: Int)] = [(57, 8), (62, 8)]
     /// The braziers either side of the idol, in temple units: the middle of each bowl's rim.
     private static let eterniaTempleBraziers: [(x: Int, y: Int)] = [(40, 16), (80, 16)]
 
+    /// The stelae out on the sand either side, and the braziers on tall stands beside them: each stela's middle
+    /// (`x`), the middle of its brazier's bowl (`bowl`), and the foot they stand on (`foot`).
+    private static func eterniaTempleStelae(_ c: PixelCanvas, _ g: Int) -> [(x: Int, bowl: (x: Int, y: Int), foot: Int)] {
+        let f = eterniaTempleFrame(c, g), q = f.q, foot = f.base + 2 * q
+        return [(0.7, true), (0.3, false)].map { p in
+            let x = eterniaPlaces6Side(c, f.x, q, p.0, left: p.1), bx = x + (p.1 ? 10 : -10) * q
+            return (x, (bx, foot - 28 * q), foot)
+        }
+    }
+
     /// The Temple of Shokoti: a desert at dusk, the sun just gone down behind the temple and the sky banded from
-    /// violet down to amber, wisps of rose cloud lit gold under. Far dunes and two little pyramids on the horizon. The
-    /// temple is a stepped pyramid of six tiers of sandstone in shadow against the glow, the treads lit by the sky, a
-    /// carved band of glyphs and serpents round each tier, a stair up its middle between balustrades ending in stone
-    /// snake heads. On its top platform, between two braziers, sits the gold idol of Shokoti in her striped cobra
-    /// hood, catching the last of the light. Obelisks stand either side, a great beast's skull lies half buried in
-    /// the sand on the left, and the crew stands on sand gone mauve in the dusk. On the screen saver the pyramid
-    /// stands three times the size, under the first stars and a thin moon.
+    /// violet down to amber, wisps of rose cloud lit gold under. Far dunes and two little stepped temples on the
+    /// horizon. The temple is a stepped pyramid of six tiers of sandstone in shadow against the glow, the treads lit by
+    /// the sky, a carved band of glyphs and serpents round each tier, a stair up its middle between balustrades, each
+    /// ending at the foot in a stone serpent's head, jaws wide. On its top platform, between two braziers, stands a
+    /// great gold idol of Shokoti herself, arms raised as in her rite: her fan headdress of rays, a ruby on the brow
+    /// band, her long hair and robe inlaid in black under the broad gold collar, catching the last of the light.
+    /// Carved stelae stand either side, crowned with her fan of rays, a brazier on a tall bronze stand beside each, a
+    /// great beast's skull lies half buried in the sand on the left, and the crew stands on sand gone mauve in the
+    /// dusk. On the screen saver the pyramid stands three times the size, under the first stars and a thin moon.
     static func eterniaTemple(_ c: PixelCanvas, _ g: Int) {
         let s = unit(g), f = eterniaTempleFrame(c, g), q = f.q, tall = isTall(c)
         let horizon = f.base - (tall ? 14 : 5) * q
         c.gradient(0, horizon, C(tall ? 0x0E0A28 : 0x4A2C5E), C(0xF2A458), bands: tall ? 14 : 7)
         c.rect(0, horizon, c.w, f.base - horizon, C(0xF2A458))
-        // The glow where the sun went down, behind the pyramid.
-        for (k, a) in [(60, 0.08), (40, 0.12), (24, 0.18)] { c.circle(c.w / 2, horizon, k * q, C(0xFFD890, a)) }
+        // The glow where the sun went down, behind the pyramid, soft all the way out.
+        eterniaPlaces6Glow(c, c.w / 2, horizon, 62 * q, C(0xFFD890), peak: 0.34)
         if tall {
             // The first stars, and a thin moon high on the right.
             c.stars(0, horizon * 45 / 100, density: 45, seed: 53)
@@ -774,10 +817,14 @@ extension Scenes {
             c.rect(x, y, len, th, C(0xB06A86)); c.rect(x + len / 6, y - th, len / 2, th, C(0x8A5278))
             c.rect(x + len / 5, y + th, len * 3 / 5, th, C(0xF6B870)); c.rect(x + len * (k % 2 + 1) / 4, y + 2 * th, len / 5, th, C(0xFFD8A0, 0.6))
         }
-        // The far dunes, dusky rose, and two little pyramids on the horizon.
+        // The far dunes, dusky rose, and two little stepped temples on the horizon, their tiers lit along the top.
         for (frac, size) in [(0.12, 14), (0.86, 10)] {
-            let px = Int(Double(c.w) * frac), h = size * s * (tall ? 2 : 1)
-            for i in 0..<h { c.rect(px - i, horizon - h + i, 2 * i + 1, 1, i < h / 3 ? C(0xA2647A) : C(0x9A5E74)); c.px(px - i, horizon - h + i, C(0xD08A80)) }
+            let px = Int(Double(c.w) * frac), h = size * s * (tall ? 2 : 1), step = max(1, h / 4)
+            for i in 0..<h {
+                let half = (i / step + 1) * step * 5 / 4
+                c.rect(px - half, horizon - h + i, 2 * half + 1, 1, i < h / 3 ? C(0xA2647A) : C(0x9A5E74))
+                if i % step == 0 { c.rect(px - half, horizon - h + i, 2 * half + 1, max(1, s), C(0xD08A80)) }
+            }
         }
         c.dunes(base: horizon + s, amp: Double(3 * s), freq: 0.03 / Double(s), phase: 0.4, bottom: f.base, C(0x9A5E6E), shade: C(0xD08A7A))
         c.dunes(base: horizon + (tall ? 8 : 3) * s, amp: Double(2 * s), freq: 0.06 / Double(s), phase: 2.2, bottom: f.base,
@@ -794,11 +841,14 @@ extension Scenes {
             let x = k * 10 * q + Int(noise(k + 950) * Double(6 * q)), y = f.base + q + Int(noise(k + 951) * Double(max(1, g - f.base - 2 * q)))
             c.rect(x, y, 4 * q, max(1, q / 2), C(0x7E5862))
         }
-        // The obelisks either side, and the beast's skull half buried on the left.
-        for (frac, left) in [(0.7, true), (0.3, false)] {
-            let ob = PixelCanvas(12, 46)
-            eterniaObelisk(ob)
-            eterniaPlaces6Blit(c, ob, eterniaPlaces6Side(c, f.x, q, frac, left: left) - 6 * q, f.base + 2 * q - 46 * q, q)
+        // The stelae either side, a brazier on its tall stand beside each, and the beast's skull half buried on the left.
+        for (i, st) in eterniaTempleStelae(c, g).enumerated() {
+            let stela = PixelCanvas(16, 46)
+            eterniaStela(stela, seed: i)
+            eterniaPlaces6Blit(c, stela, st.x - 8 * q - q / 2, st.foot - 46 * q, q)
+            let stand = PixelCanvas(9, 29)
+            eterniaBrazierStand(stand)
+            eterniaPlaces6Blit(c, stand, st.bowl.x - 4 * q, st.foot - 29 * q, q)
         }
         let skull = PixelCanvas(30, 14)
         eterniaSandSkull(skull)
@@ -811,41 +861,158 @@ extension Scenes {
         c.ground(g, C(0x4E3644), edge: C(0x6E5058), speck: C(0x42303A), seed: 47)
     }
 
-    /// An obelisk, one pixel to a unit on a 12×46 canvas, its foot on row 45: a tapering shaft of sandstone in shadow,
-    /// lit down its left edge by the glow, glyphs cut down its face, a pyramidion of gold on top.
-    private static func eterniaObelisk(_ a: PixelCanvas) {
-        let face = C(0x6A4448), faceD = C(0x4E3038), rim = C(0xE09A78), gold = C(0xE0B040), goldL = C(0xFFE08A)
-        for y in 6..<46 {
-            let half = 3 + (y - 6) / 14
-            a.rect(6 - half, y, half * 2, 1, face); a.px(6 - half, y, rim); a.px(5 + half, y, faceD)
+    /// A stela of Shokoti's cult, one pixel to a unit on a 16×46 canvas, its foot on row 45: a slab of sandstone in
+    /// shadow, lit down its left edge by the glow, crowned with her fan of rays carved in the stone, their tips inlaid
+    /// gold, round a gold half-sun with a ruby in it; down its face, between carved bands, the same rising sun cut
+    /// small, its rays fanning up, on a stepped base. `seed` changes the carving a little.
+    private static func eterniaStela(_ a: PixelCanvas, seed: Int) {
+        let face = C(0x6A4448), faceD = C(0x4E3038), faceL = C(0x8A5E5C), rim = C(0xE09A78)
+        let gold = C(0xE0B040), goldL = C(0xFFE08A), goldD = C(0x9A7020)
+        /// A fan of rays rising from (`cx`, `cy`): `n` to a half turn, a solid hub out to `hub`, rays out to `reach`.
+        func fan(_ cx: Double, _ cy: Double, n: Double, hub: Double, reach: Double, _ paint: (Int, Int, Double, Double) -> Px?) {
+            for y in Int(cy - reach - 1)...Int(cy) {
+                for x in Int(cx - reach - 1)...Int(cx + reach + 1) {
+                    let dx = Double(x) + 0.5 - cx, dy = Double(y) + 0.5 - cy
+                    guard dy <= 0.5 else { continue }
+                    let d = (dx * dx + dy * dy).squareRoot(), ph = frac((atan2(dy, dx) + .pi) / (.pi / n))
+                    guard d <= hub || (ph > 0.25 && ph < 0.75 && d <= reach) else { continue }
+                    if let col = paint(x, y, dx, d) { a.px(x, y, col) }
+                }
+            }
         }
-        for y in 0..<6 { a.rect(6 - y / 2 - 1, y, y + 2, 1, y < 2 ? goldL : gold); a.px(6 + y / 2, y, C(0x9A7020)) }
-        for (i, y) in stride(from: 10, to: 40, by: 4).enumerated() {
-            a.pattern(4, y, i % 2 == 0 ? ["G.G", ".G.", "G.G"] : ["GGG", "G..", "GGG"], ["G": faceD])
+        // The crown: long rays of lit stone, tipped gold, out of a gold half-sun with the ruby at its heart.
+        fan(8.5, 12.5, n: 7, hub: 3.4, reach: 8) { _, _, dx, d in
+            d <= 3.4 ? (dx < 0 ? goldL : gold) : d > 6.2 ? (dx < 0 ? goldL : gold) : dx < 0 ? faceL : face
         }
-        a.rect(1, 43, 10, 3, faceD); a.rect(1, 43, 10, 1, C(0x8A5E5C))
+        a.px(8, 11, C(0xC8203A)); a.px(8, 10, C(0xFF7A8A)); a.px(10, 12, goldD)
+        // The slab.
+        for y in 13..<42 {
+            a.rect(3, y, 11, 1, face); a.px(3, y, rim); a.px(4, y, faceL); a.px(13, y, faceD)
+        }
+        // Carved bands, and between them the rising sun cut small, its rays fanning up, a fleck of gold at its heart.
+        for y in [14, 25, 36] { a.rect(4, y, 9, 1, faceD); a.rect(4, y + 1, 9, 1, faceL) }
+        for (i, y0) in [23, 34].enumerated() {
+            let y = y0 + (seed % 2 == 0 ? 0 : (i == 0 ? 0 : -1))
+            a.rect(6, y, 5, 1, faceD); a.rect(6, y - 1, 5, 1, faceD); a.rect(7, y - 2, 3, 1, faceD)
+            for deg in [22.0, 56, 90, 124, 158] {
+                let ang = deg * .pi / 180
+                for r in stride(from: 3.2, through: deg == 90 ? 6.2 : 4.8, by: 0.5) {
+                    a.px(8 + Int((cos(ang) * r).rounded()), y - Int((sin(ang) * r).rounded()), faceD)
+                }
+            }
+            a.px(8, y - 1, gold); a.px(8, y, goldD)
+        }
+        // The stepped base.
+        a.rect(2, 42, 13, 2, faceD); a.rect(2, 42, 13, 1, faceL); a.px(2, 42, rim)
+        a.rect(1, 44, 15, 2, faceD); a.rect(1, 44, 15, 1, C(0x7A5052)); a.px(1, 44, rim)
+    }
+
+    /// A brazier on a tall bronze stand, one pixel to a unit on a 9×29 canvas, its foot on row 28: a wide bowl lit
+    /// along its rim, a slender stem with a knot in it, and three splayed feet. The fire burns in the moving layer.
+    private static func eterniaBrazierStand(_ a: PixelCanvas) {
+        let b = C(0x9A7038), bL = C(0xE0A860), bD = C(0x5A3E20)
+        a.pattern(0, 1, ["BBBBBBBBB", ".BBBBBBB.", "..BBBBB..", "...DBD..."], ["B": b, "D": bD])
+        a.rect(0, 1, 4, 1, bL); a.px(1, 2, bL)
+        a.rect(0, 0, 9, 1, C(0x3A1A0E))   // the coals
+        for y in 5..<24 { a.px(4, y, y % 6 == 0 ? bL : b); a.px(5, y, bD) }
+        a.rect(3, 13, 3, 2, b); a.px(3, 13, bL)
+        a.pattern(0, 24, ["...BBB...", "..B.B.B..", ".B..B..B.", "B...B...D", "B...B...D"], ["B": b, "D": bD])
     }
 
     /// A great beast's skull half buried in the sand, one pixel to a unit on a 30×14 canvas: bleached bone gone pink in
-    /// the dusk, a dark socket, a row of teeth and a horn curling back.
+    /// the dusk, a deep round socket under a heavy brow, a long snout with a nostril, a row of teeth and a horn curling
+    /// back.
     private static func eterniaSandSkull(_ a: PixelCanvas) {
         a.pattern(0, 0, [
             "...................hh.........",
             ".................hhH..........",
             "...............hhH............",
             "..........BBBBBhH.............",
-            ".......BBBBBBBBBBBB...........",
-            ".....BBBBKKBBBBBBBBBB.........",
-            "...BBBBBKKKKBBBBBBBBBBB.......",
-            "..BBBBBBBKKBBBBBBBBBBBBBB.....",
-            ".BBBBBBBBBBBBBBBBBBBBBBBBBB...",
+            ".......BBLLLLBBBBBB...........",
+            ".....BBBDKKKDBBBBBBBB.........",
+            "...BBBBBKKKKKBBBBBBBBBB.......",
+            "..BBBBBBDKKKDBBBBBBBBBBBB.....",
+            ".BBNBBBBBBBBBBBBBBBBBBBBBBB...",
             "BBBBBBBBBBBBBBBBBBBBBBBBBBBBB.",
             "BTTTBTTTBTTTBBBBBBBBBBBBBBBBBB",
             "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
             "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
             "SSSSSSSSSSSSSSSSSSSSSSSSSSSSSS",
-        ], ["B": C(0xD4B0A8), "K": C(0x2A1820), "T": C(0xF0D8C8), "h": C(0xC09888), "H": C(0x8A6A64), "S": C(0x6A4652)])
-        for x in 2..<26 { a.px(x, 9 - (x > 12 ? 1 : 0) - (x > 20 ? 1 : 0), C(0xE8CCC0)) }
+        ], ["B": C(0xD4B0A8), "L": C(0xF0D8C8), "D": C(0x7A5458), "K": C(0x2A1820), "N": C(0x5A3A40),
+            "T": C(0xF0D8C8), "h": C(0xC09888), "H": C(0x8A6A64), "S": C(0x6A4652)])
+        for x in 13..<26 { a.px(x, 9 - (x > 20 ? 1 : 0), C(0xE8CCC0)) }
+    }
+
+    /// The idol of Shokoti, gold, standing on its plinth on the temple's top platform (rows 0 to 19, centred on 60):
+    /// her fan headdress spreading wide behind her head, a burst of long gold rays lit white-gold at their tips out of
+    /// a solid gold half-disc, a gold band across her brow with the ruby in it; a stern gold face, the eyes deep (they
+    /// glow in the moving layer); her long hair down either side and her robe inlaid in black, a broad beaded gold
+    /// collar over her shoulders and a gold panel down the robe's front; both arms raised high in her rite, black
+    /// sleeves to gold cuffs, her gold hands open to the sky.
+    private static func eterniaShokotiIdol(_ c: PixelCanvas) {
+        let gold = [C(0x5A3A10), C(0x8A5A18), C(0xB88428), C(0xE0B040), C(0xF6D870), C(0xFFF0B0)]
+        let onyx = C(0x16121C), onyxL = C(0x3E3448), ruby = C(0xD0203A), rubyL = C(0xFF8090)
+        // The fan of rays, half as wide again as it is tall, so it spreads out past her hair either side.
+        let cx = 60.5, cy = 10.0
+        for y in 0...10 {
+            for x in 44...76 {
+                let dx = (Double(x) + 0.5 - cx) / 1.35, dy = Double(y) + 0.5 - cy
+                guard dy <= 0.5 else { continue }
+                let d = (dx * dx + dy * dy).squareRoot()
+                let ph = frac((atan2(dy, dx) + .pi) / (.pi / 11))
+                let ray = ph > 0.22 && ph < 0.78
+                if d <= 6.2 {
+                    c.px(x, y, d > 5.2 ? gold[2] : dx < 0 ? gold[3] : gold[2])
+                } else if ray && d <= 10.6 {
+                    c.px(x, y, d > 9.0 ? gold[5] : dx < 0 ? gold[4] : gold[3])
+                }
+            }
+        }
+        // The arms, raised high out to either side: black sleeves, gold cuffs, gold hands open to the sky.
+        /// A pixel on her left (lit) and its mirror on her right (in shade).
+        func both(_ x: Int, _ y: Int, _ l: Px, _ r: Px) { c.px(x, y, l); c.px(120 - x, y, r) }
+        for k in 0...8 {
+            let x = 54 - 10 * k / 8, y = 14 - 9 * k / 8
+            for (dx, dy) in [(0, 0), (1, 0), (0, 1), (1, 1)] { both(x + dx, y + dy, onyx, onyx) }
+            if k % 2 == 0 { both(x, y, onyxL, onyx) }
+        }
+        both(43, 6, gold[4], gold[3]); both(44, 6, gold[3], gold[2])
+        for y in 3...5 { both(43, y, gold[4], gold[3]); both(44, y, gold[3], gold[2]) }
+        both(42, 5, gold[4], gold[2])                                   // the thumbs
+        both(43, 2, gold[5], gold[4]); both(44, 2, gold[4], gold[3])    // the fingertips
+        // Her long hair, black, down either side of the face to the collar, in strands; and over the crown.
+        c.rect(57, 4, 7, 1, onyx); c.rect(56, 5, 9, 1, onyx)
+        for x in [54, 55, 65, 66] {
+            for y in 6...14 { c.px(x, y, (x == 55 || x == 66) && y % 3 == 1 ? onyxL : onyx) }
+        }
+        c.px(58, 4, onyxL); c.px(61, 5, onyxL)
+        // The gold band across her brow, the ruby in it.
+        c.rect(55, 6, 11, 1, gold[4]); c.px(55, 6, gold[5]); c.px(65, 6, gold[2])
+        c.px(60, 6, ruby); c.px(60, 5, rubyL)
+        // The face: gold, lit from the left, deep eyes under gold lids, a stern straight mouth.
+        for y in 7...11 {
+            let l = y == 11 ? 57 : 56, r = y == 11 ? 63 : 64
+            for x in l...r { c.px(x, y, x < 59 ? gold[4] : x < 62 ? gold[3] : gold[2]) }
+        }
+        c.px(56, 7, gold[5])
+        for e in eterniaShokotiIdolEyes {
+            c.rect(e.x, e.y, 2, 1, C(0x2A1606)); c.rect(e.x - (e.x < 60 ? 1 : 0), e.y - 1, 3, 1, gold[1])
+        }
+        c.px(60, 9, gold[2]); c.rect(59, 10, 3, 1, gold[1])
+        // The broad gold collar over her shoulders, a row of beads round it.
+        c.rect(56, 12, 9, 1, gold[4]); c.rect(54, 13, 13, 1, gold[3]); c.rect(53, 14, 15, 1, gold[2])
+        for x in stride(from: 54, through: 66, by: 2) { c.px(x, 13, gold[5]) }
+        c.px(53, 14, gold[4]); c.rect(56, 12, 2, 1, gold[5])
+        // The robe, black, flaring to her feet, a gold panel down its front, folds lit either side.
+        for y in 15...17 {
+            let l = 54 - (y - 15), r = 66 + (y - 15)
+            c.rect(l, y, r - l + 1, 1, onyx); c.px(l, y, onyxL)
+            c.px(57, y, onyxL); c.px(63, y, onyxL)
+            c.rect(59, y, 3, 1, y % 2 == 0 ? gold[3] : gold[2]); c.px(59, y, gold[4])
+        }
+        // The plinth.
+        c.rect(49, 18, 23, 2, gold[2]); c.rect(49, 18, 23, 1, gold[5]); c.rect(71, 18, 1, 2, gold[0])
+        for x in stride(from: 52, through: 68, by: 4) { c.px(x, 19, gold[1]) }
     }
 
     /// The temple itself, one pixel to a unit on a 120×56 canvas, its foot on row 55: six tiers of sandstone, the
@@ -887,34 +1054,49 @@ extension Scenes {
         }
         c.rect(51, 20, 2, 36, tone[3]); c.rect(51, 20, 1, 36, tone[5])
         c.rect(68, 20, 2, 36, tone[1]); c.rect(69, 20, 1, 36, tone[0])
-        // A stone snake's head at the foot of each balustrade, jaws open.
-        let snake: [Character: Px] = ["S": tone[4], "s": tone[2], "K": C(0x140A10), "F": C(0xE8D0B0), "L": tone[5]]
-        c.pattern(44, 49, ["..LSSSS", ".LSSSSS", "LSKSSSs", "SSSSSSs", "FKKKKSs", "SSSSSSs", ".sssss."], snake)
-        c.pattern(69, 49, ["SSSSL..", "SSSSSL.", "sSSSKSL", "sSSSSSS", "sSKKKKF", "sSSSSSS", ".sssss."], snake)
+        // A stone serpent's head at the foot of each balustrade, rearing out sideways in profile: a long wedge of a
+        // head, a ridge over the eye, jaws gaping on two fangs, a forked tongue out, its neck coming down off the rail.
+        let snake: [Character: Px] = ["S": tone[4], "s": tone[3], "d": C(0x1E121A), "K": C(0x140A10), "F": C(0xF4E4C8),
+                                      "L": tone[5], "E": C(0xF0B040), "T": C(0xD0303A)]
+        let head = [
+            "..........dddd..",
+            "........ddLLSSd.",
+            "......ddLLSSSSSd",
+            "....ddLLSdESSSSd",
+            "..ddLLSSSSSSSSSd",
+            "TdLSSSSSSSSSSSSd",
+            ".TTFKKKKdSSSSSSd",
+            "T..KKKFKdsSSSSSd",
+            "..dsssssssSSSSSd",
+            "....ddsssssSSSSd",
+            "......ddddsssssd",
+        ]
+        c.pattern(36, 45, head, snake)
+        c.pattern(68, 45, head.map { String($0.reversed()) }, snake)
         // The platform on top, the braziers on it: bronze bowls on legs.
         c.rect(34, 19, 53, 1, tone[5])
         for b in eterniaTempleBraziers {
             c.pattern(b.x - 3, b.y, ["BBBBBBB", ".BBBBB.", "..DBD..", ".D...D."], ["B": C(0x9A7038), "D": C(0x5A3E20)])
             c.px(b.x - 3, b.y, C(0xE0A860))
         }
-        // The idol, gold, lit from the left, its hood striped black.
-        let gold = [C(0x5A3A10), C(0x8A5A18), C(0xB88428), C(0xE0B040), C(0xF6D870), C(0xFFF0B0)]
-        let at = eterniaShokotiIdolAt
-        c.pattern(at.x, at.y, eterniaShokotiIdol,
-                  ["D": gold[1], "G": gold[3], "L": gold[4], "H": C(0x1E140C), "F": gold[4], "B": gold[1], "E": C(0x140A04),
-                   "N": gold[2], "M": gold[1], "R": gold[4], "K": C(0x1E140C)])
-        for (r, row) in eterniaShokotiIdol.enumerated() {
-            for (k, ch) in row.enumerated() where ch == "G" {
-                let v = 0.78 - Double(k - 10) / 10 * 0.28 - Double(r) * 0.012
-                c.px(at.x + k, at.y + r, eterniaPlaces6Tone(gold, v, at.x + k, at.y + r, grain: 0.2))
-            }
-        }
-        c.px(at.x + 9, at.y + 3, gold[5]); c.px(at.x + 8, at.y + 4, gold[5]); c.px(at.x + 10, at.y + 0, gold[5])
+        // The idol.
+        eterniaShokotiIdol(c)
+    }
+
+    /// A brazier's fire, its bowl's rim middle at (`x`, `y`): flames flickering up out of it, a glow round them.
+    private static func eterniaTempleFire(_ c: PixelCanvas, _ x: Int, _ y: Int, _ q: Int, _ t: Double, seed: Int) {
+        let flick = noise(Int(t * 8) * 5 + seed * 17)
+        let h = (3 + Int(flick * 2.5)) * q
+        c.circle(x + q / 2, y - h / 2, h, C(0xFFA040, 0.12))
+        c.rect(x - 2 * q, y - h / 2, 5 * q, h / 2, C(0xE0601A))
+        c.rect(x - q, y - h, 3 * q, h, C(0xF09A30))
+        c.rect(x, y - h + q, q, h - q, C(0xFFE08A))
+        c.rect(x + (flick > 0.5 ? q : -q), y - h - q, q, q, C(0xF09A30))
     }
 
     /// Shokoti's life: heat still shimmering off the sand in wavering streaks of light, the braziers' flames
-    /// flickering, and the idol's eyes glowing gold for a few seconds, going dark, glowing again. On the screen saver
-    /// a shooting star now and then.
+    /// flickering on the platform and on their stands, and the idol's eyes glowing gold for a few seconds, going dark,
+    /// glowing again. On the screen saver a shooting star now and then.
     static func eterniaTempleLife(_ c: PixelCanvas, _ g: Int, _ t: Double) {
         let s = unit(g), f = eterniaTempleFrame(c, g), q = f.q, tall = isTall(c)
         let horizon = f.base - (tall ? 14 : 5) * q
@@ -927,25 +1109,20 @@ extension Scenes {
             c.rect(x, y, len, max(1, q / 2), C(0xFFE0B0, a))
             c.rect(x + len / 4 + Int(sin(t * 2.6 + Double(k)) * Double(2 * q)), y - max(1, q / 2) - q / 2, len / 2, max(1, q / 2), C(0xFFE0B0, a * 0.7))
         }
-        // The braziers' flames.
+        // The braziers' flames, on the platform and on the stands.
         for (i, b) in eterniaTempleBraziers.enumerated() {
-            let x = f.x + b.x * q, y = f.y + b.y * q
-            let flick = noise(Int(t * 8) * 5 + i * 17)
-            let h = (3 + Int(flick * 2.5)) * q
-            c.circle(x + q / 2, y - h / 2, h, C(0xFFA040, 0.12))
-            c.rect(x - 2 * q, y - h / 2, 5 * q, h / 2, C(0xE0601A))
-            c.rect(x - q, y - h, 3 * q, h, C(0xF09A30))
-            c.rect(x, y - h + q, q, h - q, C(0xFFE08A))
-            c.rect(x + (flick > 0.5 ? q : -q), y - h - q, q, q, C(0xF09A30))
+            eterniaTempleFire(c, f.x + b.x * q, f.y + b.y * q, q, t, seed: i)
+        }
+        for (i, st) in eterniaTempleStelae(c, g).enumerated() {
+            eterniaTempleFire(c, st.bowl.x, st.bowl.y + q, q, t, seed: i + 2)
         }
         // The idol's eyes.
         if t.truncatingRemainder(dividingBy: 5.0) < 3.2 {
-            let at = eterniaShokotiIdolAt
             let pulse = 0.6 + 0.4 * sin(t * 4)
-            for ex in [at.x + 8, at.x + 11] {
-                let px = f.x + ex * q + q, py = f.y + (at.y + 7) * q + q / 2
+            for e in eterniaShokotiIdolEyes {
+                let px = f.x + e.x * q + q, py = f.y + e.y * q + q / 2
                 c.circle(px, py, 4 * q, C(0xFFD040, 0.10 * pulse)); c.circle(px, py, 2 * q, C(0xFFE070, 0.22 * pulse))
-                c.rect(f.x + ex * q, f.y + (at.y + 7) * q, 2 * q, q, C(0xFFF4B0))
+                c.rect(f.x + e.x * q, f.y + e.y * q, 2 * q, q, C(0xFFF4B0))
             }
         }
         // A shooting star, now and then, on the screen saver.

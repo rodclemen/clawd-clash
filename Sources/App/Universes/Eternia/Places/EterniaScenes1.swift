@@ -203,12 +203,6 @@ extension Scenes {
         // Cracks across the dome.
         for (x, y) in [(51, 14), (52, 15), (52, 16), (53, 17), (53, 18), (52, 19), (68, 16), (67, 17), (67, 18), (66, 19),
                        (66, 20), (74, 22), (75, 23), (44, 21), (43, 22)] { c.px(x, y, tone[1]) }
-        // The brow: a heavy ridge lit along the top, its shadow under it.
-        // It arches over each socket and dips to a point over the nose.
-        for x in 38...81 {
-            let d = min(abs(x - 48), abs(x - 71)), y = 27 - (d < 8 ? 1 : 0) + (abs(Double(x) - 59.5) < 3 ? 1 : 0)
-            c.px(x, y - 1, tone[5]); c.px(x, y, tone[4]); c.px(x, y + 1, tone[3]); c.rect(x, y + 2, 1, 2, tone[1])
-        }
         // The sockets: big and dark, frowning, their inner ends pulled down by the brow, a lit rim under each.
         for (cx, dir) in [(48, 1), (71, -1)] {
             for y in 29...39 {
@@ -220,6 +214,22 @@ extension Scenes {
                 }
             }
             c.rect(cx - 5, 40, 11, 1, tone[4]); c.rect(cx - 3, 41, 7, 1, tone[3])
+        }
+        // The brow: a heavy ridge jutting out over the sockets, four rows thick, a dark groove above it cutting it off
+        // the dome, its top lit by the sunset and its underside casting a shadow into the sockets where it overhangs.
+        // It arches over each socket and dips to a point over the nose, the bridge between the sockets left in stone.
+        for x in 37...82 {
+            let d = Double(min(abs(x - 48), abs(x - 71)))
+            let bottom = min(31, 29 + Int((d * d / 40).rounded()))
+            let lit = Double(x) < 59.5, overSocket = abs(x - 48) <= 8 || abs(x - 71) <= 8
+            func put(_ y: Int, _ col: Px) { if inside(x, y) { c.px(x, y, col) } }
+            put(bottom - 5, tone[1])
+            put(bottom - 4, lit ? tone[5] : tone[4])
+            put(bottom - 3, lit ? tone[5] : tone[4])
+            put(bottom - 2, lit ? tone[4] : tone[3])
+            put(bottom - 1, lit ? tone[3] : tone[2])
+            put(bottom, overSocket ? deep : tone[1])
+            if !inside(x - 1, bottom - 4) && x < 60 { put(bottom - 4, rim) }
         }
         // The nose: an upturned heart, dark, lit down its right edge.
         c.pattern(56, 37, [
