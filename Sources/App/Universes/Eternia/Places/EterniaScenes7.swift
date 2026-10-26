@@ -39,6 +39,19 @@ extension Scenes {
         min(1, pow(max(0, sin(.pi * k)), 0.7) * pow(max(0, 1 - k), 0.5) * 1.6)
     }
 
+    /// Mystacor's onion domes, the same way: a waist a little narrower than the widest at the foot, swelling to the
+    /// widest a quarter of the way up, then curving in smoothly (no straight sides) and drawn up into a fine point.
+    private static func eterniaPlaces7Bulb(_ k: Double) -> Double {
+        if k < 0.28 { return 0.74 + 0.26 * sin(k / 0.28 * .pi / 2) }
+        return pow(cos((k - 0.28) / 0.72 * .pi / 2), 1.5)
+    }
+
+    /// The first row of `art` with anything drawn on it.
+    private static func eterniaPlaces7Top(_ art: PixelCanvas) -> Int {
+        for y in 0..<art.h { for x in 0..<art.w where art.buf[(y * art.w + x) * 4 + 3] > 0 { return y } }
+        return 0
+    }
+
     /// A little four-pointed twinkle at (x, y), arms `r` long and `t` thick.
     private static func eterniaPlaces7Twinkle(_ c: PixelCanvas, _ x: Int, _ y: Int, _ r: Int, _ t: Int, _ col: Px) {
         c.rect(x - r, y, 2 * r + t, t, col); c.rect(x, y - r, t, 2 * r + t, col)
@@ -177,8 +190,8 @@ extension Scenes {
             }
         }
         /// A pointed cone of rose slate over a tower, `hw` wide at its foot on `base`, `h` tall, lit from the left,
-        /// banded, a crystal at its tip.
-        func cone(_ cx: Int, _ hw: Int, _ base: Int, _ h: Int) {
+        /// banded, a crystal at its tip (or, with `tip` off, just a gold point, for the Moonstone to float over).
+        func cone(_ cx: Int, _ hw: Int, _ base: Int, _ h: Int, tip: Bool = true) {
             for y in (base - h)..<base {
                 let half = (hw + 1) * (y - base + h + 1) / h
                 for x in (cx - half)...(cx + half) {
@@ -190,7 +203,8 @@ extension Scenes {
                 c.px(cx - half, y, roof[4])
             }
             c.rect(cx - hw - 1, base - 1, 2 * hw + 3, 1, roof[0])
-            c.px(cx, base - h - 1, gold); c.px(cx, base - h - 2, C(0xFFB0DC)); c.px(cx, base - h - 3, C(0xFFE4F2))
+            c.px(cx, base - h - 1, gold)
+            if tip { c.px(cx, base - h - 2, C(0xFFB0DC)); c.px(cx, base - h - 3, C(0xFFE4F2)) }
         }
         /// An onion dome over a tower: bulging past it, pinched to a spike, a crystal on top.
         func onion(_ cx: Int, _ hw: Int, _ base: Int) {
@@ -219,14 +233,6 @@ extension Scenes {
             c.px(x, lip, C(0x9A86B0))
         }
         for k in 0..<4 { c.rect(53 - k * 2, 52 + k, 15 + k * 4, 1, k % 2 == 0 ? marble[3] : marble[2]) }
-        // Clusters of rose crystal growing out of the ledge at its ends, lit on their left faces.
-        for (x, hgt, lean) in [(6, 7, -1), (9, 10, 0), (12, 5, 1), (107, 6, -1), (110, 11, 0), (113, 7, 1), (19, 4, 0), (101, 4, 0)] {
-            for y in 0..<hgt {
-                let half = min(1, y / 2), cx = x + lean * (hgt - y) / 4, yy = 52 - hgt + y
-                c.rect(cx - half, yy, half + 1, 1, roof[3]); c.px(cx + half, yy, roof[1])
-                if y == 0 { c.px(cx, yy, roof[4]) }
-            }
-        }
 
         // The outer towers, then the next pair in, the onion-domed pair, and the tall middle one.
         tower(13, 3, 34, windows: [38]); tower(107, 3, 34, windows: [38])
@@ -240,10 +246,10 @@ extension Scenes {
         }
         tower(41, 4, 22, windows: [27, 34]); tower(79, 4, 22, windows: [27, 34])
         onion(41, 4, 22); onion(79, 4, 22)
-        tower(60, 7, 22, windows: [])
-        cone(60, 7, 22, 13)
+        tower(60, 7, 26, windows: [])
+        cone(60, 7, 26, 12, tip: false)
         // Bright Moon's crescent high on the middle tower, in gold, lit along its outer edge.
-        c.pattern(57, 26, [
+        c.pattern(57, 28, [
             "..GGGG.",
             ".GGL...",
             "GGL....",
@@ -251,7 +257,7 @@ extension Scenes {
             ".GGL...",
             "..GGGG.",
         ], ["G": gold, "L": goldD])
-        c.px(58, 27, C(0xFFF0B0)); c.px(57, 28, C(0xFFF0B0)); c.px(57, 29, C(0xFFF0B0))
+        c.px(58, 29, C(0xFFF0B0)); c.px(57, 30, C(0xFFF0B0)); c.px(57, 31, C(0xFFF0B0))
 
         // The great hall across the front: a long block of marble, a balustrade along its top, an arcade of tall
         // arched windows glowing pink-gold, pilasters between them.
@@ -269,21 +275,55 @@ extension Scenes {
         c.rect(56, 44, 9, 9, C(0xFFD8B0)); c.rect(57, 43, 7, 1, C(0xFFD8B0)); c.rect(58, 42, 5, 1, C(0xFFD8B0))
         c.rect(59, 45, 3, 8, glowL)
 
-        // The Moonstone, floating over the middle spire: a long pink crystal, faceted, lit on its left.
-        c.pattern(57, 0, [
-            "...W...",
-            "..WLP..",
-            ".WLLPM.",
-            "WLLPPMD",
-            ".LLPMD.",
-            "..LPD..",
-            "...D...",
-        ], ["W": C(0xFFF4FA), "L": C(0xFFC4E6), "P": C(0xF07ABE), "M": C(0xC04A96), "D": C(0x8A2A6E)])
+        // Clusters of rose crystal growing out of the ledge at its ends, in front of the outer towers: fat prisms
+        // three wide, lit on their left faces, a white point on each, edged in dark plum so they read on the marble.
+        /// One prism: its foot on `base`, `h` tall, its tip leaning `lean` over, drawn as a dark silhouette first and
+        /// the crystal inside it.
+        func prism(_ x: Int, _ base: Int, _ h: Int, _ lean: Int) {
+            for pass in 0..<2 {
+                for r in 0..<h {
+                    let y = base - h + r, cx = x + lean * (h - r) / 5, half = r == 0 ? 0 : 1
+                    if pass == 0 { c.rect(cx - half - 1, y - (r == 0 ? 1 : 0), 2 * half + 3, r == 0 ? 2 : 1, C(0x4A1A40)); continue }
+                    if r == 0 { c.px(cx, y, C(0xFFF4FA)); continue }
+                    let facet = r == h / 3
+                    c.px(cx - 1, y, r == 1 ? C(0xFFF4FA) : roof[3]); c.px(cx, y, facet ? roof[4] : roof[2]); c.px(cx + 1, y, roof[0])
+                }
+            }
+        }
+        for (x, base, h, lean) in [(6, 52, 10, -1), (12, 52, 8, 1), (9, 53, 15, 0), (17, 53, 6, 1),
+                                   (114, 52, 10, 1), (108, 52, 8, -1), (111, 53, 15, 0), (103, 53, 6, -1)] {
+            prism(x, base, h, lean)
+        }
+
+        // The Moonstone, floating over the middle spire: a big pink crystal, faceted and lit on its left, edged in
+        // dark plum so it reads on the night sky and on the moon both, a soft glow round it.
+        c.circle(60, 6, 9, C(0xFFB0DC, 0.2)); c.circle(60, 6, 7, C(0xFFD0EC, 0.22))
+        let stone = [
+            ".....W.....",
+            "....WLP....",
+            "...WLLPM...",
+            "..WLLLPPM..",
+            ".WLLWLPPMM.",
+            "WLLLLPPPMMD",
+            ".LLLLPPMMD.",
+            "..LLLPPMD..",
+            "...LLPMD...",
+            "....LPD....",
+            ".....D.....",
+        ]
+        let grid = stone.map { Array($0) }
+        func filled(_ x: Int, _ y: Int) -> Bool { y >= 0 && y < grid.count && x >= 0 && x < 11 && grid[y][x] != "." }
+        for y in -1...grid.count {
+            for x in -1...11 where !filled(x, y) && (filled(x - 1, y) || filled(x + 1, y) || filled(x, y - 1) || filled(x, y + 1)) {
+                c.px(55 + x, 1 + y, C(0x5A1A4A))
+            }
+        }
+        c.pattern(55, 1, stone, ["W": C(0xFFF4FA), "L": C(0xFFC4E6), "P": C(0xF07ABE), "M": C(0xC04A96), "D": C(0x8A2A6E)])
     }
 
     /// Where the palace's crystals catch the light, in palace units: the Moonstone, the cone tips and finials.
     private static let eterniaBrightMoonGems: [(x: Int, y: Int)] = [
-        (60, 3), (60, 7), (59, 26), (13, 22), (107, 22), (26, 12), (94, 12), (41, 6), (79, 6), (24, 38), (96, 38),
+        (60, 1), (56, 5), (59, 28), (13, 22), (107, 22), (26, 12), (94, 12), (41, 6), (79, 6), (9, 38), (111, 38),
     ]
 
     /// Bright Moon's life: the Moonstone breathing a pink glow, the crystals on the spires twinkling in turn, and the
@@ -291,9 +331,9 @@ extension Scenes {
     static func eterniaBrightMoonLife(_ c: PixelCanvas, _ g: Int, _ t: Double) {
         let f = eterniaBrightMoonFrame(c, g), q = f.q, tall = isTall(c)
         let breath = 0.5 + 0.5 * sin(t * 1.1)
-        let sx = f.x + 60 * q + q / 2, sy = f.y + 3 * q
-        c.circle(sx, sy, Int(Double(5 * q) * (1 + 0.3 * breath)), C(0xFF9AD0, 0.12 + 0.1 * breath))
-        c.circle(sx, sy, 2 * q, C(0xFFD0EC, 0.18 + 0.12 * breath))
+        let sx = f.x + 60 * q + q / 2, sy = f.y + 6 * q
+        c.circle(sx, sy, Int(Double(9 * q) * (1 + 0.3 * breath)), C(0xFF9AD0, 0.12 + 0.1 * breath))
+        c.circle(sx, sy, 4 * q, C(0xFFD0EC, 0.16 + 0.12 * breath))
         for (i, p) in eterniaBrightMoonGems.enumerated() {
             let v = sin(t * 0.8 + Double(i) * 2.1)
             guard v > 0.72 else { continue }
@@ -461,13 +501,22 @@ extension Scenes {
             }
             c.px(cx, top - hh - 1, gold); c.px(cx, top - hh - 2, gold)
         default:
-            let hh = w + 4
+            // An onion: rounded all the way up, lit on its left, a darker rim down the right, a highlight, ribs.
+            let hh = w + 5, widest = Double(w) / 2 + 1.6
             for y in 0..<hh {
-                let k = Double(hh - y) / Double(hh)
-                let b = eterniaPlaces7Onion(k) * Double(w / 2 + 2)
-                let half = Int(b.rounded())
-                for x in (cx - half)...(cx + half) { c.px(x, top - hh + y, vio[x < cx - half / 2 ? 3 : x <= cx + half / 3 ? 2 : 1]) }
+                let k = (Double(hh - y) - 0.5) / Double(hh)
+                let half = Int((eterniaPlaces7Bulb(k) * widest).rounded())
+                for x in (cx - half)...(cx + half) {
+                    let d = Double(x - cx) / Double(max(1, half))
+                    c.px(x, top - hh + y, vio[d < -0.45 ? 3 : d < 0.15 ? 2 : d < 0.65 ? 1 : 0])
+                }
+                if half > 1 { c.px(cx + half, top - hh + y, vio[0]) }
+                // A lit fleck high on the left of the bulb.
+                if half > 2, k > 0.18, k < 0.42 { c.px(cx - half + 1, top - hh + y, C(0xDCC4FF)) }
+                // A rib up the middle of the bigger domes.
+                if w >= 9, half > 1 { c.px(cx, top - hh + y, vio[1]) }
             }
+            c.rect(cx - Int(widest * 0.74), top - 1, 2 * Int(widest * 0.74) + 1, 1, vio[0])
             c.rect(cx, top - hh - 4, 1, 4, gold); c.px(cx, top - hh - 5, C(0xFFF0B0))
         }
     }
@@ -522,12 +571,17 @@ extension Scenes {
     /// the top of Clawdstaspella's tower.
     static func eterniaMystacorLife(_ c: PixelCanvas, _ g: Int, _ t: Double) {
         let f = eterniaMystacorFrame(c, g), q = f.q, tall = isTall(c)
-        // The isles, each drawn small and blown up, bobbing on its own beat.
+        // The isles, each drawn small and blown up, bobbing on its own beat, never so high that the frame's top cuts
+        // off a finial (the window's strip is only just tall enough for them).
         for isle in eterniaMystacorIsles(tall) {
             let k = max(1, q * isle.k / 3)
             let art = eterniaMystacorIsle(seed: isle.seed)
-            let bob = Int((sin(t * 0.7 + Double(isle.seed) * 1.7) * 1.4 * Double(k)).rounded())
-            let x = c.w * isle.x / 100 - 22 * k, y = f.sea * isle.y / 100 + bob
+            let lift = Double(k) * 1.4
+            let bob = Int((sin(t * 0.7 + Double(isle.seed) * 1.7) * lift).rounded())
+            let top = eterniaPlaces7Top(art)
+            let x = c.w * isle.x / 100 - 22 * k
+            let high: Int = Int(lift.rounded(.up)) + 2 - top * k
+            let y: Int = max(f.sea * isle.y / 100, high) + bob
             eterniaPlaces7Blit(c, art, x, y, k, alpha: isle.k < 3 ? 0.9 : 1)
         }
         // The waterfall: pale streaks running down it.
@@ -537,14 +591,18 @@ extension Scenes {
             let x = 11 - (y - 37) / 8 + k % 3
             c.rect(f.x + x * q, f.y + y * q, q, 2 * q, C(0xFFFFFF, 0.7))
         }
-        // Sparks: lilac motes rising from the spire and the windows, fading as they climb.
-        for k in 0..<(tall ? 16 : 8) {
+        // Sparks: magic rising from the spire and the windows, fading as they climb. Each is a little four-pointed
+        // star, its arms a deep, strong violet and its heart white, so it reads on the pale sky and the white towers
+        // both (a plain lilac mote vanished into the periwinkle).
+        for k in 0..<(tall ? 18 : 10) {
             let ph = (t * 0.18 + noise(k * 7 + 900)).truncatingRemainder(dividingBy: 1)
             let ox = Int(noise(k * 7 + 901) * 100) + 10
             let x = f.x + ox * q + Int(sin(t * 1.2 + Double(k)) * Double(2 * q))
-            let y = f.y + (30 - Int(ph * 30)) * q
-            let col = k % 3 == 0 ? C(0xFFF4FF, 0.8 * (1 - ph)) : C(0xC8A0FF, 0.8 * (1 - ph))
-            c.rect(x, y, max(1, q / 2 + 1), max(1, q / 2 + 1), col)
+            let y = f.y + (32 - Int(ph * 34)) * q
+            let a = min(1, 1.6 * (1 - ph)), th = max(1, (q + 1) / 2), r = q + 1 + (k % 3 == 0 ? th : 0)
+            let arm = C(k % 2 == 0 ? 0x8A3CEC : 0xB04ADC, 0.95 * a)
+            c.rect(x - r, y, 2 * r + th, th, arm); c.rect(x, y - r, th, r, arm); c.rect(x, y + th, th, r, arm)
+            c.rect(x, y, th, th, C(0xFFFFFF, a))
         }
         // The hypnotic ring: every six seconds one ripples out from the spire's tip, lilac, fading.
         let ring = t.truncatingRemainder(dividingBy: 6) / 2.4
@@ -553,7 +611,7 @@ extension Scenes {
             for st in 0..<Int(rx * 4) {
                 let ang = Double(st) / (rx * 4) * 2 * .pi
                 c.rect(f.spire.x + Int(cos(ang) * rx), f.spire.y + 2 * q + Int(sin(ang) * ry), max(1, q / 2 + 1), max(1, q / 2 + 1),
-                       C(0xC8A0FF, a))
+                       C(0x9A5AF0, a))
             }
         }
     }

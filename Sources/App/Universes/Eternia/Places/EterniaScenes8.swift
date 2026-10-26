@@ -29,11 +29,21 @@ extension Scenes {
 
 extension Scenes {
     /// Where Castle Chill stands: blown up `q` times (the same rule as Greyskull's), its foot on `base`, its canvas's
-    /// top left at `x`/`y`. The frozen lake between it and the crew is wider on the screen saver.
-    static func eterniaCastleChillFrame(_ c: PixelCanvas, _ g: Int) -> (q: Int, base: Int, x: Int, y: Int) {
+    /// top left at `x`/`y`, `w` units wide. In the window, where it can't be blown up, the canvas is wider (200 units)
+    /// for the outer walls and towers either side, the palace itself `off` units in. The frozen lake between it and
+    /// the crew is wider on the screen saver.
+    static func eterniaCastleChillFrame(_ c: PixelCanvas, _ g: Int) -> (q: Int, base: Int, x: Int, y: Int, w: Int, off: Int) {
         let q = max(1, min(g * 62 / (100 * 56), c.w * 8 / (10 * 120)))
         let base = g - (isTall(c) ? 10 : 5) * q
-        return (q, base, c.w / 2 - 60 * q, base - 56 * q)
+        let w = isTall(c) ? 120 : 200
+        return (q, base, c.w / 2 - w / 2 * q, base - 56 * q, w, (w - 120) / 2)
+    }
+
+    /// Where the aurora's lower hem runs at column `x`: a long slow swell and a shorter one on top, about `at` of
+    /// the way down to the horizon, the swells `amp` pixels high.
+    private static func eterniaChillAuroraHem(_ x: Int, _ s: Int, _ horizon: Int, at: Int, amp: Int) -> Int {
+        let wave = sin(Double(x) * 0.022 / Double(s)) * Double(amp * 10 / 26 * s) + sin(Double(x) * 0.009 + 1.4) * Double(amp * 16 / 26 * s)
+        return horizon * at / 100 + Int(wave)
     }
 
     /// Ice in eight tones, darkest first: the palace's walls sit in the middle ones, so the crew's white outlines and
@@ -53,20 +63,20 @@ extension Scenes {
         let horizon = f.base - (tall ? 24 : 9) * q
         c.gradient(0, f.base, C(0x0A1430), C(0x2E6A84), bands: tall ? 12 : 8)
         c.stars(0, horizon * (tall ? 2 : 1) / 3, density: tall ? 60 : 80, seed: 47)
-        if tall {
-            // The aurora: curtains of green with violet hems, hanging in folds across the top, brightest along their
-            // lower edges the way the real thing is.
-            for x in 0..<c.w {
-                let wave = sin(Double(x) * 0.022 / Double(s)) * Double(10 * s) + sin(Double(x) * 0.009 + 1.4) * Double(16 * s)
-                let low = horizon * 42 / 100 + Int(wave)
-                let len = (34 + Int(noise(x / max(1, 2 * s) + 70) * 22)) * s
-                let fold = 0.6 + 0.4 * sin(Double(x) * 0.15 / Double(s))
-                for y in max(0, low - len)..<low {
-                    let k = Double(y - (low - len)) / Double(len)
-                    c.px(x, y, C(0x6AF0A8).alpha(0.30 * k * k * fold))
-                }
-                for y in low..<(low + 3 * s) { c.px(x, y, C(0xB088F0).alpha(0.30 * fold)) }
+        // The aurora: curtains of green hanging in folds across the sky, streaked with rays, brightest along their
+        // lower edges the way the real thing is, a hem of pale mint and a fringe of violet under it. Towering on the
+        // screen saver; a lower ribbon of it in the window's strip, over the peaks.
+        for x in 0..<c.w {
+            let low = eterniaChillAuroraHem(x, s, horizon, at: tall ? 42 : 34, amp: tall ? 26 : 6)
+            let len = (tall ? 34 + Int(noise(x / max(1, 2 * s) + 70) * 22) : 9 + Int(noise(x / max(1, 2 * s) + 70) * 7)) * s
+            let fold = 0.55 + 0.45 * sin(Double(x) * 0.15 / Double(s))
+            let ray = 0.6 + 0.4 * noise(x / max(1, s) + 90)
+            for y in max(0, low - len)..<max(0, low) {
+                let k = Double(y - (low - len)) / Double(len)
+                c.px(x, y, C(0x6CF8AC).alpha((tall ? 0.62 : 0.5) * pow(k, 1.6) * fold * ray))
             }
+            c.rect(x, low - s, 1, s, C(0xD4FFE6).alpha(0.75 * fold))
+            c.rect(x, low, 1, 2 * s, C(0xB088F0).alpha(0.5 * fold)); c.rect(x, low + 2 * s, 1, s, C(0xB088F0).alpha(0.22 * fold))
         }
         // Far peaks, snow on their tops: a pale range in the haze, a nearer blue one.
         eterniaChillPeaks(c, base: horizon - (tall ? 14 : 4) * s, amp: (tall ? 26 : 9) * s, period: (tall ? 34 : 18) * s, seed: 5,
@@ -77,13 +87,14 @@ extension Scenes {
         // the screen saver.
         let spires: [(x: Int, h: Int, w: Int, lean: Int)] = tall
             ? [(4, 62, 9, 2), (11, 44, 6, -1), (16, 30, 5, 1), (96, 66, 10, -2), (89, 46, 6, 1), (84, 28, 5, -1)]
-            : [(6, 28, 13, 2), (12, 18, 9, -1), (25, 12, 8, 1), (94, 30, 13, -2), (88, 20, 9, 1), (75, 12, 8, -1)]
+            : [(2, 18, 8, 1), (7, 32, 13, 2), (13, 20, 9, -1), (19, 11, 6, 1), (25, 15, 8, 1),
+               (98, 20, 8, -1), (93, 34, 13, -2), (87, 22, 9, 1), (81, 11, 6, -1), (75, 15, 8, -1)]
         for p in spires { eterniaChillPinnacle(c, c.w * p.x / 100, f.base, p.h * q, p.w * q, p.lean * q) }
         // The snowfield the palace stands on, banked up to its foot.
         c.dunes(base: f.base - 2 * q, amp: Double(q), freq: 0.05 / Double(q), phase: 0.8, bottom: f.base, C(0x6A8EB0), shade: C(0xA4C2DC))
 
-        // The palace, blown up to size.
-        let art = PixelCanvas(120, 56)
+        // The palace, blown up to size (with its outer walls in the window).
+        let art = PixelCanvas(f.w, 56)
         eterniaCastleChillArt(art)
         eterniaPlaces8Blit(c, art, f.x, f.y, q)
 
@@ -149,7 +160,10 @@ extension Scenes {
     }
 
     /// Castle Chill itself, one pixel to a unit on a 120×56 canvas, its foot on row 55: the outer towers and curtain
-    /// wall, the two domed towers, and the keep with its crown of shards, gate and snowflake.
+    /// wall, the two domed towers, and the keep with its crown of shards, gate and snowflake. On a wider canvas (the
+    /// window's) the palace stands in the middle and its outer works run on either side: a lower wall with snowy
+    /// merlons and icicles, a slender domed tower and a squat coned one at each end, so the strip isn't palace in the
+    /// middle and bare peaks either side.
     static func eterniaCastleChillArt(_ c: PixelCanvas) {
         let ice = eterniaChillIce
         let snow = C(0xF4FAFF), snowD = C(0xC4D8EC), glow = C(0xA8F0FF), glowL = C(0xE4FCFF), deep = C(0x0C1830)
@@ -226,19 +240,47 @@ extension Scenes {
             }
         }
 
-        // The outer towers, squat, with cones of ice.
-        for (x0, w) in [(2, 10), (108, 10)] {
-            tower(x0, w, 30)
+        /// A squat round tower from `top`, `w` wide from `x0`, under a cone of ice `h` tall, a window in it.
+        func coned(_ x0: Int, _ w: Int, _ top: Int, _ h: Int) {
+            tower(x0, w, top)
             let cx = x0 + w / 2
-            for r in 0..<11 {
-                let half = 1 + r * (w / 2 + 1) / 10
-                c.rect(cx - half, 19 + r, half, 1, ice[6]); c.rect(cx, 19 + r, half + 1, 1, ice[4])
-                if r % 3 == 1 { c.px(cx + half - 1, 19 + r, snow) }
+            for r in 0..<h {
+                let half = 1 + r * (w / 2 + 1) / (h - 1), y = top - h + r
+                c.rect(cx - half, y, half, 1, ice[6]); c.rect(cx, y, half + 1, 1, ice[4])
+                if r % 3 == 1 { c.px(cx + half - 1, y, snow) }
             }
-            c.rect(cx - w / 2 - 1, 30, w + 3, 1, snow); c.px(cx, 18, ice[7]); c.px(cx, 17, ice[7])
-            icicles(x0, x0 + w, 31, seed: x0)
-            window(cx, 38, 5)
+            c.rect(cx - w / 2 - 1, top, w + 3, 1, snow); c.px(cx, top - h - 1, ice[7]); c.px(cx, top - h - 2, ice[7])
+            icicles(x0, x0 + w, top + 1, seed: x0)
+            window(cx, top + 8, 5)
         }
+
+        // The outer works, where the canvas is wide enough for them: a lower wall either side, a slender domed tower
+        // part way along and a squat coned one at each end, then the palace drawn in the middle over them.
+        let off = (c.w - 120) / 2
+        if off > 0 {
+            for (x0, toEnd) in [(2, true), (c.w - 2 - (off + 4), false)] {
+                let ww = off + 4
+                blocks(x0, ww, 40, 2)
+                merlons(x0, x0 + ww, 37, 2)
+                icicles(x0 + 1, x0 + ww, 40, seed: x0 + 51)
+                window(toEnd ? x0 + ww - 12 : x0 + 12, 45, 4)
+                let slim = toEnd ? x0 + 18 : x0 + ww - 18 - 7
+                tower(slim, 7, 28)
+                c.rect(slim - 1, 26, 9, 2, ice[4]); c.rect(slim - 1, 26, 9, 1, ice[6]); merlons(slim - 1, slim + 9, 24, 4, step: 3)
+                icicles(slim, slim + 7, 28, seed: slim)
+                dome(slim + 3, 4, 14, 23)
+                window(slim + 3, 33, 5)
+                coned(toEnd ? x0 + 1 : x0 + ww - 10, 9, 32, 9)
+                for (sx, sw) in [(x0 + 3, 7), (x0 + ww / 2, 6)] {
+                    c.rect(sx, 53, sw, 3, snowD); c.rect(sx + 1, 52, sw - 2, 1, snowD); c.rect(sx + 1, 53, sw - 3, 1, snow)
+                }
+            }
+            c.ox = off
+        }
+        defer { c.ox = 0 }
+
+        // The outer towers, squat, with cones of ice.
+        for (x0, w) in [(2, 10), (108, 10)] { coned(x0, w, 30, 11) }
         // The curtain wall across the front, merlons capped with snow along its walk, icicles under it.
         blocks(10, 100, 36, 3)
         merlons(10, 110, 33, 3)
@@ -297,15 +339,14 @@ extension Scenes {
     /// and on the screen saver the aurora's folds rippling slowly along.
     static func eterniaCastleChillLife(_ c: PixelCanvas, _ g: Int, _ t: Double) {
         let s = unit(g), f = eterniaCastleChillFrame(c, g), q = f.q, tall = isTall(c)
-        if tall {
-            let horizon = f.base - 24 * q
-            for x in stride(from: 0, to: c.w, by: 1) {
-                let ripple = sin(Double(x) * 0.05 / Double(s) - t * 0.5) * 0.5 + 0.5
-                guard ripple > 0.75 else { continue }
-                let wave = sin(Double(x) * 0.022 / Double(s)) * Double(10 * s) + sin(Double(x) * 0.009 + 1.4) * Double(16 * s)
-                let low = horizon * 42 / 100 + Int(wave)
-                c.rect(x, low - 12 * s, 1, 12 * s, C(0x9AFFC8).alpha(0.16 * (ripple - 0.75) / 0.25))
-            }
+        // The aurora's folds brightening as a ripple runs along them.
+        let horizon = f.base - (tall ? 24 : 9) * q
+        for x in 0..<c.w {
+            let ripple = sin(Double(x) * 0.05 / Double(s) - t * 0.5) * 0.5 + 0.5
+            guard ripple > 0.7 else { continue }
+            let low = eterniaChillAuroraHem(x, s, horizon, at: tall ? 42 : 34, amp: tall ? 26 : 6), len = (tall ? 16 : 6) * s
+            let a = (ripple - 0.7) / 0.3
+            c.rect(x, low - len, 1, len, C(0x9AFFC8).alpha(0.3 * a)); c.rect(x, low - s, 1, s, C(0xF0FFF6).alpha(0.5 * a))
         }
         // Snow, falling over the whole scene, the flakes nearer the bottom a touch bigger.
         let n = tall ? 90 : 34
@@ -322,7 +363,7 @@ extension Scenes {
         for (i, p) in points.enumerated() {
             let v = sin(t * 0.8 + Double(i) * 2.1)
             guard v > 0.8 else { continue }
-            let x = f.x + p.x * q + q / 2, y = f.y + p.y * q + q / 2, r = Int(Double(3 * q) * (v - 0.8) / 0.2) + q
+            let x = f.x + (f.off + p.x) * q + q / 2, y = f.y + p.y * q + q / 2, r = Int(Double(3 * q) * (v - 0.8) / 0.2) + q
             c.rect(x - r, y, 2 * r + 1, max(1, q / 2), C(0xFFFFFF, 0.8)); c.rect(x, y - r, max(1, q / 2), 2 * r + 1, C(0xFFFFFF, 0.8))
         }
     }
@@ -465,70 +506,103 @@ extension Scenes {
         for lx in eterniaTownLamps(w, x0) { eterniaTownLamp(u, lx, F) }
     }
 
-    /// The wooded hill behind the town on the screen saver, and the water tower on top of it: four legs braced
-    /// across, a catwalk round the tank, a ladder, a cone roof.
+    /// The hills behind the town on the screen saver, in units: the ridge's top at column `x`. A big wooded hill on
+    /// the left with the water tower on it, a lower one on the right with the radio mast; `tx` and `rx` are their
+    /// middles.
+    private static func eterniaTownRidge(_ x: Int, tx: Int, rx: Int, foot F: Int) -> Int {
+        let d = Double(x - tx) / 95, e = Double(x - rx) / 80
+        let hill = max(30 * max(0, 1 - d * d), 22 * max(0, 1 - e * e))
+        return F - 46 - Int(hill) - Int(noise(x / 4 + 30) * 2)
+    }
+
+    /// Where the hills' landmarks stand, in units: the water tower's middle and the radio mast's.
+    private static func eterniaTownLandmarks(_ x0: Int) -> (tower: Int, mast: Int) { (x0 + 44, x0 + 196) }
+
+    /// The hills behind the town on the screen saver, filling the sky over the rooftops: wooded, houses with lit
+    /// windows up their slopes. On the big one the water tower, tall against the stars (four legs braced across, a
+    /// catwalk round the tank, a ladder, a cone roof), the brightest star (Eternia) beside it; on the lower one a radio
+    /// mast, a lattice tapering up to a red light that blinks in the moving layer.
     private static func eterniaTownHill(_ u: PixelCanvas, x0: Int, foot F: Int) {
-        let tx = x0 + 44
+        let (tx, rx) = eterniaTownLandmarks(x0)
+        let ridge = { (x: Int) in eterniaTownRidge(x, tx: tx, rx: rx, foot: F) }
         for x in 0..<u.w {
-            let d = Double(x - tx) / 90
-            let top = F - 46 - Int(22 * max(0, 1 - d * d)) - Int(noise(x / 4 + 30) * 2)
+            let top = ridge(x)
             u.rect(x, top, 1, F - top, C(0x141C3C)); u.px(x, top, C(0x1E2850))
         }
-        // Trees along the hill's brow, round and dark, lit a little on top by the stars.
+        // Trees along the brow, round and dark, lit a little on top by the stars.
         for k in 0..<(u.w / 6 + 1) {
-            let x = k * 6 + Int(noise(k + 470) * 4), d = Double(x - tx) / 90
-            guard abs(x - tx) > 16 else { continue }
-            let top = F - 46 - Int(22 * max(0, 1 - d * d)), r = 3 + Int(noise(k + 471) * 2)
+            let x = k * 6 + Int(noise(k + 470) * 4)
+            guard abs(x - tx) > 22, abs(x - rx) > 5 else { continue }
+            let top = ridge(x) + 1, r = 3 + Int(noise(k + 471) * 2)
             u.circle(x, top, r, C(0x18224A)); u.rect(x - r / 2, top - r, r, 1, C(0x22305A))
         }
-        // Houses up the hill's slopes, little gables with a lit window or two.
-        for k in 0..<(u.w / 17 + 1) {
-            let x = k * 17 + Int(noise(k + 480) * 8), d = Double(x - tx) / 90
-            guard abs(x - tx) > 22, noise(k + 481) > 0.35 else { continue }
-            let top = F - 44 - Int(22 * max(0, 1 - d * d)) + 3 + Int(noise(k + 482) * 4)
+        // Houses up the slopes, little gables with a lit window or two.
+        for k in 0..<(u.w / 15 + 1) {
+            let x = k * 15 + Int(noise(k + 480) * 8)
+            guard abs(x - tx) > 24, abs(x - rx) > 8, noise(k + 481) > 0.3 else { continue }
+            let top = ridge(x) + 4 + Int(noise(k + 482) * 6)
             u.rect(x, top, 7, 4, C(0x1E2446))
             for r in 0..<3 { u.rect(x + r, top - 1 - r, 7 - 2 * r, 1, C(0x262C52)) }
             u.rect(x + 1, top + 1, 2, 2, noise(k + 483) > 0.4 ? C(0xE0B060) : C(0x10142A))
             u.rect(x + 4, top + 1, 2, 2, noise(k + 484) > 0.6 ? C(0xE0B060) : C(0x10142A))
         }
-        let ground = F - 68
-        // The legs, splayed a little, with cross bracing.
-        let steel = C(0x3A4258), steelD = C(0x262C40), steelL = C(0x5A6480)
-        for (bx, tx2) in [(tx - 11, tx - 8), (tx + 11, tx + 8), (tx - 4, tx - 3), (tx + 4, tx + 3)] {
-            for y in (ground - 30)..<ground {
-                let k = Double(ground - y) / 30
+
+        // The radio mast: a lattice tapering up from the lower hill, cross-braced, guy wires out to the slopes.
+        let mb = ridge(rx) + 2, mt = 12, steel = C(0x3A4258), steelD = C(0x262C40), steelL = C(0x5A6480)
+        for y in mt..<mb {
+            let half = 1 + (y - mt) * 3 / max(1, mb - mt)
+            u.px(rx - half, y, steelL); u.px(rx + half, y, steel)
+            if (y - mt) % 4 == 0 { u.rect(rx - half, y, 2 * half + 1, 1, steelD) }
+            if (y - mt) % 4 == 2 { u.px(rx, y, steelD) }
+        }
+        for (dx, y0) in [(-22, mt + 10), (22, mt + 10), (-14, mt + 30), (14, mt + 30)] {
+            let ex = rx + dx, ey = ridge(ex) + 1, n = max(abs(dx), ey - y0)
+            for i in 0..<n where i % 2 == 0 { u.px(rx + dx * i / n, y0 + (ey - y0) * i / n, C(0x2A3048)) }
+        }
+        u.rect(rx - 1, mt - 1, 3, 1, steelL); u.px(rx, mt - 3, C(0x8A2020)); u.px(rx, mt - 2, steel)
+
+        // The water tower: its legs splayed a little with cross bracing, the tank lit from the left with a band
+        // round it, the catwalk and railing at its foot, a shallow cone roof.
+        let ground = ridge(tx) + 2, legs = 30, top = ground - legs - 18, tw = 18
+        for (bx, tx2) in [(tx - 14, tx - 10), (tx + 14, tx + 10), (tx - 5, tx - 4), (tx + 5, tx + 4)] {
+            for y in (ground - legs)..<ground {
+                let k = Double(ground - y) / Double(legs)
                 u.px(bx + Int(Double(tx2 - bx) * k), y, bx < tx ? steelL : steel)
             }
         }
         for y in [ground - 10, ground - 20] {
-            let k = Double(ground - y) / 30
-            let l = tx - 11 + Int(3 * k), r = tx + 11 - Int(3 * k)
+            let k = Double(ground - y) / Double(legs)
+            let l = tx - 14 + Int(4 * k), r = tx + 14 - Int(4 * k)
             u.rect(l, y, r - l + 1, 1, steelD)
         }
-        for i in 0..<10 { u.px(tx - 10 + i * 2, ground - 11 - i, steelD); u.px(tx + 10 - i * 2, ground - 11 - i, steelD) }
-        // The tank: a drum lit from the left, a band round it, the catwalk and railing at its foot.
-        let top = ground - 46
-        for x in (tx - 13)...(tx + 13) {
-            let k = Double(x - (tx - 13)) / 26
+        for i in 0..<9 { u.px(tx - 12 + i * 3, ground - 11 - i, steelD); u.px(tx + 12 - i * 3, ground - 11 - i, steelD) }
+        for x in (tx - tw)...(tx + tw) {
+            let k = Double(x - (tx - tw)) / Double(2 * tw)
             let col = k < 0.2 ? C(0x9AA8C0) : k < 0.5 ? C(0x7A88A2) : k < 0.8 ? C(0x5E6A84) : C(0x465068)
-            u.rect(x, top, 1, 15, col)
+            u.rect(x, top, 1, 18, col)
         }
-        u.rect(tx - 13, top + 6, 27, 2, C(0x3E4860)); u.rect(tx - 13, top + 6, 6, 2, C(0x5A6680))
-        u.rect(tx - 15, top + 15, 31, 1, steelL); u.rect(tx - 15, top + 13, 31, 1, steel)
-        for x in stride(from: tx - 15, through: tx + 15, by: 3) { u.px(x, top + 14, steel) }
-        // The roof: a shallow cone, a vent on top.
-        for r in 0..<6 {
-            let half = 4 + r * 2
-            u.rect(tx - half, top - 6 + r, half, 1, C(0xA8B4CA)); u.rect(tx, top - 6 + r, half + 1, 1, C(0x66728C))
+        u.rect(tx - tw, top + 7, 2 * tw + 1, 2, C(0x3E4860)); u.rect(tx - tw, top + 7, 8, 2, C(0x5A6680))
+        u.rect(tx - tw, top, 2 * tw + 1, 1, C(0xB4C0D4))
+        u.rect(tx - tw - 2, top + 18, 2 * tw + 5, 1, steelL); u.rect(tx - tw - 2, top + 16, 2 * tw + 5, 1, steel)
+        for x in stride(from: tx - tw - 2, through: tx + tw + 2, by: 3) { u.px(x, top + 17, steel) }
+        for r in 0..<7 {
+            let half = 5 + r * 2
+            u.rect(tx - half, top - 7 + r, half, 1, C(0xA8B4CA)); u.rect(tx, top - 7 + r, half + 1, 1, C(0x66728C))
         }
-        u.rect(tx - 1, top - 8, 2, 2, C(0x8A96AE))
+        u.rect(tx - 1, top - 9, 2, 2, C(0x8A96AE))
         // The ladder up the right leg to the catwalk.
-        for y in stride(from: ground - 1, to: top + 15, by: -2) { u.rect(tx + 6, y, 2, 1, steelD) }
-        u.rect(tx + 6, top + 15, 1, ground - top - 15, steel); u.rect(tx + 8, top + 15, 1, ground - top - 15, steel)
+        for y in stride(from: ground - 1, to: top + 18, by: -2) { u.rect(tx + 7, y, 2, 1, steelD) }
+        u.rect(tx + 7, top + 18, 1, ground - top - 18, steel); u.rect(tx + 9, top + 18, 1, ground - top - 18, steel)
         // The bright star, up and to the right of the tower, a halo round it (it twinkles in the moving layer).
-        let sx = tx + 36, sy = max(3, top - 10)
-        u.circle(sx, sy, 4, C(0xC8D8FF, 0.12)); u.circle(sx, sy, 2, C(0xDCE6FF, 0.3))
+        let (sx, sy) = eterniaTownStar(x0, F)
+        u.circle(sx, sy, 5, C(0xC8D8FF, 0.12)); u.circle(sx, sy, 2, C(0xDCE6FF, 0.3))
         u.rect(sx - 1, sy, 3, 1, C(0xFFFFFF)); u.rect(sx, sy - 1, 1, 3, C(0xFFFFFF))
+    }
+
+    /// Where Eternia shines over the town on the screen saver, in units: up and to the right of the water tower.
+    private static func eterniaTownStar(_ x0: Int, _ F: Int) -> (x: Int, y: Int) {
+        let tx = eterniaTownLandmarks(x0).tower
+        return (tx + 42, max(4, eterniaTownRidge(tx, tx: tx, rx: eterniaTownLandmarks(x0).mast, foot: F) - 44))
     }
 
     /// One of the shops and houses along the street, `bw` wide from `x`: brick or clapboard picked by `seed`, a
@@ -582,7 +656,7 @@ extension Scenes {
     }
 
     /// The diner, 64 units wide from `x`: a stainless-steel diner on a dark plinth, its rounded roof, ribbed lower
-    /// panels and two pink enamel stripes, a row of warm windows with folk at the counter inside, OPEN in neon in
+    /// panels and two pink enamel stripes, a row of warm windows with folk in the booths inside, OPEN in neon in
     /// the wide window, the door up two steps, and on the roof the sign, DINER in pink neon over a row of bulbs.
     private static func eterniaTownDiner(_ u: PixelCanvas, _ x: Int, _ F: Int) {
         let st = [C(0x2E3648), C(0x46526A), C(0x66748E), C(0x8E9CB4), C(0xB8C4D6)]
@@ -612,16 +686,23 @@ extension Scenes {
                 u.rect(wx + 13, F - 18, 3, 2, C(0xE8D8C0)); u.px(wx + 14, F - 19, C(0xF07AA4))
                 continue
             }
-            // A booth: red seat backs either side of a table, and someone sitting in it now and then.
-            u.rect(wx, F - 19, 2, 5, C(0xB03A3A)); u.px(wx, F - 19, C(0xD85A50))
-            u.rect(wx + win.w - 2, F - 19, 2, 5, C(0xB03A3A)); u.px(wx + win.w - 2, F - 19, C(0xD85A50))
-            u.rect(wx + 2, F - 16, win.w - 4, 1, C(0xE8D8C0)); u.rect(wx + 3, F - 15, win.w - 6, 1, C(0x6A4A30))
-            if i != 1 {
-                let hx = i == 0 ? wx + 2 : wx + win.w - 5
-                u.pattern(hx, F - 21, [".h.", "hhh", "sss"], ["h": C(0x3A2420), "s": i == 0 ? C(0x3A5A8A) : C(0x7A3A6A)])
+            // A booth: red seat backs either side of a table, and folk sitting in it facing each other, big enough to
+            // read at a glance: dark hair, a pale face against the warm light, a bright shirt, a hand on the table.
+            u.rect(wx, F - 21, 1, 7, C(0xB03A3A)); u.px(wx, F - 21, C(0xD85A50))
+            u.rect(wx + win.w - 1, F - 21, 1, 7, C(0xB03A3A)); u.px(wx + win.w - 1, F - 21, C(0xD85A50))
+            let everyone: [[(at: Int, right: Bool, hair: Px, shirt: Px)]] = [
+                [(0, true, C(0x2A1A14), C(0x2A8AA8)), (4, false, C(0xE8B850), C(0xD83A3A))],
+                [(0, true, C(0x5A2A18), C(0xF0E8D8))],
+                [(0, true, C(0xE8B850), C(0x3A4ACA)), (4, false, C(0x2A1A14), C(0x3AA85A))],
+            ]
+            let folk = everyone[i]
+            for p in folk {
+                let rows = p.right ? [".hhh", ".hff", ".hff", "ssss", "sssa", "sss."] : ["hhh.", "ffh.", "ffh.", "ssss", "asss", ".sss"]
+                u.pattern(wx + p.at, F - 22, rows, ["h": p.hair, "f": C(0xF4D0A8), "s": p.shirt, "a": C(0xF4D0A8)])
             }
-            // A mug on the table.
-            u.rect(wx + win.w / 2 - 1, F - 18, 2, 2, C(0xF0F0F0)); u.px(wx + win.w / 2 + 1, F - 17, C(0xD0D0D0))
+            u.rect(wx + 1, F - 16, win.w - 2, 1, C(0xE8D8C0)); u.rect(wx + 2, F - 15, win.w - 4, 1, C(0x6A4A30))
+            // A mug on the table where there's room for one.
+            if folk.count == 1 { u.rect(wx + 5, F - 18, 2, 2, C(0xF0F0F0)); u.px(wx + 7, F - 17, C(0xD0D0D0)) }
         }
         // OPEN, small, in neon blue in the wide window.
         eterniaTownText(u, x + 44, F - 23, "OPEN", 1, C(0x5AE0FF))
@@ -666,8 +747,9 @@ extension Scenes {
     }
 
     /// The music shop, 52 wide from `x`: two storeys of brick under a stone cornice, a lit window upstairs and a dark
-    /// one, MUSIC in cyan neon on a board, and the shop window: three keyboards on their stands at different
-    /// heights, a big synth on a table, a red guitar on the wall and gig posters, spotlit, and the door beside it.
+    /// one, MUSIC in cyan neon on a board, and the shop window: two keyboards on a two-tier stand (a red one
+    /// over a black one), a big synth on its own stand, a red guitar on the wall and gig posters, spotlit, and the
+    /// door beside it.
     private static func eterniaTownMusic(_ u: PixelCanvas, _ x: Int, _ F: Int) {
         let brick = C(0x5A2C2E), brickD = C(0x42201F), brickL = C(0x74403A), mortar = C(0x2E1818)
         u.rect(x, F - 46, 52, 46, brick)
@@ -696,28 +778,33 @@ extension Scenes {
         u.rect(wx + 2, wy + 1, 6, 5, C(0xC8B040)); u.rect(wx + 3, wy + 2, 4, 1, C(0x8A2A2A)); u.rect(wx + 3, wy + 4, 3, 1, C(0x2A2A3A))
         u.rect(wx + 21, wy + 1, 6, 5, C(0x3A8A9A)); u.rect(wx + 22, wy + 2, 4, 2, C(0xE07A9A))
         // The guitar on the wall between them.
-        u.rect(wx + 14, wy, 1, 6, C(0xA88A5A)); u.rect(wx + 13, wy, 3, 1, C(0x3A2A1A))
-        u.pattern(wx + 12, wy + 6, [".RR.", "RRRr", ".Rr.", "RRRr", "RRrr", ".rr."], ["R": C(0xC83A30), "r": C(0x8A2420)])
-        u.px(wx + 13, wy + 9, C(0x2A1A14))
+        u.rect(wx + 16, wy, 1, 6, C(0xA88A5A)); u.rect(wx + 15, wy, 3, 1, C(0x3A2A1A))
+        u.pattern(wx + 14, wy + 6, [".RR.", "RRRr", ".Rr.", "RRRr", "RRrr", ".rr."], ["R": C(0xC83A30), "r": C(0x8A2420)])
+        u.px(wx + 15, wy + 9, C(0x2A1A14))
         // Spotlights from the top of the window.
         for sx in [wx + 6, wx + 22] {
             for y in 0..<14 { u.rect(sx - y / 3, wy + y, 1 + 2 * (y / 3), 1, C(0xFFF0E0, 0.07)) }
         }
-        /// A keyboard on an X stand: its case, a row of keys, the stand's legs crossing under it.
-        func keyboard(_ kx: Int, _ ky: Int, _ keys: String) {
-            u.rect(kx, ky, keys.count, 1, C(0x1E1E28)); u.px(kx + 1, ky, C(0xE04A4A)); u.px(kx + 3, ky, C(0x5AE04A))
-            u.pattern(kx, ky + 1, [keys], ["W": C(0xECECF4), "B": C(0x16161E)])
-            u.rect(kx, ky + 2, keys.count, 1, C(0x2A2A36))
-            let mid = kx + keys.count / 2, legs = F - 4 - (ky + 3)
-            for i in 0..<legs { u.px(mid - 2 + i * 4 / max(1, legs), ky + 3 + i, C(0x8A8A9A)); u.px(mid + 2 - i * 4 / max(1, legs), ky + 3 + i, C(0x6A6A7A)) }
+        /// A keyboard `n` wide at (kx, ky), four rows: its case with lights along the top, black keys over white,
+        /// white keys, the case's lip. The keys are two rows tall so they read as a keyboard at a glance.
+        func keyboard(_ kx: Int, _ ky: Int, _ n: Int, _ body: Px, _ lip: Px) {
+            u.rect(kx, ky, n, 4, body); u.rect(kx, ky + 3, n, 1, lip)
+            for k in stride(from: 1, to: n - 1, by: 3) { u.px(kx + k, ky, [C(0xF0C040), C(0x5AE04A), C(0xE04A4A)][k % 3]) }
+            for k in 1..<(n - 1) {
+                let black = [1, 3, 6, 8, 10].contains((k - 1) % 12)
+                u.px(kx + k, ky + 1, black ? C(0x16161E) : C(0xF4F4FA)); u.px(kx + k, ky + 2, (k - 1) % 2 == 1 ? C(0xC8C8D4) : C(0xF4F4FA))
+            }
         }
-        keyboard(wx + 1, F - 10, "WBWBWWBWBWB")
-        keyboard(wx + 10, F - 14, "WBWBWWBWBWBWW")
-        // The big synth on its table, knobs along the top.
-        u.rect(wx + 19, F - 9, 11, 2, C(0x2A2A36)); u.rect(wx + 19, F - 9, 11, 1, C(0x3A3A48))
-        for k in 0..<5 { u.px(wx + 20 + k * 2, F - 9, [C(0xF0C040), C(0x4AD8F0), C(0xF07AA4)][k % 3]) }
-        u.pattern(wx + 19, F - 7, ["WBWBWWBWBWB"], ["W": C(0xECECF4), "B": C(0x16161E)])
-        u.rect(wx + 19, F - 6, 11, 1, C(0x1E1E28)); u.rect(wx + 20, F - 5, 1, 2, C(0x5A4A3A)); u.rect(wx + 28, F - 5, 1, 2, C(0x5A4A3A))
+        // Two keyboards on a two-tier stand on the left, its legs splayed.
+        for (lx, rx2) in [(wx + 2, wx + 4), (wx + 13, wx + 11)] {
+            for y in (F - 12)..<(F - 3) { u.px(lx + (rx2 - lx) * (y - F + 12) / 9, y, C(0x9A9AAA)) }
+        }
+        keyboard(wx + 1, F - 15, 14, C(0xC83A30), C(0x7A1E1A))
+        keyboard(wx + 3, F - 9, 13, C(0x24242E), C(0x101018))
+        // The big synth on the right, on its stand, knobs along its top.
+        keyboard(wx + 17, F - 11, 12, C(0x5A6A8A), C(0x34405A))
+        u.rect(wx + 17, F - 12, 12, 1, C(0x3A4660)); for k in 0..<5 { u.px(wx + 18 + k * 2, F - 12, [C(0xF0C040), C(0x4AD8F0), C(0xF07AA4)][k % 3]) }
+        u.rect(wx + 19, F - 7, 1, 4, C(0x9A9AAA)); u.rect(wx + 26, F - 7, 1, 4, C(0x9A9AAA))
         // Reflections across the glass.
         for k in 0..<6 { u.px(wx + 2 + k, wy + 11 - k, C(0xFFFFFF, 0.18)); u.px(wx + 4 + k, wy + 12 - k, C(0xFFFFFF, 0.1)) }
         // The sill and the door, glass in its top half lit warm, a transom over it.
@@ -817,26 +904,40 @@ extension Scenes {
         for (i, bx) in stride(from: x0 + 12, to: x0 + 53, by: 3).enumerated() where (i + Int(t * 4)) % 3 == 0 {
             u.px(bx, F - 37, C(0xFFFFFF)); u.px(bx, F - 36, C(0xFFD890, 0.4))
         }
-        // The portal, opening in the alley for a few seconds every 22.
+        // The portal, opening in the alley for six seconds every 22: it snaps open in about half a second, stays
+        // its full size, and shrinks away again. A deep blue tunnel with a bright rim, three white arms swirling
+        // into a white heart, the alley lit blue round it.
         let period = 22.0, open = 6.0, ph = t.truncatingRemainder(dividingBy: period)
         if ph < open {
-            let k = sin(ph / open * .pi), cx = x0 + 71, cy = F - 13
-            let rx = max(1, Int(6 * k)), ry = max(1, Int(12 * k))
-            u.rect(x0 + 63, F - 30, 16, 30, C(0x7AD0FF, 0.10 * k))
-            u.ellipse(cx, cy, rx + 2, ry + 2, C(0x4A7AFF, 0.25 * k))
-            u.ellipse(cx, cy, rx, ry, C(0x8AD8FF, 0.6 * k))
-            u.ellipse(cx, cy, max(1, rx * 2 / 3), max(1, ry * 2 / 3), C(0xD4F4FF, 0.7 * k))
-            u.ellipse(cx, cy, max(1, rx / 3), max(1, ry / 3), C(0xFFFFFF, 0.85 * k))
-            // The swirl: sparks spiralling into the middle.
-            for i in 0..<16 {
-                let a = t * 3.2 + Double(i) * 0.75, r = 1 - Double(i) / 16
-                let px = cx + Int(cos(a) * Double(rx + 1) * r), py = cy + Int(sin(a) * Double(ry + 1) * r)
-                u.px(px, py, C(0xFFFFFF, 0.9 * k))
+            let k = min(1, sin(ph / open * .pi) * 2.2), cx = x0 + 71, cy = F - 13
+            let rx = max(1, Int((6 * k).rounded())), ry = max(1, Int((12 * k).rounded()))
+            u.rect(x0 + 63, F - 30, 16, 30, C(0x7AD0FF, 0.12 * k))
+            u.ellipse(cx, cy, rx + 3, ry + 3, C(0x4A7AFF, 0.3 * k))
+            u.ellipse(cx, cy, rx, ry, C(0x2A5AE0, 0.9 * k))
+            u.ellipse(cx, cy, max(1, rx * 2 / 3), max(1, ry * 2 / 3), C(0x5A9AFF, 0.8 * k))
+            // The swirl: three arms winding in to the middle, turning.
+            for arm in 0..<3 {
+                for st in 0..<16 {
+                    let r = 1 - Double(st) / 16, a = Double(arm) * 2.094 + t * 2.6 + (1 - r) * 4.2
+                    u.px(cx + Int((cos(a) * Double(rx) * r).rounded()), cy + Int((sin(a) * Double(ry) * r).rounded()),
+                         r > 0.5 ? C(0x9AE8FF, 0.95 * k) : C(0xFFFFFF, 0.95 * k))
+                }
+            }
+            u.ellipse(cx, cy, max(1, rx / 3), max(1, ry / 4), C(0xFFFFFF, 0.9 * k))
+            // The rim, pale and bright all the way round.
+            let steps = 6 * (rx + ry)
+            for i in 0..<steps {
+                let a = Double(i) / Double(steps) * 2 * .pi
+                u.px(cx + Int((cos(a) * Double(rx)).rounded()), cy + Int((sin(a) * Double(ry)).rounded()), C(0xD4F6FF, 0.95 * k))
             }
         }
-        // The bright star, twinkling.
+        // The bright star, twinkling, and the radio mast's red light blinking.
         if tall {
-            let tx = x0 + 44, top = F - 68 - 46, sx = tx + 36, sy = max(3, top - 10)
+            let (sx, sy) = eterniaTownStar(x0, F)
+            if t.truncatingRemainder(dividingBy: 2) < 1.1 {
+                let mx = eterniaTownLandmarks(x0).mast
+                u.circle(mx, 9, 2, C(0xFF4A3A, 0.3)); u.px(mx, 9, C(0xFF6A50))
+            }
             let tw = 0.5 + 0.5 * sin(t * 2.1), r = 2 + Int(tw * 2.5)
             u.rect(sx - r, sy, 2 * r + 1, 1, C(0xFFFFFF, 0.7)); u.rect(sx, sy - r, 1, 2 * r + 1, C(0xFFFFFF, 0.7))
             u.circle(sx, sy, 1, C(0xFFFFFF, 0.6 * tw))
