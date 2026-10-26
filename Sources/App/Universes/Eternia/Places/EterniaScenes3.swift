@@ -115,30 +115,35 @@ extension Scenes {
     /// foot at (`x`, `foot`): a black trunk lit dull red down one side, crooked branches forking to twigs.
     private static func eterniaDeadTree(_ c: PixelCanvas, _ x: Int, _ foot: Int, _ q: Int, seed: Int, flip: Bool) {
         let art = PixelCanvas(30, 40)
-        let bark = C(0x231C1E), barkL = C(0x5A3A36)
-        /// A branch from (x0, y0) going `len` units at angle `a` (radians, 0 up), forking `depth` more times.
+        let bark = C(0x231C1E), barkL = C(0x5A3A36), barkM = C(0x3A2A2A)
+        /// A branch from (x0, y0) going `len` units at angle `a` (radians, 0 up), forking `depth` more times: a
+        /// stroke `wide` units thick all the way along (square dabs, so slanting limbs keep their weight), lit dull
+        /// red down its left edge, tapering a unit at each fork.
         func branch(_ x0: Double, _ y0: Double, _ a: Double, _ len: Double, _ wide: Int, _ depth: Int, _ k: Int) {
             let n = max(1, Int(len))
             var x = x0, y = y0
             for i in 0..<n {
                 let bend = sin(Double(i) * 0.9 + Double(k)) * 0.25
                 x += sin(a + bend); y -= cos(a + bend)
-                art.rect(Int(x), Int(y), wide, 1, bark); art.px(Int(x), Int(y), barkL)
+                let lx = Int(x) - wide / 2, ly = Int(y) - (wide - 1) / 2
+                art.rect(lx, ly, wide, wide, bark)
+                if wide > 2 { art.rect(lx + 1, ly, 1, wide, barkM) }
+                art.px(lx, Int(y), barkL)
             }
             guard depth > 0 else { return }
             let spread = 0.5 + noise(seed * 31 + k) * 0.4
-            branch(x, y, a - spread, len * 0.62, max(1, wide - 1), depth - 1, k * 2 + 1)
-            branch(x, y, a + spread * 0.8, len * 0.55, max(1, wide - 1), depth - 1, k * 2 + 2)
+            branch(x, y, a - spread, len * 0.66, max(1, wide - 1), depth - 1, k * 2 + 1)
+            branch(x, y, a + spread * 0.8, len * 0.58, max(1, wide - 1), depth - 1, k * 2 + 2)
         }
-        // The trunk, leaning a little, its roots spread over the ground.
-        art.rect(11, 37, 8, 3, bark); art.rect(9, 38, 12, 2, bark); art.px(8, 39, bark); art.px(21, 39, bark)
-        art.px(9, 38, barkL); art.px(11, 37, barkL)
-        branch(14, 38, 0.12, 16, 4, 0, 0)
-        branch(15, 23, -0.5, 9, 3, 2, 1)
-        branch(16, 25, 0.6, 10, 3, 2, 2)
-        branch(16, 22, 0.1, 7, 3, 2, 3)
-        // A knot hole, dark.
-        art.rect(14, 30, 1, 2, C(0x0E0A0A))
+        // The trunk, leaning a little and thick, its roots spread over the ground.
+        art.rect(10, 36, 10, 4, bark); art.rect(7, 38, 16, 2, bark); art.px(6, 39, bark); art.px(23, 39, bark)
+        art.rect(7, 38, 2, 1, barkL); art.rect(10, 36, 1, 2, barkL)
+        branch(14.5, 38, 0.1, 15, 5, 0, 0)
+        branch(15, 25, -0.6, 11, 3, 2, 1)
+        branch(16, 27, 0.7, 10, 3, 2, 2)
+        branch(16, 24, 0.05, 9, 3, 2, 3)
+        // A knot hole, dark, its lower lip lit.
+        art.rect(14, 30, 2, 2, C(0x0E0A0A)); art.rect(14, 32, 2, 1, barkL)
         let draw = flip ? { () -> PixelCanvas in
             let m = PixelCanvas(30, 40)
             for yy in 0..<40 { for xx in 0..<30 where art.buf[(yy * 30 + xx) * 4 + 3] > 0 { m.px(29 - xx, yy, unpremultiplied(art, (yy * 30 + xx) * 4)) } }
@@ -193,11 +198,20 @@ extension Scenes {
         }
         c.rect(4, 51, 112, 2, tone[3]); c.rect(4, 51, 112, 1, tone[4])
 
-        // The keep: a great block of plate, buttresses sloping out either side.
-        for y in 30..<56 {
-            let k = (y - 30) / 6
-            c.rect(36 - k - 1, y, k + 1, 1, tone[4]); c.rect(84, y, k + 1, 1, tone[1])
+        // The keep: a great block of plate, a raking buttress either side: a straight slope, one column out every
+        // two rows, its sloped face lit (dull red on the sunset side), plate courses across it and a cap at the top.
+        for y in 32..<56 {
+            let k = (y - 32) / 2 + 1
+            c.rect(36 - k, y, k, 1, tone[3]); c.rect(84, y, k, 1, tone[1])
+            // The sloped faces: a bright edge and a softer one just inside it.
+            c.px(36 - k, y, (y - 32) % 2 == 0 ? rim : tone[5]); c.px(37 - k, y, tone[4])
+            c.px(83 + k, y, tone[2]); c.px(82 + k, y, tone[2])
+            if y % 6 == 3 && k > 2 {
+                c.rect(37 - k, y, k - 1, 1, tone[2]); c.rect(84, y, k - 1, 1, tone[0])
+                c.px(37 - k + (k - 1) / 2, y - 1, tone[5]); c.px(84 + (k - 1) / 2, y - 1, tone[2])
+            }
         }
+        c.rect(34, 30, 3, 2, tone[5]); c.px(34, 30, rim); c.rect(84, 30, 3, 2, tone[2]); c.rect(84, 30, 3, 1, tone[3])
         block(36, 48, 24, 3)
         c.rect(36, 24, 1, 32, rim)
         // A row of spikes along its top.
@@ -299,7 +313,7 @@ extension Scenes {
     static func eterniaWhisperingWoods(_ c: PixelCanvas, _ g: Int) {
         let f = eterniaWhisperingWoodsFrame(c, g), tall = isTall(c)
         let a = PixelCanvas(f.w, f.h)
-        eterniaWoods(a, canopy: tall ? f.h * 30 / 100 : 9)
+        eterniaWoods(a, canopy: tall ? f.h * 30 / 100 : 9, q: f.q)
         eterniaPlaces3Blit(c, a, 0, f.y, f.q)
         c.ground(g, C(0x3A5A54), edge: C(0x5A8070), speck: C(0x2E4A46), seed: 23)
         // Fallen petals on the path, a few.
@@ -310,9 +324,20 @@ extension Scenes {
     }
 
     /// The woods themselves, on a canvas of their own at one pixel to a unit; `canopy` is the row the canopy's
-    /// underside hangs down to (its lobes hang lower).
-    private static func eterniaWoods(_ c: PixelCanvas, canopy cb: Int) {
+    /// underside hangs down to (its lobes hang lower), `q` how many times it will be blown up.
+    private static func eterniaWoods(_ c: PixelCanvas, canopy cb: Int, q: Int) {
         let w = c.w, h = c.h
+        // Where the crew stands in front: their heads come up about 36 pixels over the ground, whatever the scale.
+        // From a little over that down to the ground the woods sink into dusk, so white outlines and names read on
+        // them; the pastels stay above, in the light.
+        let crewTop = h - 36 / q, duskTop = max(cb + 4, crewTop - 12 / q)
+        func dusk(_ col: Px, _ strength: Double) {
+            for y in duskTop..<h {
+                let k = Double(y - duskTop) / Double(max(1, h - duskTop))
+                let a = strength * min(1, k * 1.5)
+                c.rect(0, y, w, 1, col.alpha((a * 8).rounded() / 8))
+            }
+        }
         // The haze between the trees: lavender up top, pink, then peach low down, and darker under the trees.
         c.gradient(0, h * 7 / 10, C(0xB0A0E0), C(0xF6C8D6), bands: 6)
         c.gradient(h * 7 / 10, h, C(0xE8B4C8), C(0x7A6A90), bands: 4)
@@ -340,7 +365,8 @@ extension Scenes {
             let x = k * 11 + Int(noise(k + 600) * 6), tw = 3 + Int(noise(k + 610) * 3)
             trunk(x, tw, far, roots: false, seed: k)
         }
-        c.gradient(h * 3 / 4, h, C(0x8A7AA4, 0.0), C(0x6A5A84, 0.9), bands: 4)
+        // Dusk falling among the far trees, deep violet behind the crew.
+        dusk(C(0x3E3260), 0.82)
         // The nearer trees, deeper violet, branches reaching up into the leaves.
         let mid = [C(0x5E4A7A), C(0x6E5A8A), C(0x80689A), C(0x9478AA), C(0xA88ABA)]
         for k in 0..<(w / 34 + 1) {
@@ -356,10 +382,13 @@ extension Scenes {
             c.rect(x, top, 1, h - top, C(0x3E5868)); c.px(x, top, C(0x587886))
         }
 
-        // Shafts of light down through the canopy, leaning right.
+        // And deeper still over the nearer trees and the undergrowth.
+        dusk(C(0x2A2244), 0.5)
+
+        // Shafts of light down through the canopy, leaning right, fading out before they reach the crew.
         for k in 0..<(w / 40 + 1) {
             let x0 = k * 40 + 6 + Int(noise(k + 640) * 20), sw = 5 + Int(noise(k + 650) * 6)
-            for y in cb..<(h - 8) {
+            for y in cb..<max(cb, duskTop) {
                 let x = x0 + (y - cb) / 3
                 c.rect(x, y, sw, 1, C(0xFFF2D8, 0.16 * (1 - Double(y - cb) / Double(h))))
             }
@@ -411,13 +440,16 @@ extension Scenes {
             c.ellipse(x - r / 4, cy - r / 4, r * 2 / 3, r / 2, leaf[2])
             c.ellipse(x - r / 3, cy - r / 2, r / 3, r / 4, leaf[3])
         }
-        // Blossom: little clusters of pink among the leaves.
-        for k in 0..<(w * (cb + 6) / 90) {
-            let x = Int(noise(k * 2 + 850) * Double(w - 2)), y = Int(noise(k * 2 + 851) * Double(cb + 6))
-            guard y < h - 1 else { continue }
-            let i = (y * w + x) * 4
+        // Blossom: round clumps of pink among the leaves, lit on top and shaded rose underneath, so they read as
+        // flowers and not as twinkling stars.
+        for k in 0..<(w * (cb + 6) / 150) {
+            let x = Int(noise(k * 2 + 850) * Double(w - 4)), y = Int(noise(k * 2 + 851) * Double(cb + 6))
+            guard y < h - 4 else { continue }
+            let i = (min(h - 1, y + 1) * w + x + 1) * 4
             guard c.buf[i + 1] > c.buf[i] && c.buf[i + 1] > 0x50 else { continue }
-            c.pattern(x, y, [".P.", "PLP", ".P."], ["P": C(0xF0A0C8), "L": C(0xFFD8EA)])
+            let big = noise(k * 2 + 852) > 0.6
+            c.pattern(x, y, big ? [".LP..", "LPPPP", "PPPPd", "PPPdd", ".dd.."] : [".LP.", "LPPP", "PPPd", ".dd."],
+                      ["P": C(0xF0A0C8), "L": C(0xFFD8EA), "d": C(0xB8608E)])
         }
         // Vines hanging from the canopy between the trunks, a blossom at the end of each.
         for k in 0..<(w / 23 + 1) {
@@ -471,15 +503,33 @@ extension Scenes {
         c.gradient(0, f.base, C(0x0C1030), C(0x34507E), bands: tall ? 12 : 7)
         c.stars(0, horizon, density: tall ? 50 : 70, seed: 31)
         if tall {
-            // An aurora across the top: curtains of green and pink, faint, hanging in folds.
-            for x in 0..<c.w {
-                let wave = sin(Double(x) * 0.03 / Double(s)) * Double(8 * s) + sin(Double(x) * 0.011) * Double(12 * s)
-                let top = horizon / 8 + Int(wave)
-                let len = (20 + Int(noise(x / max(1, s) + 50) * 14)) * s
-                let col = x / (6 * s) % 3 == 0 ? C(0xF0A0E0) : C(0x80F0C0)
-                for y in top..<(top + len) {
-                    let k = Double(y - top) / Double(len)
-                    c.px(x, y, col.alpha(0.16 * (1 - k)))
+            // An aurora across the top: two curtains hanging in folds, as a real one does: brightest along a wavy
+            // lower hem of green, rays of light climbing from it and fading softly upwards, going teal and then
+            // pink-violet at their tops. Each ray its own height and brightness, so the curtain looks pleated.
+            let curtains: [(hem: Int, len: Int, amp: Double, freq: Double, ph: Double, peak: Double)] = [
+                (horizon * 30 / 100, 34, 10, 0.022, 0.0, 0.58), (horizon * 17 / 100, 22, 7, 0.031, 2.2, 0.38),
+            ]
+            let green = C(0x7CF5B4), teal = C(0x5ADCD8), pink = C(0xE07AE0)
+            for cu in curtains {
+                for x in 0..<c.w {
+                    let xs = Double(x) / Double(s)
+                    let hem = cu.hem + Int((sin(xs * cu.freq + cu.ph) * cu.amp + sin(xs * cu.freq * 2.7 + cu.ph * 3) * cu.amp * 0.4) * Double(s))
+                    // The rays: a few units wide each, every one its own height and strength.
+                    let ray = Int(xs / 3)
+                    let ry = 0.55 + noise(ray + Int(cu.ph * 10) + 70) * 0.45
+                    let len = Int(Double(cu.len * s) * (0.6 + noise(ray + Int(cu.ph * 10) + 90) * 0.6))
+                    // The curtain thins out at its ends and in a gap or two along it.
+                    let span = 0.5 + 0.5 * sin(xs * 0.008 + cu.ph * 1.7)
+                    let strength = cu.peak * ry * min(1, span * 1.6)
+                    guard strength > 0.03, len > 0 else { continue }
+                    for y in max(0, hem - len)...hem {
+                        let k = Double(hem - y) / Double(len)   // 0 at the hem, 1 at the top of the ray
+                        let a = strength * (k < 0.06 ? 0.6 + k / 0.06 * 0.4 : pow(1 - k, 1.6))
+                        let col = k < 0.3 ? lerp(green, teal, k / 0.3) : lerp(teal, pink, (k - 0.3) / 0.4)
+                        c.px(x, y, col.alpha((a * 12).rounded() / 12))
+                    }
+                    // The hem itself, a bright green line.
+                    c.px(x, hem + 1, green.alpha(strength * 0.5))
                 }
             }
             // A big pale moon, low on the left.

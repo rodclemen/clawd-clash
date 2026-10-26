@@ -103,8 +103,8 @@ extension Scenes {
     /// stone falcon, Zoar, wings spread wide, its eyes lit sky blue; under it her stone throne with a sky-blue gem in
     /// its crest, on a dais of three steps, and sunk into the dais the round pool, glowing. Heavy pillars stand down
     /// the hall; between them niches, each with a stone falcon on a plinth, and narrow lancet windows with Greyskull's
-    /// violet dusk in them. On the screen saver the hall rises into a ribbed vault, falcons carved along the
-    /// clerestory, iron braziers hanging on long chains.
+    /// violet dusk in them. On the screen saver the hall rises into a ribbed vault, a clerestory of falcons carved
+    /// between pairs of little dusk-lit lancets under a dog-tooth band, iron braziers hanging on long chains.
     static func eterniaChamber(_ c: PixelCanvas, _ g: Int) {
         let f = eterniaS4Frame(c, g)
         let u = PixelCanvas(f.w, f.h)
@@ -179,7 +179,36 @@ extension Scenes {
             }
         }
         if wallTop < top {
-            // The clerestory: a falcon carved with its wings spread in every bay.
+            // The clerestory: between the falcons, pairs of little lancet windows with the dusk in them, each in a
+            // pale surround with a colonnette between the two; a band of dog-tooth along the top, a chevron moulding
+            // along the bottom.
+            let spots = ([cx] + eterniaS4Bays(u.w, first: 54, step: 40).map(\.x)).sorted()
+            for (a, b) in zip(spots, spots.dropFirst()) {
+                let m = (a + b) / 2, spring = top - 12, bottom = top - 6
+                for lx in [m - 4, m + 4] {
+                    for y in (spring - 5)..<(bottom + 1) {
+                        for xx in (lx - 4)...(lx + 4) {
+                            if eterniaS4Arch(xx, y, cx: lx, hw: 2, spring: spring, bottom: bottom, r: 1.3) {
+                                let k = Double(y - (spring - 4)) / Double(bottom - spring + 4)
+                                u.px(xx, y, lerp(C(0x2A1C4C), C(0xD07A4A), k * k))
+                            } else if eterniaS4Arch(xx, y, cx: lx, hw: 3, spring: spring, bottom: bottom, r: 1.3) {
+                                u.px(xx, y, stone(xx, y, xx < lx ? 0.5 : 0.34, grain: 0.08))
+                            }
+                        }
+                    }
+                    u.px(lx - 1, spring - 1, C(0xFFFFFF, 0.7))
+                    u.rect(lx - 4, bottom, 9, 1, tone[5]); u.rect(lx - 4, bottom + 1, 9, 1, tone[2])
+                }
+                u.rect(m, top - 15, 1, 9, tone[5]); u.rect(m - 1, top - 16, 3, 1, tone[6]); u.rect(m - 1, top - 6, 3, 1, tone[4])
+            }
+            for x in stride(from: 0, to: u.w, by: 4) {
+                u.pattern(x, wallTop + 2, ["TTT", ".s."], ["T": tone[4], "s": tone[2]])
+            }
+            for x in 0..<u.w {
+                let d = x % 4, y = top - 2 - (d < 2 ? d : 4 - d)
+                u.px(x, y, tone[5]); u.px(x, y + 1, tone[2])
+            }
+            // A falcon carved with its wings spread in every bay.
             for b in eterniaS4Bays(u.w, first: 54, step: 40) {
                 chamberFalcon(u, b.x, top - 13, span: 10, eyes: false)
             }
@@ -232,7 +261,7 @@ extension Scenes {
         u.pattern(cx - 2, top + 4, [".SSS.", "SKSKS", ".SKS.", ".S.S."], ["S": tone[6], "K": tone[1]])
 
         // The great falcon carved across the alcove, wings spread, its eyes lit.
-        chamberFalcon(u, cx, top + 10, span: 20, eyes: true)
+        chamberFalcon(u, cx, top + 10, span: 26, eyes: true)
 
         // The throne: a tall back of stone with a pointed crest, the sky-blue gem in it, broad arms, a heavy seat.
         let seat = B - 17
@@ -274,7 +303,10 @@ extension Scenes {
     /// A falcon carved in the stone with its wings spread, `span` either side of `x`, its head at row `y`: long
     /// feathers fanning out and down from its shoulders, its breast in chevrons, the hooked beak; `eyes` lights them.
     private static func chamberFalcon(_ u: PixelCanvas, _ x: Int, _ y: Int, span: Int, eyes: Bool) {
-        let tone = chamberStone
+        // The great falcon over the throne (`eyes`) is carved in the palest stone, a step brighter all over, so it
+        // stands out against the dark of the alcove even in the window.
+        let base = chamberStone, b = eyes ? 1 : 0
+        let tone = (0..<base.count).map { base[min(base.count - 1, $0 + b)] }
         let sh = Double(span) / 20
         // The wings: a solid fan of long feathers each side, the outer ones longest and nearly level, the inner ones
         // short and steep, every other one a shade darker so they read as feathers; a band of small coverts over
@@ -287,7 +319,7 @@ extension Scenes {
                 for w in [-1.0, 0, 1] {
                     eterniaS4Line(u, x0, y0 + w, x1, y1 + w, tone[i % 2 == 0 ? 5 : 4])
                 }
-                eterniaS4Line(u, x0 + side * len * 0.4 * cos(a), y0 + len * 0.4 * sin(a) + 1, x1, y1 + 1, tone[3])
+                eterniaS4Line(u, x0 + side * len * 0.4 * cos(a), y0 + len * 0.4 * sin(a) + 1, x1, y1 + 1, eyes ? base[1] : tone[3])
                 u.px(Int(x1.rounded()), Int(y1.rounded()), tone[6])
             }
             let ex = Double(x) + side * 6 * sh, ey = Double(y) + 5
@@ -499,9 +531,25 @@ private func mysticFloatingRock(_ w: Int, peaks: Bool, seed: Int) -> (art: Pixel
         if bottomY > deck { art.px(x, bottomY, rock[0]) }
         art.px(x, topY, Double(x) < mid ? rock[6] : rock[5])
     }
-    // Strata across the underside, and the crystal under the tip.
-    for y in stride(from: deck + 2, to: deck + depth - 1, by: 3) {
-        for x in 1...w where art.buf[(y * art.w + x) * 4 + 3] > 0 && (x + y) % 4 != 0 { art.px(x, y, rock[2]) }
+    // The underside broken into facets: cracks running from under the rim down towards the tip, as if the rock had
+    // been torn out of the ground point first, each crack dark with a lit edge on the side facing the light.
+    let cracks = max(2, w / 4)
+    for j in 0..<cracks {
+        let kk = -0.8 + 1.6 * (Double(j) + 0.5) / Double(cracks) + (noise(j * 17 + seed) - 0.5) * 0.2
+        let x0 = mid + kk * half * 0.85, y0 = Double(deck + 2)
+        let reach = 0.55 + noise(j * 23 + seed) * 0.3
+        let x1 = mid + kk * half * 0.35, y1 = Double(deck) + Double(depth) * reach
+        let n = max(1, Int(max(abs(x1 - x0), abs(y1 - y0)).rounded()))
+        for i in 0...n {
+            let k = Double(i) / Double(n)
+            let x = Int((x0 + (x1 - x0) * k).rounded()), y = Int((y0 + (y1 - y0) * k).rounded())
+            guard x > 0, x < art.w - 1, art.buf[(y * art.w + x) * 4 + 3] > 0, art.buf[(y * art.w + x + 1) * 4 + 3] > 0 else { continue }
+            art.px(x, y, rock[1]); art.px(x + (kk < 0 ? -1 : 1), y, kk < 0 ? rock[5] : rock[2])
+        }
+    }
+    // A lit edge down the left of the underside.
+    for y in (deck + 1)..<(deck + depth) {
+        if let x = (1...w).first(where: { art.buf[(y * art.w + $0) * 4 + 3] > 0 }) { art.px(x, y, rock[5]) }
     }
     let tipX = Int(mid), tipY = deck + depth
     art.px(tipX, tipY, mysticGlow.mid); art.px(tipX, tipY + 1, mysticGlow.lit); art.px(tipX, tipY + 2, mysticGlow.mid)
@@ -558,18 +606,20 @@ extension Scenes {
         let B = u.h, cx = u.w / 2, top = B - 56
         let rock = mysticRock
         // Far islands drifting in the haze, too far off to see them move.
-        var far: [(x: Int, y: Int, w: Int)] = [(cx - 70, top + 2, 6), (cx + 76, top + 14, 5), (cx - 124, top + 16, 7),
-                                               (cx + 128, top + 1, 6), (cx - 178, top + 9, 5), (cx + 180, top + 18, 6)]
+        var far: [(x: Int, y: Int, w: Int)] = [(cx - 70, top + 2, 8), (cx + 76, top + 14, 7), (cx - 124, top + 16, 9),
+                                               (cx + 128, top + 1, 8), (cx - 178, top + 9, 7), (cx + 180, top + 18, 8)]
         if top >= 30 {
-            far += [(cx - 30, top * 40 / 100, 8), (cx + 22, top * 82 / 100, 7), (cx - 66, top * 10 / 100, 6),
-                    (cx + 72, top * 34 / 100, 9), (cx - 8, top * 20 / 100, 5)]
+            far += [(cx - 30, top * 40 / 100, 10), (cx + 22, top * 82 / 100, 9), (cx - 66, top * 10 / 100, 8),
+                    (cx + 72, top * 34 / 100, 11), (cx - 8, top * 20 / 100, 7)]
         }
+        // Hazed towards the far ranges' lavender, not grey, so they stay violet rock; their crystal still glows.
         for (i, fr) in far.enumerated() {
             let r = mysticFloatingRock(fr.w, peaks: i % 3 == 0, seed: i * 11 + 300)
             for yy in 0..<r.art.h {
                 for xx in 0..<r.art.w where r.art.buf[(yy * r.art.w + xx) * 4 + 3] > 0 {
                     let col = unpremultiplied(r.art, (yy * r.art.w + xx) * 4)
-                    u.px(fr.x - r.art.w / 2 + xx, fr.y + yy - r.deck, lerp(col, C(0x9ED0A8), 0.55))
+                    let glows = Int(col.g) > Int(col.r) + 40
+                    u.px(fr.x - r.art.w / 2 + xx, fr.y + yy - r.deck, glows ? col : lerp(col, C(0x9C90C8), 0.42))
                 }
             }
         }
@@ -592,9 +642,9 @@ extension Scenes {
 
         /// A crag: a jagged faceted peak with its tip at `tip`, `hw` either side of `x` at its foot, lit lilac on
         /// its left face, deep indigo on its right, cracks running down both faces and a vein of green crystal.
-        func crag(_ x: Int, _ tip: Int, _ hw: Int, seed: Int) {
+        func crag(_ x: Int, _ tip: Int, _ hw: Int, seed: Int, vein: Bool = true, leans: Double = 4) {
             let foot = B - 6
-            let lean = (noise(seed + 3) - 0.5) * 4
+            let lean = (noise(seed + 3) - 0.5) * leans
             func ridge(_ y: Int) -> Int {
                 let k = Double(y - tip) / Double(max(1, foot - tip))
                 return x + Int((lean * k + (noise(seed * 5 + y / 3) - 0.5) * 1.6).rounded())
@@ -631,6 +681,7 @@ extension Scenes {
                 eterniaS4Line(u, Double(sx + 1), Double(y0 + 2), Double(sx + 2 + hw / 3), Double(y0 + 8), rock[1])
             }
             // A vein of crystal glowing green, running crookedly down the rock.
+            guard vein else { return }
             let vy = tip + (foot - tip) / 3
             var vx = Double(ridge(vy)) - Double(hw) * 0.25
             for y in vy..<max(vy + 1, min(foot - 2, vy + (foot - tip) / 2)) {
@@ -640,9 +691,16 @@ extension Scenes {
             }
         }
         // Crags along the sides first, then the massif, the tallest last and in front.
+        // Each its own: a needle or a broad tooth, leaning one way or the other, some with a lower shoulder peak
+        // beside them, and only some veined, so no two along the row look alike.
         for b in eterniaS4Bays(u.w, first: 100, step: 42) {
-            let jitter = Int((noise(b.x + 5) - 0.5) * 14)
-            crag(b.x + jitter, top + 20 + Int(noise(b.x + 6) * 14), 9 + Int(noise(b.x + 7) * 6), seed: b.x)
+            let r1 = noise(b.x * 3 + 5), r2 = noise(b.x * 3 + 6), r3 = noise(b.x * 3 + 7)
+            let x = b.x + Int((r1 - 0.5) * 24), tip = top + 12 + Int(r2 * 30), hw = 6 + Int(r3 * 11)
+            if r1 > 0.45 {
+                let side = r2 > 0.5 ? 1 : -1
+                crag(x + side * (hw * 3 / 4 + 3), tip + 9 + Int(r3 * 8), max(5, hw * 2 / 3), seed: b.x + 77, vein: false, leans: 8)
+            }
+            crag(x, tip, hw, seed: b.x, vein: r3 > 0.35, leans: 4 + r1 * 10)
         }
         let massif: [(dx: Int, tip: Int, hw: Int)] = [(-72, 32, 9), (70, 30, 10), (-52, 22, 12), (52, 24, 11),
                                                        (-32, 12, 15), (32, 14, 14), (12, 6, 15), (-12, 1, 18)]
@@ -698,6 +756,10 @@ extension Scenes {
 /// Avion's marble, darkest first, and its crimson roofs.
 private let avionMarble = [C(0x7C7698), C(0xA8A2C0), C(0xD2CEE2), C(0xF4F2FA)]
 private let avionRoof = [C(0x5E1626), C(0x8E2234), C(0xB83444), C(0xE05A5C)]
+/// The far towers' paler marble and roofs, and the far clouds, lit pink-white on top down to lavender.
+private let avionPaleWall = [C(0xB8A6C8), C(0xCCBCD8), C(0xE0D4EA), C(0xF0EAF6)]
+private let avionPaleRoof = [C(0x9A5C80), C(0xB07090), C(0xC488A4), C(0xD8A0B4)]
+private let avionFarClouds = [C(0xFCE6EC), C(0xEACADA), C(0xD4B4D0), C(0xBCA0C6), C(0xA88EBC)]
 
 /// The towers of Avion on its canvas, `cx` its middle and `top` the top of its 56 rows: each one's middle, width,
 /// the top of its roof, the roof's height, and what it carries (0 nothing, 1 a perch, 2 wings). The great tower last.
@@ -759,39 +821,33 @@ extension Scenes {
                 }
             }
         }
-        let farTones = [C(0xFCE6EC), C(0xEACADA), C(0xD4B4D0), C(0xBCA0C6), C(0xA88EBC)]
+        let farTones = avionFarClouds
         let nearTones = [C(0xFFF0F2), C(0xF0D2E0), C(0xCCB0D2), C(0xA48CBC), C(0x847098), C(0x6A5A86), C(0x56497A), C(0x4A3E6C)]
-        let paleWall = [C(0xB8A6C8), C(0xCCBCD8), C(0xE0D4EA), C(0xF0EAF6)]
-        let paleRoof = [C(0x9A5C80), C(0xB07090), C(0xC488A4), C(0xD8A0B4)]
+        let paleWall = avionPaleWall, paleRoof = avionPaleRoof
 
         // Islands of cloud high up on the screen saver, towers standing on them, pale with distance.
-        if top >= 30 {
-            // Each island's row, low enough that its towers stay inside the picture.
-            func row(_ k: Int) -> Int { 26 + (top - 32) * k / 100 }
-            let isles: [(dx: Int, y: Int, n: Int)] = [(-58, row(55), 3), (52, row(20), 2), (6, row(95), 2),
-                                                      (-22, row(0), 1), (80, row(80), 1)]
-            for (i, isle) in isles.enumerated() {
-                let x = cx + isle.dx, y = isle.y
-                for j in 0..<isle.n {
-                    let tx = x - (isle.n - 1) * 4 + j * 8, th = 8 + Int(noise(i * 9 + j) * 8)
-                    avionTower(u, tx, 3 + j % 2, y - th - 4, 4, y, wall: paleWall, roof: paleRoof, gold: C(0xF0D8A0),
-                               window: C(0x9888B4))
-                }
-                for k in 0..<5 {
-                    let px = x - 10 + k * 5, pr = 3 + (k % 2) * 2
-                    u.ellipse(px, y + 1, pr + 1, pr / 2 + 1, farTones[1]); u.ellipse(px - 1, y, pr, pr / 2, farTones[0])
-                }
-                u.ellipse(x, y + 3, 13, 2, farTones[3])
-            }
-        }
+        avionIsles(u)
 
-        // The far cloud sea, and pale towers standing on it all along.
+        // The far cloud sea, and pale towers standing on it in little clusters with open sky between, each cluster
+        // a tall tower among shorter ones (not a row of posts all alike).
         clouds(base: B - 22, bottom: B, size: 1.4, seed: 3, tones: farTones)
-        for i in stride(from: -u.w / 2, to: u.w / 2, by: 9) where abs(i) > 62 && noise(i + 903) > 0.45 {
-            let n = noise(i + 900), x = cx + i + Int(noise(i + 901) * 5)
-            let h = 6 + Int(n * n * 22)
-            avionTower(u, x, 3 + Int(noise(i + 902) * 3), B - 24 - h, 4 + Int(n * 3), B - 18,
-                       wall: paleWall, roof: paleRoof, gold: C(0xF0D8A0), window: C(0x9888B4))
+        var gx = Int(noise(950) * 10)
+        var gi = 0
+        while gx < u.w {
+            let n = 2 + Int(noise(gi * 5 + 951) * 3)        // two to four towers in the cluster
+            let tallest = Int(noise(gi * 5 + 952) * Double(n))
+            var x = gx
+            for j in 0..<n {
+                let tw = 3 + Int(noise(gi * 9 + j + 953) * 3)
+                let h = j == tallest ? 18 + Int(noise(gi * 9 + j + 954) * 12) : 4 + Int(noise(gi * 9 + j + 955) * 10)
+                if abs(x - cx) > 62 {
+                    avionTower(u, x, tw, B - 24 - h, 3 + tw / 2 + (j == tallest ? 2 : 0), B - 18,
+                               wall: paleWall, roof: paleRoof, gold: C(0xF0D8A0), window: C(0x9888B4))
+                }
+                x += tw + 1 + Int(noise(gi * 9 + j + 956) * 3)
+            }
+            gx = x + 12 + Int(noise(gi * 5 + 957) * 22)
+            gi += 1
         }
 
         // The city: the towers, then the skybridges between them.
@@ -848,6 +904,30 @@ extension Scenes {
         u.rect(0, B - 1, u.w, 1, C(0x4E4060))
     }
 
+    /// The islands of cloud high over Avion on the screen saver (none in the window), towers standing on them, pale
+    /// with distance; also the mask the drifting clouds pass behind.
+    fileprivate static func avionIsles(_ u: PixelCanvas) {
+        let cx = u.w / 2, top = u.h - 56
+        guard top >= 30 else { return }
+        // Each island's row, low enough that its towers stay inside the picture.
+        func row(_ k: Int) -> Int { 26 + (top - 32) * k / 100 }
+        let isles: [(dx: Int, y: Int, n: Int)] = [(-58, row(55), 3), (52, row(20), 2), (6, row(95), 2),
+                                                  (-22, row(0), 1), (80, row(80), 1)]
+        for (i, isle) in isles.enumerated() {
+            let x = cx + isle.dx, y = isle.y
+            for j in 0..<isle.n {
+                let tx = x - (isle.n - 1) * 4 + j * 8, th = 8 + Int(noise(i * 9 + j) * 8)
+                avionTower(u, tx, 3 + j % 2, y - th - 4, 4, y, wall: avionPaleWall, roof: avionPaleRoof,
+                           gold: C(0xF0D8A0), window: C(0x9888B4))
+            }
+            for k in 0..<5 {
+                let px = x - 10 + k * 5, pr = 3 + (k % 2) * 2
+                u.ellipse(px, y + 1, pr + 1, pr / 2 + 1, avionFarClouds[1]); u.ellipse(px - 1, y, pr, pr / 2, avionFarClouds[0])
+            }
+            u.ellipse(x, y + 3, 13, 2, avionFarClouds[3])
+        }
+    }
+
     /// A tower of Avion: `w` wide round `x`, its cone roof from `roofTop` down `rh` rows, the wall down to `foot`;
     /// marble lit from the left, arched windows in rows, a gold band under the roof and a gold spike on top.
     private static func avionTower(_ u: PixelCanvas, _ x: Int, _ w: Int, _ roofTop: Int, _ rh: Int, _ foot: Int,
@@ -860,20 +940,35 @@ extension Scenes {
                 u.px(xx, y, wall[k < 0.3 ? 3 : k < 0.7 ? 2 : k < 0.9 ? 1 : 0])
             }
         }
-        // Arched windows in rows, two abreast on the wider towers.
-        let cols = w >= 8 ? [x0 + w / 3 - 1, x0 + w * 2 / 3] : [x0 + w / 2]
-        for y in stride(from: wallTop + 4, to: foot - 3, by: 6) {
-            for wx in cols {
-                u.px(wx, y, window); u.rect(wx, y + 1, 1, 2, window)
-                if w >= 9 { u.rect(wx - 1, y + 1, 1, 2, window) }
+        // The windows, storey by storey: on the wider towers a pair of arched windows, then a single tall one with
+        // a balcony, in turn; on the slim ones a lancet now and then. A sill under each, a string course between the
+        // storeys, and a few windows lit warm by the dawn.
+        let pair = w >= 8 ? [x0 + w / 3 - 1, x0 + w * 2 / 3] : [x0 + w / 2]
+        let lit = C(0xFFD890)
+        for (n, y) in stride(from: wallTop + 4, to: foot - 4, by: 6).enumerated() {
+            let single = w < 8 || n % 2 == 1
+            let cols = single ? [x0 + (w - 1) / 2] : pair
+            if w < 8 && n % 2 == 1 { continue }
+            for (j, wx) in cols.enumerated() {
+                let glow = noise(x * 13 + n * 7 + j) > 0.8
+                let pane = glow ? lit : window, tall = single && w >= 8 ? 4 : 3
+                let ww = w >= 9 && !single ? 2 : 1
+                u.rect(wx - (ww - 1), y + 1, ww, tall - 1, pane); u.px(wx, y, pane)
+                if ww == 2 { u.px(wx - 1, y, wall[1]) }
+                u.rect(wx - ww, y + tall, ww + 2, 1, wall[3])
+                if single && w >= 8 {
+                    // A little balcony under the tall window, its rail gold.
+                    u.rect(wx - 2, y + tall + 1, 5, 1, wall[1]); u.rect(wx - 2, y + tall, 5, 1, gold)
+                }
             }
+            if n > 0 && w >= 6 { u.rect(x0, y - 2, w, 1, wall[1]); u.px(x0, y - 2, wall[2]) }
         }
         // The gold band, and the cone roof overhanging it a little, lit on the left.
         u.rect(x0 - 1, wallTop, w + 2, 1, gold); u.rect(x0, wallTop + 1, w, 1, wall[0])
         let even = w % 2 == 0 ? 1 : 0
         for y in roofTop..<wallTop {
             let k = Double(y - roofTop + 1) / Double(rh)
-            let hw = Int((Double(w + 2) / 2 * k).rounded())
+            let hw = max(even, Int((Double(w + 2) / 2 * k).rounded()))
             for xx in (x - hw)...(x + hw - even) {
                 let n = Double(xx - (x - hw)) / Double(max(1, hw * 2))
                 u.px(xx, y, roof[n < 0.3 ? 3 : n < 0.65 ? 2 : n < 0.9 ? 1 : 0])
@@ -899,28 +994,49 @@ extension Scenes {
             }
         }
         eterniaS4BlowUp(c, u, f.x, f.y, q)
-        // Little clouds drifting right, slowly, in the open sky over the city (never across the towers).
+        // Little clouds drifting right, slowly, in the open sky over the city (never across the towers). On the
+        // screen saver they pass behind the islands of cloud and their towers: drawn apart, then laid on only where
+        // no island is.
         let lane = f.y + (top >= 30 ? 0 : 2 * q)
         let laneH = max(2, top - (top >= 30 ? 10 : 4))
+        let isles = PixelCanvas(f.w, f.h)
+        Scenes.avionIsles(isles)
+        let sky = top >= 30 ? PixelCanvas(c.w, c.h) : c
         for k in 0..<(top >= 30 ? 6 : 4) {
             let span = c.w + 60 * q
             let start = Int(noise(k * 7 + 70) * Double(span)), drift = Int(t * Double(q) * (1.2 + Double(k % 3) * 0.5))
             let x = (start + drift) % span - 30 * q
             let y = lane + Int(noise(k * 7 + 71) * Double(laneH)) * q
             let r = (top >= 30 ? 3 + Int(noise(k * 7 + 72) * 3) : 2) * q
-            c.ellipse(x + r, y + r / 3, r * 2, r * 2 / 3, C(0xE0B8D4, 0.7))
-            c.ellipse(x, y, r * 3, r, C(0xFCE8F0, 0.75)); c.ellipse(x - r, y - r / 2, r * 3 / 2, r, C(0xFFF6F8, 0.8))
+            sky.ellipse(x + r, y + r / 3, r * 2, r * 2 / 3, C(0xE0B8D4, 0.7))
+            sky.ellipse(x, y, r * 3, r, C(0xFCE8F0, 0.75)); sky.ellipse(x - r, y - r / 2, r * 3 / 2, r, C(0xFFF6F8, 0.8))
         }
-        // The bird-men: grey fur, white hair, blue wings, gliding with a beat of the wings now and then.
-        let glide = ["......H......", "WWWWWWBWWWWWW", ".wwwwBBBwwww.", ".....BBB.....", ".....L.L....."]
-        let flap = ["WW....H....WW", ".WWW..B..WWW.", "...wwBBBww...", ".....BBB.....", ".....L.L....."]
-        let pal: [Character: Px] = ["H": C(0xE8EAF2), "B": C(0x6A6C7A), "W": C(0x2E4E9A), "w": C(0x5A7AC0), "L": C(0x3A3A48)]
+        if sky !== c {
+            for y in 0..<min(c.h, f.y + f.h * q) {
+                for x in 0..<c.w where sky.buf[(y * c.w + x) * 4 + 3] > 0 {
+                    let ux = (x - f.x) / q, uy = (y - f.y) / q
+                    if ux >= 0, uy >= 0, ux < f.w, uy < f.h, isles.buf[(uy * f.w + ux) * 4 + 3] > 0 { continue }
+                    c.px(x, y, unpremultiplied(sky, (y * c.w + x) * 4))
+                }
+            }
+        }
+        // The bird-men: big enough to read as people, not planes. Wings swept up in a V, the long dark flight
+        // feathers fanned apart at their tips like fingers, paler coverts at their roots; between them a grey body
+        // hanging under the shoulders, the red straps of a harness, a head of white hair round a grey face, legs
+        // trailing. Now and then a beat of the wings, swept down.
+        let glide = ["F.F.................F.F", "FFFF...............FFFF", ".WWWW.............WWWW.", "..WWWWw.........wWWWW..",
+                     "...wWWWww.HHH.wwWWWw...", ".....wwWWwHGHwWWww.....", ".......wwRBBBRww.......", "..........BBB..........",
+                     "..........B.B..........", "..........L.L.........."]
+        let flap = [".......................", "..........HHH..........", ".....wwWWwHGHwWWww.....", "..wWWWWWWRBBBRWWWWWWw..",
+                    ".WWWWw....BBB....wWWWW.", "FWWw......BBB......wWWF", "FF........B.B........FF", "F.F.......L.L.......F.F"]
+        let pal: [Character: Px] = ["H": C(0xF4F4FA), "G": C(0x9A9CAC), "B": C(0x6A6C7A), "R": C(0xC83A30), "F": C(0x1E3A84),
+                                    "W": C(0x2E5EB8), "w": C(0x7AA2E4), "L": C(0x3A3A48)]
         for b in 0..<(tall ? 2 : 1) {
             let period = 19.0 + Double(b) * 7
             let phase = ((t + Double(b) * 9) / period).truncatingRemainder(dividingBy: 1)
             guard phase < 0.6 else { continue }
-            let bs = q
-            let x = -20 * bs + Int(phase / 0.6 * Double(c.w + 40 * bs))
+            let bs = q + 1
+            let x = -24 * bs + Int(phase / 0.6 * Double(c.w + 48 * bs))
             let base = tall ? f.y + (top * (b == 0 ? 45 : 22) / 100) * q : f.y + (top + 4) * q
             let y = base + Int((sin(t * 1.1 + Double(b)) * Double(2 * q)).rounded())
             let rows = (Int(t * 5) % 9 < 2) ? flap : glide
