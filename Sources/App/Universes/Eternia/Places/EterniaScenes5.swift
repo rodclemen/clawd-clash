@@ -48,6 +48,35 @@ private func eternia5Pattern(_ c: PixelCanvas, _ x: Int, _ y: Int, _ b: Int, _ r
     }
 }
 
+/// The rows a polygon through `pts` covers, from `y0` to `y1`: calls `span` with each row and the first and last
+/// pixel whose middle is inside it.
+private func eternia5Spans(_ pts: [(Double, Double)], _ y0: Int, _ y1: Int, _ span: (Int, Int, Int) -> Void) {
+    guard pts.count > 2 else { return }
+    let ys = pts.map(\.1)
+    let top = max(y0, Int(ys.min()!.rounded(.down))), bottom = min(y1, Int(ys.max()!.rounded(.up)))
+    guard top <= bottom else { return }
+    for y in top...bottom {
+        let cy = Double(y) + 0.5
+        var xs: [Double] = []
+        for i in 0..<pts.count {
+            let a = pts[i], b = pts[(i + 1) % pts.count]
+            if (a.1 <= cy) != (b.1 <= cy) { xs.append(a.0 + (cy - a.1) / (b.1 - a.1) * (b.0 - a.0)) }
+        }
+        xs.sort()
+        var i = 0
+        while i + 1 < xs.count {
+            let xa = Int((xs[i] - 0.5).rounded(.up)), xb = Int((xs[i + 1] - 0.5).rounded(.down))
+            if xb >= xa { span(y, xa, xb) }
+            i += 2
+        }
+    }
+}
+
+/// Fills the polygon through `pts` on `c` in `col`.
+private func eternia5Fill(_ c: PixelCanvas, _ pts: [(Double, Double)], _ col: Px) {
+    eternia5Spans(pts, 0, c.h - 1) { y, xa, xb in c.rect(xa, y, xb - xa + 1, 1, col) }
+}
+
 /// A little four-pointed twinkle at (x, y), its arms `r` long, `t` thick.
 private func eternia5Twinkle(_ c: PixelCanvas, _ x: Int, _ y: Int, _ r: Int, _ t: Int, _ col: Px) {
     c.rect(x - r, y, 2 * r + t, t, col); c.rect(x, y - r, t, 2 * r + t, col)
@@ -113,7 +142,7 @@ extension Scenes {
 
         // The hive, blown up to size.
         let hive = PixelCanvas(120, 72)
-        eterniaAndreenosHive(hive)
+        eterniaAndreenosHive(hive, fine: tall)
         eternia5BlowUp(c, hive, f.x, f.y, q)
 
         // The meadow in front: deep green, plain and dark where the crew stands, a worn path from the door.
@@ -140,12 +169,22 @@ extension Scenes {
                                                _ petal: [Px], seed: Int) {
         let sw = max(2, q * 2), top = foot - h
         c.rect(x - sw / 2, top, sw, h, C(0x3E6A2A)); c.rect(x - sw / 2, top, max(1, sw / 2), h, C(0x5E8E3A))
-        // Two leaves, out either side of the stem.
-        for (k, side) in [(0.55, -1), (0.75, 1)] {
-            let ly = top + Int(Double(h) * k), lw = r * 3 / 2
-            for i in 0..<lw {
-                let lx = side < 0 ? x - sw / 2 - i : x + sw / 2 + i, th = max(1, Int(Double(r) / 3 * sin(Double(i) / Double(lw) * .pi)))
-                c.rect(lx, ly - i / 2 - th / 2, 1, th, i % 4 == 0 ? C(0x4A7A30) : C(0x5A8E38))
+        // Two broad leaves, out either side of the stem and curving up, lit on their upper halves, a dark midrib.
+        for (k, side) in [(0.58, -1.0), (0.76, 1.0)] {
+            let p = (Double(x) + side * Double(sw) / 2, Double(top) + Double(h) * k)
+            let len = Double(r) * 2.1, wid = Double(r) * 0.62
+            // Out along the leaf (`a`, 0 at the stem, 1 at the tip) and across it (`b`, plus on its upper side).
+            let along = (side * 0.86, -0.5), up = (side * along.1, -side * along.0)
+            func pt(_ a: Double, _ b: Double) -> (Double, Double) {
+                (p.0 + along.0 * len * a + up.0 * wid * b, p.1 + along.1 * len * a + up.1 * wid * b)
+            }
+            let tip = pt(1, -0.15)
+            eternia5Fill(c, [p, pt(0.25, 0.75), pt(0.55, 0.8), pt(0.8, 0.5), tip, pt(0.6, 0.05), pt(0.3, 0.05)], C(0x6AA040))
+            eternia5Fill(c, [p, pt(0.3, 0.05), pt(0.6, 0.05), tip, pt(0.75, -0.45), pt(0.45, -0.7), pt(0.2, -0.55)], C(0x3E7028))
+            let n = max(2, Int(len))
+            for i in 0...n {
+                let m = pt(Double(i) / Double(n) * 0.95, 0.02 - Double(i) / Double(n) * 0.15)
+                c.rect(Int(m.0), Int(m.1), max(1, q / 2), max(1, q / 2), C(0x2E5A20))
             }
         }
         // The head: petals round the disc, the far ones darker, each lit along its upper edge.
@@ -165,8 +204,9 @@ extension Scenes {
     }
 
     /// The hive itself, one pixel to a unit on a 120×72 canvas, its foot on row 71: five rounded tiers of wax, a crown
-    /// on top, rows of cells, doorways with ledges, the grand door at the foot and honey hanging from the eaves.
-    static func eterniaAndreenosHive(_ c: PixelCanvas) {
+    /// on top, rows of cells (two to a tier when it's blown up big, `fine`, one in the window where more would be busy),
+    /// doorways with ledges, the grand door at the foot and honey hanging from the eaves.
+    static func eterniaAndreenosHive(_ c: PixelCanvas, fine: Bool) {
         // Wax in six tones, darkest first; honey in three; the dark of an empty cell or a doorway.
         let wax = [C(0x3A2208), C(0x5C3810), C(0x82561A), C(0xA87426), C(0xCC9838), C(0xEAC062)]
         let honey = [C(0xB86A10), C(0xE09A22), C(0xFFD060)], deep = C(0x1E0E02)
@@ -207,14 +247,16 @@ extension Scenes {
             // The cells: a honeycomb band round its middle, in two staggered rows, fading out where the band curves
             // away at the sides. The lowest band has only a few, low down either side of the door.
             guard i > 0 else { continue }
-            for row in 0..<2 {
+            for row in 0..<(fine ? 2 : 1) {
                 let cy = tier.top + 2 + row * 3
                 guard cy + 4 < tier.bottom else { continue }
                 for cx in stride(from: 60 - hw + 3 + row * 3, to: 60 + hw - 6, by: 6) {
                     let pick = noise(cx * 17 + cy * 5 + i)
-                    let fill: Px = pick < 0.45 ? wax[4] : pick < 0.8 ? honey[1] : deep
-                    c.pattern(cx, cy, [".RRR.", "RCCCR", "RCCCR", ".RRR."], ["R": wax[1], "C": fill])
-                    if pick < 0.45 { c.px(cx + 1, cy + 1, wax[5]) } else if pick < 0.8 { c.px(cx + 1, cy + 1, honey[2]); c.px(cx + 3, cy + 2, honey[0]) }
+                    // Capped wax mostly, honey in some, an empty one now and then; ringed in a tone just darker than
+                    // the band, so the comb reads as a texture, not a row of holes.
+                    let fill: Px = pick < 0.6 ? wax[4] : pick < 0.92 ? honey[1] : wax[1]
+                    c.pattern(cx, cy, [".RRR.", "RCCCR", "RCCCR", ".RRR."], ["R": wax[2], "C": fill])
+                    if pick < 0.6 { c.px(cx + 1, cy + 1, wax[5]) } else if pick < 0.92 { c.px(cx + 1, cy + 1, honey[2]) }
                 }
             }
         }
@@ -296,271 +338,489 @@ extension Scenes {
 
 // MARK: - Darksmoke
 
+/// Which pixels of a `w`×`h` picture a shape covers, for rock drawn as polygons and shaded afterwards. Off the sides
+/// and below the foot counts as covered (the rock goes on), above the top as open sky.
+private struct Eternia5Mask {
+    let w: Int, h: Int
+    var on: [Bool]
+    /// How far down everything drawn is moved, so shapes may reach a little above row 0.
+    var drop = 0.0
+    init(_ w: Int, _ h: Int) { self.w = w; self.h = h; on = [Bool](repeating: false, count: w * h) }
+    subscript(x: Int, y: Int) -> Bool {
+        if y < 0 { return false }
+        if x < 0 || x >= w || y >= h { return true }
+        return on[y * w + x]
+    }
+    /// Covers (or, with `value` false, carves out) the polygon through `pts`, shifted by (`dx`, `dy`): every pixel
+    /// whose middle is inside it.
+    mutating func poly(_ pts: [(Double, Double)], dx: Double = 0, dy: Double = 0, value: Bool = true) {
+        let dy = dy + drop, w = w
+        var on = on
+        eternia5Spans(pts.map { ($0.0 + dx, $0.1 + dy) }, 0, h - 1) { y, xa, xb in
+            let a = max(0, xa), b = min(w - 1, xb)
+            if b >= a { for x in a...b { on[y * w + x] = value } }
+        }
+        self.on = on
+    }
+    /// Covers a round blob `r` across at (`x`, `y`).
+    mutating func disc(_ x: Double, _ y: Double, _ r: Double) {
+        let y = y + drop
+        let ri = Int(r.rounded(.up)) + 1
+        for yy in (Int(y) - ri)...(Int(y) + ri) where yy >= 0 && yy < h {
+            for xx in (Int(x) - ri)...(Int(x) + ri) where xx >= 0 && xx < w {
+                let ddx = Double(xx) + 0.5 - x, ddy = Double(yy) + 0.5 - y
+                if ddx * ddx + ddy * ddy <= r * r { on[yy * w + xx] = true }
+            }
+        }
+    }
+    /// Covers a tapering curve from `a` to `b` bending towards `ctl`, `r0` thick at `a` and `r1` at `b`.
+    mutating func curve(_ a: (Double, Double), _ ctl: (Double, Double), _ b: (Double, Double), _ r0: Double, _ r1: Double) {
+        for i in 0...16 {
+            let k = Double(i) / 16, m = 1 - k
+            disc(m * m * a.0 + 2 * m * k * ctl.0 + k * k * b.0, m * m * a.1 + 2 * m * k * ctl.1 + k * k * b.1, r0 + (r1 - r0) * k)
+        }
+    }
+}
+
 extension Scenes {
-    /// Where Granamyr's cliffs stand at Darksmoke: drawn at one pixel to a unit on a 120×56 canvas
-    /// (`eterniaDarksmokeCliffs`, 180 wide, wider than the window's strip) and blown up `q` times, their foot on `base`, their canvas's top left at `x`/`y`.
+    /// Where Granamyr's crags stand at Darksmoke, shared by the still picture and the moving layer: drawn at one
+    /// pixel to a unit, 200 units wide and 60 tall (wider than the window's strip on the screen saver), blown up `q`
+    /// times, their foot on `base`, their top left at `x`/`y`. The great cave's mouth is at units (100, 40).
     static func eterniaDarksmokeFrame(_ c: PixelCanvas, _ g: Int) -> (q: Int, base: Int, x: Int, y: Int) {
         let q = eternia5Scale(c, g)
         let base = g - (isTall(c) ? 10 : 6) * q
-        return (q, base, c.w / 2 - 90 * q, base - 55 * q)
+        return (q, base, c.w / 2 - 100 * q, base - 59 * q)
     }
 
-    /// The caves in the cliffs, in cliff units: each mouth's middle and its half width and height. The first is
-    /// Granamyr's own, at the foot.
-    private static let eterniaDarksmokeCaves: [(x: Int, y: Int, rx: Int, ry: Int)] = [
-        (90, 48, 11, 10), (44, 22, 4, 4), (128, 29, 5, 4), (72, 31, 3, 3), (152, 41, 4, 4), (26, 40, 3, 4), (106, 19, 3, 3),
-    ]
-    /// Where smoke comes out of the cliff tops, in cliff units.
-    private static let eterniaDarksmokeVents: [(x: Int, y: Int)] = [(44, 4), (86, 10), (100, 9), (140, 17)]
+    private typealias Eternia5Shape = [(Double, Double)]
 
-    /// Darksmoke, where Granamyr the dragon lives: a sky thick with smoke, near black overhead and lit dull orange
-    /// at the horizon by the fires underground, long banks of grey-violet smoke rolling across it, black crags far
-    /// off with ember light along their tops. The cliffs are columns of black basalt standing shoulder to shoulder,
-    /// each lit cold grey down its left edge, jointed across, their six-sided tops stepping up to a peak on the left;
-    /// caves open in them, dark mouths with a fire glowing deep inside, and Granamyr's great cave at the foot, its
-    /// glow the brightest. Stumps of basalt columns stand about the ash plain the crew stands on. On the screen saver
-    /// the cliffs stand three times the size and the smoke goes up a long way, dragons gliding across it.
+    /// The near crags, in units, black and lit from below: the great cliff with its two horns of rock, the leaning
+    /// spire on the left, the hooked one on the right, an overhang either side and a few lesser teeth. The last few
+    /// stand out past the 200 units, at the window's ends.
+    private static let eterniaDarksmokeNear: [Eternia5Shape] = [
+        // The great cliff, a horn of rock curling up and out at each shoulder.
+        [(58, 60), (61, 46), (63, 36), (67, 29), (71, 26), (69, 18), (66, 10), (62, 3), (64.5, 2.5), (70, 8), (76, 15),
+         (81, 21), (86, 19.5), (91, 21.5), (96, 18.5), (101, 20.5), (106, 18), (111, 21), (116, 19), (121, 13), (127, 7),
+         (134, 2), (135.5, 3.5), (131, 9), (128, 17), (129, 25), (133, 29), (137, 36), (139, 46), (142, 60)],
+        // The leaning spire, its tip out over the left.
+        [(28, 60), (32, 46), (32, 36), (29, 26), (25, 16), (20, 8), (17, 2), (21, 4), (28, 11), (36, 21), (43, 30),
+         (48, 40), (51, 50), (54, 60)],
+        // The overhang, jutting towards the cave.
+        [(47, 60), (46, 48), (49, 40), (55, 35), (64, 32), (60, 37), (57, 42), (56, 50), (59, 60)],
+        // The hooked spire on the right, curling over like a talon.
+        [(146, 60), (149, 48), (152, 38), (156, 28), (161, 19), (168, 12), (176, 7), (181, 7.5), (174, 12), (168, 20),
+         (166, 30), (167, 42), (171, 52), (174, 60)],
+        // A slab leaning on the cliff's right shoulder.
+        [(138, 48), (141, 40), (147, 35), (153, 37), (148, 42), (144, 50), (146, 60), (139, 60)],
+        // Lesser teeth either end.
+        [(4, 60), (8, 46), (11, 38), (13.5, 33), (16, 40), (19, 52), (22, 60)],
+        [(178, 60), (181, 46), (185, 35), (187.5, 30), (190, 37), (192, 48), (196, 60)],
+        // At the window's ends: a tall spire leaning in at each edge and lesser crags inside them.
+        [(-152, 60), (-152, 6), (-146, 4), (-138, 9), (-130, 2), (-125, -1), (-123, 4), (-124, 14), (-120, 28),
+         (-113, 44), (-108, 60)],
+        [(-98, 60), (-93, 46), (-90, 34), (-87, 24), (-83, 16), (-80, 14), (-78, 20), (-76, 32), (-70, 46), (-66, 60)],
+        [(-52, 60), (-47, 50), (-41, 43), (-36, 41), (-31, 47), (-26, 60)],
+        [(352, 60), (352, 4), (344, 8), (336, 3), (329, 0), (327, 5), (328, 16), (323, 30), (316, 46), (311, 60)],
+        [(302, 60), (298, 48), (295, 36), (295, 25), (298, 15), (301, 12), (302, 20), (305, 32), (309, 46), (312, 60)],
+        [(222, 60), (226, 52), (232, 45), (238, 42), (243, 49), (248, 60)],
+    ]
+    /// Granamyr's cave: the maw carved out of the great cliff, the fangs of rock hanging in its roof and standing on
+    /// its sill, and the ledge he sleeps on, out in front.
+    private static let eterniaDarksmokeMaw: Eternia5Shape = [
+        (74, 52), (72.5, 45), (74, 38), (78, 33), (85, 30), (93, 28.5), (100, 29.5), (107, 28), (115, 30), (121, 33),
+        (126, 38), (127.5, 45), (126, 52),
+    ]
+    private static let eterniaDarksmokeFangs: [Eternia5Shape] = [
+        [(81, 31), (87, 30), (84, 38.5)], [(87.5, 29.5), (92.5, 29), (90, 36)], [(97.5, 29.5), (102, 29.5), (99.8, 33)],
+        [(108, 28.5), (112.5, 29.2), (110, 36)], [(113, 30), (119, 31.5), (116, 38.5)],
+        [(76, 51.5), (81.5, 51.5), (79.5, 44.5)], [(118.5, 51.5), (124, 51.5), (120.5, 44)],
+    ]
+    private static let eterniaDarksmokeLedge: Eternia5Shape = [(66, 60), (66, 54), (70, 51), (130, 51), (134, 54), (134, 60)]
+    /// The crags behind, hazier with the smoke between: a spire leaning right behind the near one leaning left, the
+    /// cliff's own back ridge showing over its crest, a spire behind the hooked one, and more at the window's ends.
+    private static let eterniaDarksmokeBack: [Eternia5Shape] = [
+        [(10, 60), (17, 40), (25, 22), (33, 10), (40, 2), (43, 0.5), (44.5, 6), (47, 18), (53, 32), (58, 46), (60, 60)],
+        [(56, 60), (60, 30), (66, 22), (74, 25), (80, 17), (88, 11), (94, 14), (100, 8), (106, 13), (113, 9), (120, 17),
+         (126, 21), (134, 19), (140, 27), (146, 60)],
+        [(136, 60), (144, 40), (149, 28), (152, 14), (155, 5), (157.5, 2), (160, 12), (164, 26), (171, 42), (177, 60)],
+        [(174, 60), (183, 36), (190, 24), (197, 30), (203, 42), (208, 60)],
+        [(-8, 60), (-2, 38), (3, 27), (8, 34), (14, 60)],
+        [(-124, 60), (-114, 30), (-106, 17), (-102, 23), (-96, 42), (-88, 60)],
+        [(-44, 60), (-36, 36), (-29, 25), (-24, 31), (-14, 60)],
+        [(236, 60), (246, 32), (253, 21), (258, 28), (268, 60)],
+        [(312, 60), (316, 36), (322, 22), (327, 31), (336, 60)],
+    ]
+    /// On the screen saver, the crags rising high behind everything, faint in the smoke.
+    private static let eterniaDarksmokeHigh: [Eternia5Shape] = [
+        [(-14, 60), (-2, 22), (8, -2), (17, -20), (24, -28), (26, -22), (29, -6), (36, 18), (48, 60)],
+        [(104, 60), (112, 14), (118, -2), (123, -12), (125, -8), (128, 6), (136, 60)],
+        [(150, 60), (160, 22), (168, -4), (175, -17), (181, -24), (183, -18), (184, -4), (190, 20), (204, 60)],
+        [(60, 60), (66, 22), (72, 6), (76, 2), (79, 10), (86, 60)],
+    ]
+    /// The cracks of lava running down the near crags, in units, each from its top to the pool at its foot.
+    private static let eterniaDarksmokeCracks: [[(Int, Int)]] = [
+        [(67, 30), (65, 37), (68, 43), (66, 50), (67, 59)],
+        [(133, 31), (135, 38), (132, 45), (134, 52), (133, 59)],
+        [(39, 34), (41, 41), (38, 46), (42, 52), (41, 59)],
+        [(164, 38), (166, 44), (163, 50), (164, 59)],
+    ]
+    /// Vents along the cliff's crest, between the horns, where smoke pours out, in units.
+    private static let eterniaDarksmokeVents: [(x: Int, y: Int)] = [(91, 21), (101, 20), (111, 20), (-81, 14), (300, 12)]
+
+    /// Darksmoke, the black crags where Granamyr and Eternia's ancient dragons live: a sky choked with smoke, near
+    /// black overhead and lit red and orange from below by the fires underground, long streamers of smoke lying across
+    /// it. The crags are jagged black rock, a strong ragged skyline: a spire leaning out on the left, a talon of rock
+    /// hooking over on the right, overhangs, and in the middle the great cliff, two horns of rock curling up off its
+    /// shoulders. Under them Granamyr's cave, a huge maw in the rock, fangs of stone hanging in its roof and standing
+    /// on its sill, dark inside with a deep red glow far back and old dragon bones on the ledge he sleeps on out in
+    /// front. Lava glows in cracks down the crags and pools at their feet, and every edge facing it is rim-lit orange;
+    /// up high the rock goes black against the lighter smoke, hazier the further back. The crew stands on a plain of
+    /// grey ash. On the screen saver the crags stand three times the size, more rising high behind them into the smoke.
     static func eterniaDarksmoke(_ c: PixelCanvas, _ g: Int) {
         let s = unit(g), f = eterniaDarksmokeFrame(c, g), q = f.q, tall = isTall(c)
-        let horizon = f.base - (tall ? 20 : 8) * q
-        c.gradient(0, f.base, C(0x18141E), C(0x7A4632), bands: tall ? 12 : 8)
-        // Banks of smoke rolling across the sky: billows of grey-violet, lighter on top, lit ember under.
-        let banks: [(x: Int, y: Int, len: Int)] = tall
-            ? [(0, 12, 46), (50, 6, 50), (20, 26, 44), (68, 24, 36), (2, 42, 38), (54, 40, 44), (26, 58, 34), (78, 60, 26)]
-            : [(0, 20, 22), (48, 8, 26), (80, 34, 16), (24, 44, 14)]
-        for (k, b) in banks.enumerated() {
-            let x = c.w * b.x / 100, y = horizon * b.y / 100, len = b.len * s * (tall ? 2 : 1), t = s * (tall ? 2 : 1)
-            let bumps = 4 + k % 3
-            for i in 0..<bumps {
-                let bx = x + len * (i * 2 + 1) / (bumps * 2), r = (len / bumps) * (6 + Int(noise(k * 9 + i) * 5)) / 10
-                c.circle(bx, y - r / 3, r, C(0x3A3442))
-                c.circle(bx - r / 4, y - r / 2, r * 2 / 3, C(0x4A4352))
-                c.circle(bx - r / 3, y - r * 2 / 3, r / 3, C(0x5C5464))
+        // The sky: near black up top, smoke-brown, then red and orange where the fires light it from below.
+        let glowTop = max(0, f.y + (tall ? -10 : 18) * q)
+        c.gradient(0, glowTop, C(0x221820), C(0x4A2A2C), bands: tall ? 8 : 4)
+        c.gradient(glowTop, f.base, C(0x4A2A2C), C(0xC8582C), bands: tall ? 10 : 6)
+        // Long streamers of smoke lying across it, grey-violet above and lit ember underneath.
+        let streams: [(x: Int, y: Int, len: Int, th: Int)] = tall
+            ? [(-6, 8, 70, 4), (40, 15, 66, 5), (2, 25, 54, 3), (52, 32, 56, 4), (-4, 44, 62, 5), (36, 54, 70, 4),
+               (6, 66, 50, 3), (60, 74, 44, 3), (20, 82, 60, 2)]
+            : [(-4, 10, 40, 2), (44, 4, 46, 2), (26, 30, 36, 2), (70, 40, 34, 2)]
+        let skyH = Double(tall ? f.y + 40 * q : f.y + 30 * q)
+        for (k, st) in streams.enumerated() {
+            eterniaDarksmokeStreamer(c, c.w * st.x / 100, Int(skyH * Double(st.y) / 100), c.w * st.len / 100,
+                                     st.th * s * (tall ? 2 : 1), seed: k, lit: Double(st.y) / 100)
+        }
+
+        // The crags, drawn a unit to a pixel on a canvas the size of the picture and blown up to size.
+        let uw = c.w / q + 2, uh = f.base / q + 1
+        let lx = uw / 2 - 100, ly = uh - 60
+        let art = PixelCanvas(uw, uh)
+        eterniaDarksmokeCrags(art, lx: lx, ly: ly, tall: tall)
+        eternia5BlowUp(c, art, f.x - lx * q, f.base - (uh - 1) * q, q)
+
+        // The plain in front: grey ash, plain where the crew stands, warmed near the lava pools.
+        c.gradient(f.base + q, g, C(0x3E3238), C(0x342A30), bands: 3)
+        for crack in eterniaDarksmokeCracks {
+            let x = f.x + crack.last!.0 * q
+            c.ellipse(x, f.base + q, 9 * q, max(1, q), C(0xE06A2A, 0.22)); c.ellipse(x, f.base + q, 5 * q, max(1, q / 2), C(0xF09040, 0.35))
+        }
+        c.ground(g, C(0x3A3034), edge: C(0x5A4844), speck: C(0x2E2628), seed: 53)
+    }
+
+    /// A long streamer of smoke from (`x`, `y`), `len` pixels long and about `th` thick, wavering along its length,
+    /// thinning at both ends, its edges soft: grey-violet along its top, lit ember along its underside, more so the
+    /// lower in the sky it lies (`lit`, 0...1).
+    private static func eterniaDarksmokeStreamer(_ c: PixelCanvas, _ x: Int, _ y: Int, _ len: Int, _ th: Int, seed: Int,
+                                                 lit: Double) {
+        let top = lerp(C(0x5A4A58), C(0x7A5A60), lit), under = lerp(C(0x7A3A30), C(0xD86E3E), lit)
+        let ph = noise(seed * 13 + 900) * 6, f1 = 0.018 + noise(seed * 13 + 901) * 0.02
+        for i in 0..<max(1, len) {
+            let k = Double(i) / Double(max(1, len))
+            let taper = min(1, k * 5, (1 - k) * 4)
+            let half = Double(th) * taper * (0.7 + 0.3 * sin(Double(i) * f1 * 2.7 + ph))
+            guard half >= 0.5 else { continue }
+            let cy = Double(y) + sin(Double(i) * f1 + ph) * Double(th) * 0.5 + Double(i) * 0.04
+            for dy in Int(-half)...Int(half) {
+                let e = abs(Double(dy)) / half
+                // Three steps of softness, so it stays pixel art but has no hard rim.
+                let a = e < 0.45 ? 0.62 : e < 0.75 ? 0.4 : 0.18
+                c.px(x + i, Int(cy) + dy, (dy > Int(half / 3) ? under : top).alpha(a * min(1, taper * 1.4)))
             }
-            c.rect(x + len / 10, y, len * 4 / 5, t, C(0x3A3442)); c.rect(x + len / 5, y + t / 2, len * 3 / 5, t, C(0x7A4232, 0.45))
-        }
-        // The far crags, black, ember light along their tops, a farther range behind them on the screen saver.
-        if tall { eterniaDarksmokeCrags(c, base: horizon - 30 * s, amp: 18 * s, period: 24 * s, seed: 7, bottom: f.base, C(0x2E2632), edge: C(0x4A3438)) }
-        eterniaDarksmokeCrags(c, base: horizon, amp: (tall ? 12 : 6) * s, period: (tall ? 16 : 11) * s, seed: 13,
-                              bottom: f.base, C(0x1E1A22), edge: C(0x8A4428))
-        // The ash plain under the cliffs.
-        c.rect(0, horizon + (tall ? 6 : 3) * s, c.w, f.base - horizon, C(0x2A2430))
-
-        // The cliffs, blown up to size.
-        let cliffs = PixelCanvas(180, 56)
-        eterniaDarksmokeCliffs(cliffs)
-        eternia5BlowUp(c, cliffs, f.x, f.y, q)
-
-        // The plain in front: dark ash, plain where the crew stands, a few cracks glowing ember.
-        c.gradient(f.base + q, g, C(0x34303A), C(0x2C2832), bands: 3)
-        for k in 0..<(c.w / (36 * s) + 1) {
-            let x = k * 36 * s + Int(noise(k + 140) * Double(18 * s)), y = f.base + q + Int(noise(k + 141) * Double(max(1, (g - f.base) / 2)))
-            c.rect(x, y, (3 + Int(noise(k + 142) * 5)) * s, max(1, q / 2), C(0xD05A22, 0.5))
-        }
-        // Stumps of basalt columns either side, six-sided tops lit, the nearer ones taller.
-        let stumps: [(x: Int, h: Int, w: Int)] = [(2, 16, 6), (7, 10, 5), (11, 6, 4), (16, 3, 4), (84, 4, 4), (89, 7, 5),
-                                                  (93, 12, 5), (98, 18, 6)]
-        for st in stumps {
-            let x = c.w * st.x / 100, w = st.w * q, h = st.h * q
-            eterniaDarksmokeColumn(c, x - w / 2, g - h, w, h + q, q)
-        }
-        c.ground(g, C(0x302C34), edge: C(0x4C4652), speck: C(0x24202A), seed: 53)
-    }
-
-    /// A basalt column from (`x`, `top`), `w` wide and `h` tall, `q` pixels a unit: a six-sided top lit pale, the
-    /// face lit cold grey down its left, dark down its right, a joint across it now and then.
-    private static func eterniaDarksmokeColumn(_ c: PixelCanvas, _ x: Int, _ top: Int, _ w: Int, _ h: Int, _ q: Int) {
-        let tone = eterniaDarksmokeRock
-        c.rect(x, top, w, h, tone[2])
-        c.rect(x, top, max(1, q), h, tone[4]); c.rect(x + max(1, q), top, max(1, q), h, tone[3])
-        c.rect(x + w - max(1, q), top, max(1, q), h, tone[0])
-        for j in stride(from: top + 7 * q, to: top + h - 2 * q, by: 8 * q) {
-            c.rect(x, j, w, max(1, q / 2), tone[1]); c.rect(x, j - max(1, q / 2), max(1, q), max(1, q / 2), tone[5])
-        }
-        c.rect(x, top, w, max(1, q), tone[4]); c.rect(x + max(1, q), top, max(1, w - 2 * q), max(1, q), tone[5])
-        c.rect(x, top + max(1, q), w, max(1, q / 2), tone[1])
-    }
-
-    /// Basalt in six tones, darkest first: black, but never so black the crew can't read in front of it.
-    private static let eterniaDarksmokeRock = [C(0x141118), C(0x1E1A24), C(0x2C2734), C(0x3A3444), C(0x504858), C(0x6C6478)]
-
-    /// Jagged ranges along the horizon: peaks at every `period` pixels at heights of their own, filled to `bottom`.
-    private static func eterniaDarksmokeCrags(_ c: PixelCanvas, base: Int, amp: Int, period: Int, seed: Int, bottom: Int,
-                                              _ col: Px, edge: Px) {
-        let p = max(1, period)
-        for x in 0..<c.w {
-            let k = x / p, f = Double(x % p) / Double(p)
-            let h0 = noise(k * 31 + seed), h1 = noise((k + 1) * 31 + seed)
-            let v = h0 * (1 - f) + h1 * f - 0.45 * sin(f * .pi)
-            let top = base - Int(v * Double(amp))
-            if top < bottom { c.rect(x, top, 1, bottom - top, col); c.px(x, top, edge) }
         }
     }
 
-    /// Granamyr's cliffs, one pixel to a unit on a 180×56 canvas, their foot on row 55: columns of basalt stepping
-    /// up to a peak left of the middle and a shoulder on the right, the caves in them, ledges across.
-    static func eterniaDarksmokeCliffs(_ c: PixelCanvas) {
-        let tone = eterniaDarksmokeRock, ember = C(0xD86A2A), emberD = C(0x7A3420)
-        /// The height of the cliff top over column `x`: a peak on the left, a saddle, a shoulder on the right, low at
-        /// the ends.
-        func ridge(_ x: Double) -> Double {
-            let peak = 51 * exp(-pow((x - 46) / 20, 2)), saddle = 43 * exp(-pow((x - 94) / 22, 2))
-            let shoulder = 39 * exp(-pow((x - 140) / 16, 2)), body = 24 * exp(-pow((x - 90) / 78, 4))
-            return max(peak, saddle, shoulder, body)
+    /// The crags themselves on `c`, a pixel to a unit, the 200-unit landmark's top left at (`lx`, `ly`): the far ranges,
+    /// on the screen saver the high crags, the crags behind, the cave's dark, the near crags, lava and the bones.
+    private static func eterniaDarksmokeCrags(_ c: PixelCanvas, lx: Int, ly: Int, tall: Bool) {
+        let dx = Double(lx), dy = Double(ly)
+        /// Where the lava lights the rock from: the cave and each crack and pool, in units of the landmark.
+        var glows: [(x: Double, y: Double, r: Double, k: Double)] = [(100, 42, 27, 0.95)]
+        for crack in eterniaDarksmokeCracks {
+            let mid = crack[crack.count / 2], foot = crack.last!
+            glows.append((Double(mid.0), Double(mid.1), 8, 0.45)); glows.append((Double(foot.0), Double(foot.1), 13, 0.75))
         }
-        // The columns, each its own width and height.
-        var x = 0
-        var k = 0
-        while x < 180 {
-            let w = 4 + Int(noise(k * 3 + 200) * 3)
-            let mid = Double(x) + Double(w) / 2
-            let h = Int(ridge(mid) + (noise(k * 3 + 201) - 0.5) * 6)
-            let top = max(1, 55 - h)
-            if h > 2 {
-                for y in top..<56 {
-                    for xx in x..<min(180, x + w) {
-                        let across = Double(xx - x) / Double(max(1, w - 1))
-                        // Lit on the left, the far side of each column in shadow; a little darker low down.
-                        let v = 0.72 - 0.6 * across - (y > 44 ? 0.06 : 0)
-                        c.px(xx, y, eternia5Dither(tone, v, xx, y, grain: 0.18))
-                    }
-                }
-                c.rect(x, top, 1, 56 - top, tone[4]); c.rect(min(179, x + w - 1), top, 1, 56 - top, tone[0])
-                // Joints across the column, each its own heights.
-                var j = top + 5 + Int(noise(k * 3 + 202) * 4)
-                while j < 54 {
-                    c.rect(x, j, w, 1, tone[1]); c.px(x, j - 1, tone[5])
-                    j += 6 + Int(noise(j * 7 + k) * 5)
-                }
-                // The six-sided top: a pale face, its near edge darker.
-                c.rect(x, top, w, 1, tone[4]); c.rect(x + 1, top, max(1, w - 2), 1, tone[5]); c.rect(x, top + 1, w, 1, tone[2])
-            }
-            x += w
+        let shifted = glows.map { (x: $0.x + dx, y: $0.y + dy, r: $0.r, k: $0.k) }
+
+        // The far ranges along the horizon: ragged teeth, brown-black in the haze, their tops lit by the glow.
+        var far = Eternia5Mask(c.w, c.h)
+        var pts: Eternia5Shape = [(-2, Double(c.h))]
+        var x = -2.0, k = 0
+        while x < Double(c.w) + 6 {
+            let big = noise(k * 7 + 604) > 0.75
+            pts.append((x, dy + 40 - noise(k * 7 + 600) * 9 - (big ? 9 : 0)))
+            x += 3 + noise(k * 7 + 601) * (big ? 9 : 6)
+            pts.append((x, dy + 47 - noise(k * 7 + 602) * 5))
+            x += 2 + noise(k * 7 + 603) * 7
             k += 1
         }
-        // Ledges across the face, where the dragons perch: lighter, a dark shadow under each.
-        for (x0, x1, y) in [(30, 60, 26), (100, 136, 33), (58, 84, 34), (12, 38, 44), (146, 166, 45)] {
-            c.rect(x0, y, x1 - x0, 1, tone[5]); c.rect(x0, y + 1, x1 - x0, 1, tone[3]); c.rect(x0 + 1, y + 2, x1 - x0 - 2, 1, tone[0])
+        pts.append((x, Double(c.h)))
+        far.poly(pts)
+        if tall { var high = Eternia5Mask(c.w, c.h); for sh in eterniaDarksmokeHigh { high.poly(sh, dx: dx, dy: dy) }
+                  eterniaDarksmokeShade(c, high, haze: 0.62, glows: [], seed: 5) }
+        eterniaDarksmokeShade(c, far, haze: 0.5, glows: [], seed: 7)
+        var back = Eternia5Mask(c.w, c.h)
+        for sh in eterniaDarksmokeBack { back.poly(sh, dx: dx, dy: dy) }
+        eterniaDarksmokeShade(c, back, haze: 0.28, glows: shifted.map { (x: $0.x, y: $0.y, r: $0.r * 1.3, k: $0.k * 0.5) }, seed: 11)
+
+        // The cave's dark: black at its edges, a deep red glow far back where the dragon's fire smoulders.
+        var maw = Eternia5Mask(c.w, c.h)
+        maw.poly(eterniaDarksmokeMaw, dx: dx, dy: dy)
+        var near = Eternia5Mask(c.w, c.h)
+        for sh in eterniaDarksmokeNear { near.poly(sh, dx: dx, dy: dy) }
+        near.poly(eterniaDarksmokeMaw, dx: dx, dy: dy, value: false)
+        for sh in eterniaDarksmokeFangs { near.poly(sh, dx: dx, dy: dy) }
+        near.poly(eterniaDarksmokeLedge, dx: dx, dy: dy)
+        for yy in 0..<c.h {
+            for xx in 0..<c.w where maw[xx, yy] && !near[xx, yy] {
+                let ux = (Double(xx) - dx - 100) / 21, uy = (Double(yy) - dy - 42) / 10
+                let d = (ux * ux + uy * uy).squareRoot()
+                let v = max(0, 1 - d) + (noise(xx * 5 + yy * 77) - 0.5) * 0.12
+                c.px(xx, yy, v > 0.72 ? C(0x521610) : v > 0.42 ? C(0x2E0C0C) : v > 0.12 ? C(0x18060A) : C(0x090306))
+            }
         }
-        // The caves: arched mouths standing on a ledge, black up under their roofs, the fire glowing up from deep
-        // inside, its light spilling out over the sill.
-        for (i, cave) in eterniaDarksmokeCaves.enumerated() {
-            let top = cave.y - cave.ry, bottom = i == 0 ? 55 : cave.y + cave.ry
-            for y in top...bottom {
-                for xx in (cave.x - cave.rx)...(cave.x + cave.rx) {
-                    let dx = Double(xx - cave.x) / Double(cave.rx), dy = Double(y - cave.y) / Double(cave.ry)
-                    guard y >= cave.y || dx * dx + dy * dy <= 1 else { continue }
-                    let depth = Double(y - top) / Double(max(1, bottom - top))
-                    let glow = max(0, depth - 0.3) / 0.7 * (1 - abs(dx) * 0.6)
-                    c.px(xx, y, lerp(C(0x0C0608), i == 0 ? C(0xD0561E) : C(0xB04A1C), glow))
+        eterniaDarksmokeShade(c, near, haze: 0, glows: shifted, seed: 3)
+
+        // The lava: cracks running down the rock, white-hot at the core, orange either side.
+        for crack in eterniaDarksmokeCracks {
+            for i in 0..<(crack.count - 1) {
+                // Smouldering dark red near its top, hotter as it runs down to the pool.
+                let hot = Double(i + 1) / Double(crack.count - 1)
+                eterniaDarksmokeLine(c, crack[i].0 + lx, crack[i].1 + ly, crack[i + 1].0 + lx, crack[i + 1].1 + ly) { px, py, n in
+                    if hot > 0.5 { c.px(px + (n % 2 == 0 ? -1 : 1), py, C(0x6A2014)) }
+                    c.px(px, py, hot < 0.3 ? C(0x8A2A16) : hot < 0.6 ? C(0xC8461C) : n % 7 == 3 ? C(0xFFD070) : C(0xEC6A24))
                 }
             }
-            // The roof's lip over the mouth, dark, and the sill under it, lit by the fire.
-            for a in stride(from: Double.pi + 0.2, through: 2 * .pi - 0.2, by: 0.15) {
-                c.px(cave.x + Int((cos(a) * Double(cave.rx + 1)).rounded()), cave.y + Int((sin(a) * Double(cave.ry + 1)).rounded()), tone[0])
-            }
-            if i > 0 {
-                c.rect(cave.x - cave.rx - 1, bottom + 1, cave.rx * 2 + 3, 1, ember); c.rect(cave.x - cave.rx, bottom + 2, cave.rx * 2 + 1, 1, emberD)
-                c.rect(cave.x - cave.rx - 1, bottom, 1, 1, tone[4])
-            }
+            // The pool at its foot.
+            let p = crack.last!
+            c.rect(p.0 + lx - 4, p.1 + ly, 9, 1, C(0xC8501E)); c.rect(p.0 + lx - 2, p.1 + ly, 5, 1, C(0xF8A040))
+            c.rect(p.0 + lx - 3, p.1 + ly - 1, 7, 1, C(0x7A2414))
         }
-        // Granamyr's cave: fangs of basalt hanging over its mouth and standing either side, ember-lit.
-        for (fx, len) in [(82, 3), (86, 4), (94, 4), (98, 3)] {
-            for j in 0..<len { c.rect(fx, 39 + j, max(1, 2 - j / 2), 1, j == len - 1 ? emberD : tone[4]) }
+
+        // Old dragon bones on the ledge, lit from the cave: a ribcage on the left, a horned skull on the right.
+        let bone = C(0xDCC8A4), boneS = C(0x8E7656), boneL = C(0xF4C890)
+        let ox = lx, oy = ly
+        c.rect(ox + 84, oy + 50, 11, 1, boneS)
+        for (i, rx) in [85, 87, 89, 91, 93].enumerated() {
+            let h = 3 + (i == 2 ? 1 : i == 0 || i == 4 ? -1 : 0)
+            c.rect(ox + rx, oy + 50 - h, 1, h, bone); c.px(ox + rx + 1, oy + 50 - h, bone); c.px(ox + rx, oy + 50 - h, boneL)
         }
-        for fx in [79, 100] { c.rect(fx, 49, 2, 7, tone[3]); c.px(fx + (fx < 90 ? 1 : 0), 49, ember); c.rect(fx + (fx < 90 ? 1 : 0), 50, 1, 6, emberD) }
+        c.pattern(ox + 104, oy + 46, [
+            "...H......",
+            "..HBBB....",
+            ".BBKBBBBB.",
+            "BBBBBBBBBB",
+            ".SBSBSBSS.",
+        ], ["H": boneL, "B": bone, "K": C(0x1A0A08), "S": boneS])
     }
 
-    /// Darksmoke's life: smoke curling up out of the cliff tops and the caves, embers floating up and drifting, two
-    /// great eyes opening now and then in the dark of Granamyr's cave and, on the screen saver, dragons gliding
-    /// across the smoke high up.
+    /// Shades the rock `m` covers onto `c`: near-black basalt in angular facets, the lava's glow (`glows`, each a
+    /// place, a reach and a strength) warming it and catching its edges orange where they face the light; edges up
+    /// in the dark stay black against the smoke. `haze` lightens it towards the smoke's colour for rock further back.
+    private static func eterniaDarksmokeShade(_ c: PixelCanvas, _ m: Eternia5Mask, haze: Double,
+                                              glows: [(x: Double, y: Double, r: Double, k: Double)], seed: Int) {
+        let rock = [C(0x08060A), C(0x110C12), C(0x1A1218), C(0x261A20), C(0x34242A), C(0x463036)]
+        let smoke = C(0x4E3238), emberD = C(0x5E2216), ember = C(0xC8501E), hot = C(0xF8A048)
+        for y in 0..<m.h {
+            for x in 0..<m.w where m.on[y * m.w + x] {
+                var warm = 0.0
+                for gl in glows {
+                    let ddx = Double(x) - gl.x, ddy = Double(y) - gl.y
+                    let d = (ddx * ddx + ddy * ddy).squareRoot()
+                    if d < gl.r { let k = 1 - d / gl.r; warm += gl.k * k * k }
+                }
+                warm = min(1, warm)
+                // Angular facets: the rock broken into slanting planes, each a little lighter or darker.
+                let facet = noise(((x * 2 + y) / 7) * 7919 + ((y - x / 3) / 5) * 131 + seed) - 0.5
+                let v = 0.2 + facet * 0.3 + Double(y) / Double(m.h) * 0.08
+                var col = eternia5Dither(rock, v, x, y, grain: 0.14)
+                col = lerp(col, emberD, warm * 0.5)
+                // Edges: facing the glow, rim-lit; up in the dark, the darkest tone, crisp against the smoke.
+                let side = !m[x - 1, y] || !m[x + 1, y], up = !m[x, y - 1]
+                let edge = side || up
+                let near2 = !m[x - 2, y] || !m[x + 2, y]
+                if up && !side && warm > 0.12 && warm < 0.4 {
+                    col = lerp(emberD, ember, warm * 1.5)
+                } else if edge {
+                    col = warm > 0.12 ? (warm > 0.55 ? lerp(ember, hot, min(1, (warm - 0.55) * 1.6)) : lerp(emberD, ember, (warm - 0.12) * 2.3))
+                        : haze > 0 ? lerp(rock[3], smoke, 0.4) : rock[0]
+                } else if near2 && warm > 0.3 {
+                    col = lerp(emberD, ember, (warm - 0.3) * 0.8)
+                }
+                if haze > 0 { col = lerp(col, smoke, haze * (0.75 + 0.25 * (1 - Double(y) / Double(m.h)))) }
+                c.px(x, y, col)
+            }
+        }
+    }
+
+    /// Calls `plot` for each pixel along the line from (`x0`, `y0`) to (`x1`, `y1`), with its step number.
+    private static func eterniaDarksmokeLine(_ c: PixelCanvas, _ x0: Int, _ y0: Int, _ x1: Int, _ y1: Int,
+                                             _ plot: (Int, Int, Int) -> Void) {
+        let n = max(abs(x1 - x0), abs(y1 - y0), 1)
+        for i in 0...n {
+            plot(x0 + (x1 - x0) * i / n, y0 + (y1 - y0) * i / n, i + x0 * 3)
+        }
+    }
+
+    /// Darksmoke's life: smoke pouring out of the vents and the cracks' tops in long plumes that rise and lean away on
+    /// the wind, embers floating up off the lava, the lava and the cave's glow pulsing, Granamyr's great eyes opening
+    /// now and then in the dark of his cave and, on the screen saver, dragons gliding through the smoke.
     static func eterniaDarksmokeLife(_ c: PixelCanvas, _ g: Int, _ t: Double) {
         let f = eterniaDarksmokeFrame(c, g), q = f.q, tall = isTall(c)
-        // Smoke from the vents and the upper caves: grey puffs rising, swelling and thinning, lighter than the
-        // cliffs so it reads on them.
-        let rise = Double((tall ? 40 : 14) * q)
-        let sources = eterniaDarksmokeVents.map { ($0.x, $0.y) } + eterniaDarksmokeCaves.dropFirst().prefix(3).map { ($0.x, $0.y - $0.ry) }
+        func at(_ u: Double, _ v: Double) -> (x: Int, y: Int) { (f.x + Int(u * Double(q)), f.y + Int(v * Double(q))) }
+        // The cave's glow breathing, slow, as the dragon inside does.
+        let breath = 0.5 + 0.5 * sin(t * 0.7)
+        let m = at(100, 44)
+        c.ellipse(m.x, m.y - 2 * q, 8 * q, 4 * q, C(0xA02814, 0.04 + 0.12 * breath))
+        // The lava pulsing: a brighter glow running down each crack, the pools swelling.
+        for (i, crack) in eterniaDarksmokeCracks.enumerated() {
+            let pulse = 0.5 + 0.5 * sin(t * 1.3 + Double(i) * 1.7)
+            let p = at(Double(crack.last!.0) + 0.5, Double(crack.last!.1) + 0.5)
+            c.ellipse(p.x, p.y, 6 * q, max(1, q * 3 / 2), C(0xF89040, 0.12 + 0.2 * pulse))
+            let run = (t * 0.35 + Double(i) * 0.3).truncatingRemainder(dividingBy: 1)
+            let j = min(crack.count - 2, Int(run * Double(crack.count - 1))), k = run * Double(crack.count - 1) - Double(j)
+            let a = crack[j], b = crack[j + 1]
+            let r = at(Double(a.0) + Double(b.0 - a.0) * k + 0.5, Double(a.1) + Double(b.1 - a.1) * k + 0.5)
+            c.ellipse(r.x, r.y, q, 2 * q, C(0xFFC060, 0.35))
+        }
+        // Granamyr's eyes, opening in the dark of the cave for a few seconds, blinking once, then shut again.
+        let cyc = t.truncatingRemainder(dividingBy: 9)
+        if cyc > 4.5 {
+            var open = min(1, (cyc - 4.5) * 2.5, (9 - cyc) * 2.5)
+            if abs(cyc - 6.8) < 0.12 { open = 0.2 }
+            for (ex, dir) in [(92.0, 1), (103.0, -1)] {
+                let e = at(ex, 37.5)
+                c.ellipse(e.x + 5 * q / 2, e.y + q, 5 * q, 2 * q, C(0xF0C030, 0.14 * open))
+                // An almond, its inner corner lower, the lid closing down over it, a slit of pupil.
+                for i in 0..<5 {
+                    let rows = i == 0 || i == 4 ? 1 : 2, drop = (dir > 0 ? i : 4 - i) >= 3 ? 1 : 0
+                    let hgt = max(0, Int((Double(rows * q) * open).rounded()))
+                    guard hgt > 0 else { continue }
+                    let y = e.y + drop * q / 2 + (2 * q - rows * q) / 2 + (rows * q - hgt)
+                    c.rect(e.x + i * q, y, q, hgt, i == 2 ? C(0x1A0806) : i == 0 || i == 4 ? C(0xE08A20) : C(0xF8DC48))
+                }
+            }
+        }
+
+        // Smoke: plumes pouring up out of the vents and the cracks' tops, leaning away on the wind into long trails,
+        // soft-edged, lit ember low down and going grey-violet as they climb.
+        let rise = Double((tall ? 72 : 24) * q), lean = Double((tall ? 60 : 34) * q)
+        var sources = eterniaDarksmokeVents.map { (Double($0.x), Double($0.y), 1.0) }
+        sources += eterniaDarksmokeCracks.map { (Double($0[0].0), Double($0[0].1), 0.6) }
         for (i, src) in sources.enumerated() {
-            let cx = Double(f.x + src.0 * q), top = Double(f.y + src.1 * q)
-            for k in 0..<8 {
-                let ph = (t * 0.12 + Double(k) / 8 + Double(i) * 0.17).truncatingRemainder(dividingBy: 1)
-                let x = cx - ph * Double(6 * q) + sin(t * 0.7 + Double(k + i)) * Double(q)
-                let y = top - ph * rise
-                let r = Double(q) * (1 + ph * (tall ? 4 : 2.5))
-                let a = min(1, (1 - ph) * 1.4) * 0.6
-                c.circle(Int(x), Int(y), Int(r), C(0x5E5664, a))
-                c.circle(Int(x - r / 3), Int(y - r / 3), Int(r * 0.55), C(0x7A7280, a))
+            let base = at(src.0 + 0.5, src.1)
+            let n = 46, speed = 0.05 + noise(i * 5 + 40) * 0.03
+            let flow = t * speed * Double(n)
+            for j in 0..<n {
+                let u = (Double(j) + flow.truncatingRemainder(dividingBy: 1)) / Double(n)
+                let id = j - Int(flow)
+                let sway = sin(u * 5 - t * 0.6 + Double(i)) * Double(2 * q) * (0.3 + u)
+                let x = Double(base.x) + pow(u, 1.6) * lean * src.2 + sway
+                let y = Double(base.y) - u * rise * (0.6 + 0.4 * src.2)
+                let w = Double(q) * (1.2 + u * (tall ? 9 : 6)) * (0.8 + 0.4 * noise(id * 7 + i * 31))
+                let a = min(1, u * 8) * pow(1 - u, 0.7) * 0.17 * src.2
+                let col = lerp(C(0xB85A3A), C(0x7A6876), min(1, u * 1.8))
+                c.ellipse(Int(x), Int(y), max(1, Int(w * 1.7)), max(1, Int(w * 0.85)), col.alpha(a))
+                c.ellipse(Int(x - w * 0.4), Int(y - w * 0.3), max(1, Int(w)), max(1, Int(w * 0.45)), C(0x9A8A96, a * 0.6))
             }
         }
-        // Embers: sparks drifting up out of the great cave, flickering, going out as they climb.
-        let cave = eterniaDarksmokeCaves[0]
-        for k in 0..<(tall ? 30 : 14) {
-            let ph = (t * (0.1 + noise(k * 3 + 70) * 0.08) + noise(k * 3 + 71)).truncatingRemainder(dividingBy: 1)
-            let x0 = Double(f.x + (cave.x - cave.rx) * q) + noise(k * 3 + 72) * Double(2 * cave.rx * q)
-            let x = x0 + sin(t * 1.1 + Double(k)) * Double(3 * q) + ph * Double((k % 2 == 0 ? 8 : -8) * q)
-            let y = Double(f.y + (cave.y - cave.ry) * q) - ph * Double((tall ? 70 : 40) * q)
-            guard y > 0, noise(Int(t * 8) + k * 13) > 0.15 else { continue }
-            let sz = max(1, q / 2 + (k % 3 == 0 ? 1 : 0))
-            c.rect(Int(x), Int(y), sz, sz, (k % 2 == 0 ? C(0xFFB050) : C(0xF06A28)).alpha(1 - ph * 0.8))
+
+        // Embers: sparks floating up off the lava and out of the cave, drifting on the wind, flickering, going out.
+        let fromAt: [(Double, Double)] = eterniaDarksmokeCracks.map { (Double($0.last!.0), Double($0.last!.1)) } + [(100, 50), (92, 50), (108, 50)]
+        for k in 0..<(tall ? 40 : 18) {
+            let ph = (t * (0.08 + noise(k * 3 + 70) * 0.07) + noise(k * 3 + 71)).truncatingRemainder(dividingBy: 1)
+            let src = fromAt[k % fromAt.count], o = at(src.0 + (noise(k * 3 + 72) - 0.5) * 8, src.1)
+            let x = Double(o.x) + sin(t * 1.3 + Double(k)) * Double(2 * q) + ph * Double((tall ? 30 : 16) * q)
+            let y = Double(o.y) - ph * Double((tall ? 90 : 46) * q)
+            guard y > 0, noise(Int(t * 9) + k * 13) > 0.12 else { continue }
+            let sz = max(1, q / 2 + (k % 4 == 0 ? 1 : 0))
+            c.rect(Int(x), Int(y), sz, sz, (k % 3 == 0 ? C(0xFFD070) : C(0xF8782C)).alpha(1 - ph * 0.85))
         }
-        // Granamyr's eyes, opening in the dark of the cave for a few seconds, then shut again.
-        let blink = t.truncatingRemainder(dividingBy: 7.5)
-        if blink > 4.5 {
-            let open = min(1, (blink - 4.5) * 3, (7.5 - blink) * 3)
-            for ex in [cave.x - 4, cave.x + 3] {
-                let x = f.x + ex * q, y = f.y + (cave.y - 3) * q
-                c.circle(x + q / 2, y + q / 2, 2 * q, C(0xF0D040, 0.18 * open))
-                c.rect(x - q, y, 3 * q, max(1, Int(Double(q) * open)), C(0xF8E060))
-                c.rect(x, y, max(1, q / 2), max(1, Int(Double(q) * open)), C(0x201008))
-            }
-        }
+
         guard tall else { return }
-        // Dragons gliding across the smoke high up, black against the grey, wings beating slowly.
-        let up = [
-            "............W......W...........",
-            "...........WW.....WW...........",
-            "..........WWW....WWW...........",
-            ".........WWWW...WWWW...........",
-            "........WWWWW..WWWWW.......HHH.",
-            ".......WWWWWW.WWWWWW......HHHHH",
-            "S.......BBBBBBBBBBBNNNNNNNH....",
-            "SS.TTTTTBBBBBBBBBB......H......",
-            ".S......L.....L................",
-        ]
-        let down = [
-            "...........................HHH.",
-            "..........................HHHHH",
-            "S.......BBBBBBBBBBBNNNNNNNH....",
-            "SS.TTTTTBBBBBBBBBB......H......",
-            ".S.....WWWWWW.WWWWWW...........",
-            "........WWWWW..WWWWW...........",
-            ".........WWWW...WWWW...........",
-            "..........WWW....WWW...........",
-            "...........WW.....WW...........",
-        ]
-        let horizon = f.base - 20 * q
+        // Dragons gliding through the smoke, black with their undersides lit by the fires, wings beating slowly.
         for k in 0..<3 {
-            let b = max(1, q * (4 - k) / 4), speed = 0.012 + Double(k) * 0.006, dir = k == 1 ? -1.0 : 1.0
-            let span = Double(c.w + 40 * b)
-            var x = (t * speed * span + Double(k) * span * 0.41).truncatingRemainder(dividingBy: span)
-            if dir < 0 { x = span - x }
-            let y = Double(horizon) * (0.08 + Double(k) * 0.2) + sin(t * 0.4 + Double(k)) * Double(4 * b)
-            let flap = Int(t * (1.2 + Double(k) * 0.3)) % 2 == 0
-            eternia5Pattern(c, Int(x) - 31 * b, Int(y) + (flap ? 0 : 2 * b), b, flap ? up : down,
-                            ["W": C(0x120C16), "B": C(0x120C16), "H": C(0x120C16), "T": C(0x120C16), "L": C(0x120C16), "N": C(0x120C16), "S": C(0x120C16)], flip: dir < 0)
+            let b = max(1, q * (3 - k) / 3), speed = 0.011 + Double(k) * 0.005, dir = k == 1 ? -1.0 : 1.0
+            let span = Double(c.w + 56 * b)
+            var x = (t * speed * span + Double(k) * span * 0.41).truncatingRemainder(dividingBy: span) - Double(52 * b)
+            if dir < 0 { x = Double(c.w) - x - Double(52 * b) }
+            let y = Double(f.y) * (0.12 + Double(k) * 0.24) + sin(t * 0.35 + Double(k)) * Double(5 * b)
+            let flap = t * (0.9 + Double(k) * 0.25) + Double(k) * 2
+            eterniaDarksmokeDragon(c, Int(x), Int(y), b, flap: flap, flip: dir < 0, haze: Double(k) * 0.3)
         }
+    }
+
+    /// A dragon in flight at (`x`, `y`), `b` pixels to a unit, facing right (left when `flip`): a long neck and horned
+    /// head, a body, legs tucked up, a long tail ending in a spade, and two great bat wings, the near one black, the
+    /// far one a shade lighter behind it, swinging between raised high and spread back flat with `flap` (in radians)
+    /// so the wings, neck and tail always stand clear of one another. Black, its underside lit ember; `haze` (0...1)
+    /// pales it with distance.
+    private static func eterniaDarksmokeDragon(_ c: PixelCanvas, _ x: Int, _ y: Int, _ b: Int, flap: Double, flip: Bool,
+                                               haze: Double) {
+        let w = 52, h = 38
+        var near = Eternia5Mask(w, h), farWing = Eternia5Mask(w, h), skin = Eternia5Mask(w, h)
+        near.drop = 11; farWing.drop = 11; skin.drop = 11
+        /// A bat wing from the shoulder `sh` to the hip `hip`: the arm out to the wrist, three long fingers fanning
+        /// back from it, the first pointing at angle `a` (radians, y down) and `len` units out, the membrane between
+        /// them scalloped.
+        func wing(_ m: inout Eternia5Mask, _ bones: inout Eternia5Mask, _ sh: (Double, Double), _ hip: (Double, Double),
+                  _ len: Double, _ a: Double) {
+            let wrist = (sh.0 + cos(a + 0.55) * len * 0.42, sh.1 + sin(a + 0.55) * len * 0.42)
+            let tips = [(a, 0.7), (a - 0.6, 0.62), (a - 1.2, 0.48)].map { (wrist.0 + cos($0.0) * len * $0.1, wrist.1 + sin($0.0) * len * $0.1) }
+            var pts: Eternia5Shape = [sh, wrist, tips[0]]
+            for (i, end) in [tips[1], tips[2], hip].enumerated() {
+                let from = tips[i], mid = ((from.0 + end.0) / 2, (from.1 + end.1) / 2)
+                pts.append((mid.0 + (wrist.0 - mid.0) * 0.38, mid.1 + (wrist.1 - mid.1) * 0.38))
+                pts.append(end)
+            }
+            m.poly(pts)
+            // The arm and its fingers, thicker than the membrane, so the wing keeps its shape however it's held.
+            bones.curve(sh, ((sh.0 + wrist.0) / 2, (sh.1 + wrist.1) / 2), wrist, 0.9, 0.7)
+            for tp in tips { bones.curve(wrist, ((wrist.0 + tp.0) / 2, (wrist.1 + tp.1) / 2), tp, 0.6, 0.3) }
+        }
+        let a = (-130 + 32 * sin(flap)) * Double.pi / 180
+        var farBones = Eternia5Mask(w, h)
+        farBones.drop = 11
+        wing(&farWing, &farBones, (27.5, 16.5), (23, 17.5), 17, a + 0.95)
+        wing(&skin, &near, (24.5, 17.5), (17, 18.6), 23, a)
+        near.poly([(15, 18.4), (21, 16.8), (27, 17), (29.5, 18.4), (27, 20.2), (20, 20.6)])   // the body
+        near.curve((29, 18), (35, 18.5), (38.5, 13), 1.2, 0.8)                             // the neck
+        near.poly([(37, 12), (40, 11), (43, 11.6), (47, 12.8), (47, 13.8), (43, 14), (40.5, 15.2), (37.6, 15)])  // the head
+        near.poly([(38, 12.4), (34, 8.6), (39.4, 11.4)])                                   // its horn
+        near.curve((16, 19), (7, 23), (2.5, 17), 1.1, 0.4)                                   // the tail
+        near.poly([(2.6, 17.4), (0.5, 15), (4, 16), (1.8, 19.4)])                            // its spade
+        near.poly([(21, 20), (20.4, 22.6), (22, 22.6), (22.8, 20.2)]); near.poly([(25.6, 19.8), (27.2, 22), (28.4, 21.4), (27.2, 19.4)])
+        let body = lerp(C(0x120A10), C(0x4A3440), haze), skinC = lerp(C(0x2E1A22), C(0x5A3E48), haze)
+        let farC = lerp(C(0x2A1A22), C(0x5A4450), haze), farSkin = lerp(C(0x3E2830), C(0x66505A), haze)
+        let rim = lerp(C(0x9A3A1E), C(0x8A5048), haze)
+        for yy in 0..<h {
+            for xx in 0..<w {
+                let col: Px
+                let i = yy * w + xx
+                if near.on[i] { col = yy + 1 < h && !near.on[i + w] && !skin.on[i + w] && yy > 27 ? rim : body }
+                else if skin.on[i] { col = skinC }
+                else if farBones.on[i] { col = farC }
+                else if farWing.on[i] { col = farSkin }
+                else { continue }
+                c.rect(x + (flip ? w - 1 - xx : xx) * b, y + yy * b, b, b, col)
+            }
+        }
+        // The eye, a fleck of ember.
+        c.rect(x + (flip ? w - 1 - 42 : 42) * b, y + 23 * b, b, b, C(0xF8A040))
     }
 }
 
 // MARK: - Trolla
 
 extension Scenes {
-    /// Where the village stands on Trolla: drawn at one pixel to a unit on a 120×56 canvas (`eterniaTrollaVillage`)
-    /// and blown up `q` times, its foot on `base`, its canvas's top left at `x`/`y`.
+    /// Where the village stands on Trolla: drawn at one pixel to a unit on a 200×56 canvas (`eterniaTrollaVillage`),
+    /// wide so it spreads across the window's strip, and blown up `q` times, its foot on `base`, its canvas's top left
+    /// at `x`/`y` (on the screen saver its outermost houses run off the sides).
     static func eterniaTrollaFrame(_ c: PixelCanvas, _ g: Int) -> (q: Int, base: Int, x: Int, y: Int) {
         let q = eternia5Scale(c, g)
         let base = g - (isTall(c) ? 12 : 7) * q
-        return (q, base, c.w / 2 - 60 * q, base - 55 * q)
+        return (q, base, c.w / 2 - 100 * q, base - 55 * q)
     }
 
     /// Trolla's moons, in hundredths of the sky's width and height: where each is, its radius in units, its two
@@ -629,15 +889,18 @@ extension Scenes {
         }
 
         // In the window, outlying houses on the plain either side of the village (the screen saver has its islets).
-        let outliers: [Int] = tall ? [] : [7, 18, 82, 93]
-        for (k, at) in outliers.enumerated() {
-            let art = PixelCanvas(12, 15)
-            eterniaTrollaHouse(art, 6, 14, 3 + k % 2, 3 + k % 2, eterniaTrollaDomes[(k * 3 + 1) % eterniaTrollaDomes.count], top: k % 2)
-            eternia5BlowUp(c, art, c.w * at / 100 - 6 * q, lip(c.w * at / 100) - 13 * q + (k % 2) * q, q)
+        // In the window the village runs on out along the plain either side, so it spans most of the strip.
+        let outliers: [(off: Int, hw: Int, wall: Int)] = tall ? [] : [
+            (-156, 4, 4), (-138, 5, 6), (-121, 4, 5), (-108, 3, 3), (110, 3, 3), (122, 5, 5), (139, 4, 6), (157, 5, 4),
+        ]
+        for (k, o) in outliers.enumerated() {
+            let art = PixelCanvas(16, 19), x = c.w / 2 + o.off * q
+            eterniaTrollaHouse(art, 8, 18, o.hw, o.wall, eterniaTrollaDomes[(k * 3 + 1) % eterniaTrollaDomes.count], top: k % 2)
+            eternia5BlowUp(c, art, x - 8 * q, lip(x) - 17 * q, q)
         }
 
         // The village, blown up to size.
-        let village = PixelCanvas(120, 56)
+        let village = PixelCanvas(200, 56)
         eterniaTrollaVillage(village)
         eternia5BlowUp(c, village, f.x, f.y, q)
         c.ground(g, C(0x3A2E52), edge: C(0x5E4E7A), speck: C(0x2C2240), seed: 61)
@@ -725,64 +988,69 @@ extension Scenes {
         }
     }
 
-    /// Where the windows are on the village canvas, so the moving layer can make them flicker.
-    private static let eterniaTrollaHouses: [(cx: Int, foot: Int, hw: Int, wall: Int, dome: Int, top: Int)] = [
-        (14, 52, 4, 4, 2, 1), (26, 50, 6, 6, 0, 0), (40, 46, 5, 6, 1, 1), (80, 46, 5, 6, 3, 0), (94, 50, 6, 6, 4, 1),
-        (106, 52, 4, 4, 1, 0), (49, 40, 4, 5, 4, 0), (71, 40, 4, 5, 2, 1), (33, 54, 3, 3, 3, 0), (87, 54, 3, 3, 0, 1),
+    /// The top of the village's knoll over column `x` of its canvas: a broad mound, highest in the middle.
+    private static func eterniaTrollaKnoll(_ x: Int) -> Int { 34 + Int(21 * pow(abs(Double(x) - 100) / 96, 1.4)) }
+
+    /// The houses round the knoll, so the moving layer can make their windows flicker: each one's middle, how far
+    /// into the knoll its foot sits (`sink`), its half width, wall, dome colours and top.
+    private static let eterniaTrollaHouses: [(cx: Int, sink: Int, hw: Int, wall: Int, dome: Int, top: Int)] = [
+        (78, 1, 5, 6, 4, 0), (122, 1, 5, 6, 2, 1), (64, 1, 6, 7, 1, 1), (136, 1, 6, 7, 3, 0), (47, 2, 6, 7, 0, 0),
+        (153, 2, 6, 7, 4, 1), (86, 9, 4, 5, 3, 1), (114, 9, 4, 5, 0, 0), (32, 2, 6, 6, 2, 1), (168, 2, 6, 6, 1, 0),
+        (22, 4, 5, 5, 3, 0), (178, 4, 5, 5, 0, 1), (62, 12, 5, 6, 4, 1), (138, 12, 5, 6, 2, 0), (42, 10, 4, 4, 1, 0),
+        (158, 10, 4, 4, 3, 1),
     ]
 
-    /// The village, one pixel to a unit on a 120×56 canvas, its foot on row 55: a knoll of moon rock, the little
-    /// houses round its slopes, steps up to the tall house at the top with its onion dome and star.
+    /// The village, one pixel to a unit on a 200×56 canvas, its foot on row 55: a broad knoll of moon rock, the little
+    /// houses crowding its slopes, steps up to the tall house at the top with its onion dome and star.
     static func eterniaTrollaVillage(_ c: PixelCanvas) {
         let rock = [C(0x2C2240), C(0x3A2E52), C(0x4A3C64), C(0x5E4E7A), C(0x76648E)]
         // The knoll: a broad mound, lit on the left, rocks along its brow.
-        func top(_ x: Int) -> Int { 38 + Int(17 * pow(abs(Double(x) - 60) / 58, 1.5)) }
-        for x in 2..<118 {
-            let t = top(x)
+        for x in 3..<197 {
+            let t = eterniaTrollaKnoll(x)
             guard t < 56 else { continue }
             for y in t..<56 {
-                let side = Double(60 - x) / 60 * 0.3, depth = Double(y - t) / 18
+                let side = Double(100 - x) / 100 * 0.3, depth = Double(y - t) / 20
                 c.px(x, y, eternia5Dither(rock, 0.62 + side - depth * 0.5, x, y, grain: 0.22))
             }
             c.px(x, t, rock[4])
         }
         // Steps up the middle to the tall house.
-        for (i, y) in stride(from: 54, through: 42, by: -2).enumerated() {
-            let w = 12 - i
-            c.rect(60 - w / 2, y, w, 1, rock[4]); c.rect(60 - w / 2, y + 1, w, 1, rock[2])
+        for (i, y) in stride(from: 54, through: 38, by: -2).enumerated() {
+            let w = 14 - i
+            c.rect(100 - w / 2, y, w, 1, rock[4]); c.rect(100 - w / 2, y + 1, w, 1, rock[2])
         }
-        // The tall house: a round tower of pale stone, an onion dome of rose and gold, a spire with a star.
+        // The tall house: a broad round tower of pale stone, an onion dome of rose and gold, a spire with a star.
         let stone = [C(0x5A4A6A), C(0x7E6C88), C(0xA492A8), C(0xC4B4C0)]
-        for y in 18...40 {
-            for x in 54...66 {
-                let n = Double(x - 60) / 6
+        for y in 18...37 {
+            for x in 91...109 {
+                let n = Double(x - 100) / 9
                 c.px(x, y, stone[max(0, min(3, Int(2.4 - n * 1.6)))])
             }
         }
-        c.rect(53, 26, 15, 1, stone[0]); c.rect(53, 25, 15, 1, stone[3])
+        c.rect(90, 26, 21, 1, stone[0]); c.rect(90, 25, 21, 1, stone[3])
         // Its windows, round, glowing, and the door.
-        for (x, y) in [(57, 29), (62, 29), (59, 21)] { c.rect(x, y, 2, 2, C(0xFFD870)); c.px(x + 1, y + 1, C(0xD89A40)) }
-        c.rect(58, 35, 4, 6, C(0x2A1838)); c.rect(59, 34, 2, 1, C(0x2A1838)); c.px(58, 35, stone[0])
+        for (x, y) in [(94, 29), (98, 21), (105, 29), (102, 21)] { c.rect(x, y, 2, 2, C(0xFFD870)); c.px(x + 1, y + 1, C(0xD89A40)) }
+        c.rect(98, 31, 5, 7, C(0x2A1838)); c.rect(99, 30, 3, 1, C(0x2A1838)); c.px(98, 31, stone[0])
         // The onion dome: swelling out over the tower and drawing in to a point.
         for j in 0..<16 {
             let k = Double(j) / 15
             let bulge = k < 0.4 ? sin(0.5 + k / 0.4 * (Double.pi / 2 - 0.5)) : pow(1 - (k - 0.4) / 0.6, 0.65)
-            let half = Int((9 * bulge).rounded())
+            let half = Int((12 * bulge).rounded())
             let y = 17 - j
-            for x in (60 - half)...(60 + half) {
-                let n = Double(x - 60) / Double(max(1, half))
+            for x in (100 - half)...(100 + half) {
+                let n = Double(x - 100) / Double(max(1, half))
                 let band = j == 2 || j == 6
                 c.px(x, y, band ? C(0xE8B850) : n < -0.2 ? C(0xD07AA8) : n < 0.5 ? C(0xA85486) : C(0x6E2E5A))
             }
         }
-        c.px(56, 10, C(0xFFE0F0)); c.px(55, 11, C(0xF0B0D0))
-        c.rect(60, 0, 1, 3, C(0xE8B850))
+        c.px(95, 10, C(0xFFE0F0)); c.px(94, 11, C(0xF0B0D0)); c.px(94, 12, C(0xF0B0D0))
+        c.rect(100, 0, 1, 3, C(0xE8B850))
         // The other houses round the knoll, the far ones first.
-        for h in eterniaTrollaHouses.sorted(by: { $0.foot < $1.foot }) {
-            eterniaTrollaHouse(c, h.cx, h.foot, h.hw, h.wall, eterniaTrollaDomes[h.dome], top: h.top)
+        for h in eterniaTrollaHouses.sorted(by: { eterniaTrollaKnoll($0.cx) + $0.sink < eterniaTrollaKnoll($1.cx) + $1.sink }) {
+            eterniaTrollaHouse(c, h.cx, eterniaTrollaKnoll(h.cx) + h.sink, h.hw, h.wall, eterniaTrollaDomes[h.dome], top: h.top)
         }
         // Little round lamps on posts along the steps.
-        for x in [52, 68] { c.rect(x, 44, 1, 6, rock[0]); c.rect(x - 1, 42, 3, 2, C(0xFFE8A0)) }
+        for x in [91, 109] { c.rect(x, 44, 1, 6, rock[0]); c.rect(x - 1, 42, 3, 2, C(0xFFE8A0)) }
     }
 
     /// Trolla's life: the nearer moons orbiting slowly round the sky, passing in front of the stars; a star
@@ -803,7 +1071,7 @@ extension Scenes {
         }
         // The star on the spire, twinkling.
         let pulse = 0.6 + 0.4 * sin(t * 2.2)
-        let sx = f.x + 60 * q, sy = f.y - q
+        let sx = f.x + 100 * q, sy = f.y - q
         eternia5Twinkle(c, sx, sy, Int(Double(3 * q) * pulse) + q, max(1, q / 2), C(0xFFE890, 0.9))
         // Sparkles: little twinkles winking on in the air over the village and fading.
         let cols = [C(0xFFE080), C(0xF4A0D8), C(0x90F0F0), C(0xFFFFFF)]
@@ -818,7 +1086,8 @@ extension Scenes {
         // The windows: now and then one flickers brighter, as a lamp inside is turned up.
         for (i, h) in eterniaTrollaHouses.enumerated() where h.wall >= 4 && h.hw >= 4 {
             guard noise(Int(t * 3) * 11 + i * 29) > 0.8 else { continue }
-            c.rect(f.x + (h.cx + h.hw / 2) * q, f.y + (h.foot - h.wall + 1) * q, 2 * q, 2 * q, C(0xFFF4C0, 0.9))
+            let foot = eterniaTrollaKnoll(h.cx) + h.sink
+            c.rect(f.x + (h.cx + h.hw / 2) * q, f.y + (foot - h.wall + 1) * q, 2 * q, 2 * q, C(0xFFF4C0, 0.9))
         }
     }
 }
