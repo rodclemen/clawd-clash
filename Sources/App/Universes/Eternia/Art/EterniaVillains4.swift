@@ -8,7 +8,7 @@ import Foundation
 
 let eterniaVillains4: [EterniaVillain: Persona] = [
     .webstor: Persona(name: "Webstor", weapon: .blaster, motion: .swing, shot: .web, muzzle: (45, 34), handGun: false,
-                      headTop: 20, signature: 3.6, draw: drawWebstor),
+                      headTop: 20, signature: 5.0, draw: drawWebstor),
     .whiplash: Persona(name: "Whiplash", weapon: .saber, bulk: 3, headTop: 21, signature: 3.0, draw: drawWhiplash),
     .spikor: Persona(name: "Spikor", weapon: .saber, headTop: 18, signature: 3.0, draw: drawSpikor),
     .twoBad: Persona(name: "Two Bad", weapon: .saber, bulk: 3, headTop: 16, signature: 3.6, draw: drawTwoBad),
@@ -59,11 +59,12 @@ private func v4Tail(_ base: (x: Double, y: Double), dir: Double, bend: Double, c
 // MARK: - Webstor
 
 /// Webstor: Skeleclawd's climber and spy. Navy blue skin, a bug's head with a domed, ridged crown, two big red
-/// compound eyes and two little ones over them, and a pair of pale fangs; orange armour with a black spider on it, a
+/// compound eyes and two little ones over them, and a pair of pale fangs; orange armour with a black spider on its
+/// front side, a
 /// black belt and briefs, orange boots. On his back the black spider pack, its orange legs bent round it and a spool of
 /// line on top; on his front arm a grapple gun that shoots a sticky line (a web). He swings from place to place on
-/// it. Signature: he springs up and hangs upside down on his line, bobbing and slowly turning round, then drops back
-/// down onto his feet.
+/// it. Signature: he springs up and hangs upside down on a long line from the top of the frame, his head just off the
+/// floor, bobbing and slowly turning round, then drops back down onto his feet.
 private func drawWebstor(_ c: PixelCanvas, _ p: Pose) {
     let s = p.signature ?? -1
     let hang = v4Ramp(s, 0.06, 0.18, 0.82, 0.94)
@@ -84,16 +85,19 @@ private func drawWebstor(_ c: PixelCanvas, _ p: Pose) {
     flipped.flipHorizontally()
     if s > 0.38 && s < 0.62 { flipped.mirror(aboutX: 28) }
     let bob = Int((sin(p.t * 4) * 1.2).rounded())
-    let dy = 5 - Int(((1 - hang) * 12).rounded()) + bob
-    // The line, from his belt up between his legs, fading out well short of the frame's top.
+    let dy = 9 - Int(((1 - hang) * 14).rounded()) + bob
+    // The line, from his belt up between his legs to the top of the frame, a long bright thread with a glint on it,
+    // fading out only in the last few rows so it never ends in a hard edge.
     let beltY = Double(51 - 36 + dy)
     var y = beltY
-    while y > 3 {
-        let ny = max(3, y - 2)
-        let fade = min(1, (ny - 3) / 6)
-        v4Line(c, (27.5, y), (27.5, ny), C(0xEEF0F6, 0.9 * fade), r: 0.5)
+    while y > 2 {
+        let ny = max(2, y - 2)
+        let fade = min(1, (ny - 2) / 4)
+        v4Line(c, (27.5, y), (27.5, ny), C(0xF4F6FC, 0.95 * fade), r: 0.6)
         y = ny
     }
+    let glint = beltY - 4 - frac(p.t * 0.7) * (beltY - 10)
+    c.px(27, Int(glint), C(0xFFFFFF))
     c.paste(flipped, x: 0, y: dy)
 }
 
@@ -154,15 +158,19 @@ private func webstorArt(_ c: PixelCanvas, _ p: Pose, swinging: Bool) {
     let fang = C(0xE4E0D2)
     c.px(25, 31, fang); c.px(26, 32, fang); c.px(30, 31, fang); c.px(29, 32, fang)
 
-    // The armour: orange across his chest, lit along the top, a black spider on it; the black belt and briefs.
-    c.rect(18, 33, 20, 3, orange); c.rect(18, 33, 20, 1, orangeL); c.rect(36, 33, 2, 3, orangeD)
-    c.pattern(24, 33, [
-        "K.K.K.K",
-        ".KKKKK.",
+    // The armour: orange across his chest, lit along the top, a black spider on it, set off to his front side (a dark
+    // bar centred under those red eyes read as a mouth): head up, its round body and four legs a side bent out.
+    // The black belt and briefs.
+    c.rect(18, 33, 20, 4, orange); c.rect(18, 33, 20, 1, orangeL); c.rect(36, 33, 2, 4, orangeD)
+    c.rect(18, 37, 20, 1, black); c.rect(23, 37, 2, 1, orange)
+    c.pattern(28, 33, [
+        "K.....K",
+        ".K.K.K.",
+        "KKKKKKK",
+        "..KKK..",
         "K.KKK.K",
     ], ["K": black])
-    c.rect(18, 36, 20, 1, black); c.rect(27, 36, 2, 1, orange)
-    c.rect(18, 37, 20, 1, C(0x14204A))
+    c.px(31, 33, black); c.px(31, 35, C(0x6A2A1E))
     c.rect(15, 33, 3, 1, orange)
 
     if swinging {
@@ -370,8 +378,8 @@ private func drawSpikor(_ c: PixelCanvas, _ p: Pose) {
 /// Two Bad: two villains on one body, who never agree on anything. A broad body split down the middle, its left half
 /// blue and its right half green to match the heads above it: a blue one in a black skullcap and a green one with a
 /// shock of dark hair under a red headband. A red harness crosses his chest to a gold disc, a red belt with a gold
-/// buckle, red boots. He fights with his big fists. Signature: the two heads turn to each other and argue, each mouth
-/// going in turn, angry sparks flying between them.
+/// buckle, red boots. He fights with his big fists. Signature: the two heads turn right round in profile, nose to
+/// nose, and argue, each shouting in turn with its mouth wide, angry sparks flying up between them.
 private func drawTwoBad(_ c: PixelCanvas, _ p: Pose) {
     let blue = C(0x4A7EDC), blueD = C(0x2E5AAE), blueL = C(0x7CA6F2)
     let green = C(0x5AAE3E), greenD = C(0x3A7E26), greenL = C(0x88D262)
@@ -409,20 +417,23 @@ private func drawTwoBad(_ c: PixelCanvas, _ p: Pose) {
     c.rect(26, 33, 4, 3, gold); c.rect(26, 33, 4, 1, goldL); c.px(29, 35, C(0x9A7420))
     c.rect(15, 36, 25, 1, red); c.rect(15, 36, 4, 1, redL); c.rect(27, 36, 2, 1, gold)
 
-    // The two heads.
-    let lean = turned ? 1 : 0
-    twoBadHead(c, x: 16 + lean, skin: blue, dark: blueD, lit: blueL, facingLeft: false,
-               open: turned && talker == 0 && Int(p.t * 10) % 2 == 0, hat: .cap)
-    twoBadHead(c, x: 29 - lean, skin: green, dark: greenD, lit: greenL, facingLeft: turned,
-               open: turned && talker == 1 && Int(p.t * 10) % 2 == 0, hat: .band(red, redL))
+    // The two heads: looking out front, or turned right round in profile, nose to nose, the one shouting thrust
+    // forward and up a pixel.
+    let shoutBob = turned && Int(p.t * 10) % 2 == 0 ? 1 : 0
+    twoBadHead(c, x: 16, y: turned && talker == 0 ? -shoutBob : 0, skin: blue, dark: blueD, lit: blueL,
+               facing: turned ? .right : .front, open: turned && talker == 0 && shoutBob == 1, hat: .cap)
+    twoBadHead(c, x: 29, y: turned && talker == 1 ? -shoutBob : 0, skin: green, dark: greenD, lit: greenL,
+               facing: turned ? .left : .front, open: turned && talker == 1 && shoutBob == 1, hat: .band(red, redL))
     if turned {
-        // Angry sparks between them, on the side of whoever is shouting.
-        let x = talker == 0 ? 27 : 28
+        // Angry sparks flying up between them, bright on a hot orange glow, and a cross little vein on the listener.
         let on = Int(p.t * 12) % 2 == 0
-        let zig = C(0xFFF2B0)
-        let burst = on ? ["Z...Z", ".Z.Z.", "..Z..", ".Z.Z.", "Z...Z"] : ["..Z..", "..Z..", "ZZ.ZZ", "..Z..", "..Z.."]
-        c.pattern(x - 2, 12, burst, ["Z": zig])
-        c.px(talker == 0 ? 22 + lean : 33 - lean, 17, C(0xE8302A))   // a cross little vein on the listener
+        let zig = C(0xFFF6C0)
+        c.glowLine(27.5, 13, 27.5, 13, core: C(0xFFF0B0, 0), glow: C(0xFF7A2A), coreR: 0.2, glowR: 4.5, strength: 0.6)
+        let burst = on ? ["Z.....Z", ".Z...Z.", "..Z.Z..", "...Z...", "..Z.Z..", ".Z...Z.", "Z.....Z"]
+                       : ["...Z...", "...Z...", "...Z...", "ZZZ.ZZZ", "...Z...", "...Z...", "...Z..."]
+        c.pattern(25, 10, burst, ["Z": zig])
+        let vx = talker == 0 ? 37 : 18
+        c.pattern(vx - 1, 15, ["R.R", ".R.", "R.R"], ["R": C(0xFF3A3A)])
     }
 
     // The front fist: at his side, or swung on his arm.
@@ -439,11 +450,16 @@ private func drawTwoBad(_ c: PixelCanvas, _ p: Pose) {
 }
 
 private enum TwoBadHat { case cap, band(Px, Px) }
+private enum TwoBadFacing { case front, left, right }
 
-/// One of Two Bad's heads, 11 wide, its left edge at `x`, from row 17 down onto his shoulders: eyes and a scowl,
-/// looking forward (or back at the other head, `facingLeft`), the mouth shouting (`open`), and its own headgear.
-private func twoBadHead(_ c: PixelCanvas, x: Int, skin: Px, dark: Px, lit: Px, facingLeft: Bool, open: Bool,
-                        hat: TwoBadHat) {
+/// One of Two Bad's heads, 11 wide, its left edge at `x`, from row 17 down onto his shoulders (`y` lifts it): two
+/// eyes and a scowl looking out front, or (`facing` left or right) turned in profile to the other head, one eye at
+/// its near side under a hard brow, the nose jutting out past its edge, an ear on the back of it and the mouth at the
+/// front, shouting (`open`) wide with its teeth showing. And its own headgear.
+private func twoBadHead(_ c: PixelCanvas, x: Int, y: Int, skin: Px, dark: Px, lit: Px, facing: TwoBadFacing,
+                        open: Bool, hat: TwoBadHat) {
+    c.oy += y
+    defer { c.oy -= y }
     c.pattern(x, 18, [
         "..HHHHHHH..",
         ".HHHHHHHHH.",
@@ -456,16 +472,26 @@ private func twoBadHead(_ c: PixelCanvas, x: Int, skin: Px, dark: Px, lit: Px, f
         "..HHHHHHH..",
     ], ["H": skin])
     c.rect(x, 20, 1, 5, lit); c.rect(x + 10, 20, 1, 5, dark); c.rect(x + 2, 26, 7, 1, dark)
-    // The eyes, under a brow slanting down to the middle, shifted the way he looks.
-    let e = facingLeft ? 2 : 4
-    c.rect(x + e, 22, 1, 2, ink); c.rect(x + e + 3, 22, 1, 2, ink)
-    c.rect(x + e - 1, 21, 2, 1, dark); c.rect(x + e + 3, 21, 2, 1, dark)
-    // The mouth: a grim line, or open and shouting with teeth along its top.
-    let m = facingLeft ? 1 : 3
-    if open {
-        c.rect(x + m, 24, 5, 2, C(0x3A0E14)); c.rect(x + m, 24, 5, 1, white)
-    } else {
-        c.rect(x + m + 1, 25, 4, 1, dark)
+    let maw = C(0x3A0E14)
+    switch facing {
+    case .front:
+        // The eyes, under a brow slanting down to the middle, and a grim mouth.
+        c.rect(x + 4, 22, 1, 2, ink); c.rect(x + 7, 22, 1, 2, ink)
+        c.rect(x + 3, 21, 2, 1, dark); c.rect(x + 7, 21, 2, 1, dark)
+        c.rect(x + 4, 25, 4, 1, dark)
+    case .left, .right:
+        // In profile: everything drawn for facing right, mirrored across the head for facing left.
+        let r = facing == .right
+        func fx(_ dx: Int, _ w: Int = 1) -> Int { r ? x + dx : x + 10 - dx - (w - 1) }
+        c.rect(fx(11), 21, 1, 3, skin); c.px(fx(11), 23, dark)            // the nose, jutting out
+        c.rect(fx(7), 22, 2, 2, ink)                                      // the near eye
+        c.rect(fx(6, 4), 21, 4, 1, dark); c.px(fx(9), 20, dark)           // the hard brow, down at the front
+        c.rect(fx(2, 2), 22, 2, 3, dark); c.px(fx(2), 22, lit)            // the ear, on the back of his head
+        if open {
+            c.rect(fx(6, 5), 24, 5, 3, maw); c.rect(fx(6, 5), 24, 5, 1, white); c.px(fx(9), 26, white)
+        } else {
+            c.rect(fx(7, 4), 25, 4, 1, dark)
+        }
     }
     switch hat {
     case .cap:
@@ -490,8 +516,8 @@ private func twoBadHead(_ c: PixelCanvas, x: Int, skin: Px, dark: Px, lit: Px, f
 
 // MARK: - Faker
 
-/// Faker: Skeleclawd's robot copy of He-Clawd, and not a very good one. The same pageboy, harness and stance in the
-/// wrong colours: blue skin, the pageboy red, an orange chest plate with a little control panel of lights where the
+/// Faker: Skeleclawd's robot copy of He-Clawd, and not a very good one. The same pageboy (cropped short, so his blue
+/// face shows), harness and stance in the wrong colours: blue skin, the pageboy red, an orange chest plate with a little control panel of lights where the
 /// iron cross should be, the same brown fur briefs and boots and gold-studded belt; his eyes glow yellow. He fights
 /// with a copy of the Power Sword with an orange guard. Signature: he strikes He-Clawd's pose, sword overhead, but no
 /// lightning comes; sparks fizz out of his ear instead, and a wisp of smoke, before he lowers it.
@@ -529,12 +555,15 @@ private func drawFaker(_ c: PixelCanvas, _ p: Pose) {
     c.rect(15, 34, 3, 1, bracer); c.px(15, 34, bracerL)
     c.rect(38, 34 - raise, 3, 1, bracer); c.px(38, 34 - raise, bracerL)
 
-    // His eyes, glowing yellow, a faint glow round them.
+    // His blue brow, lit, where He-Clawd's fringe would hang; his eyes, glowing yellow, a glow round them.
+    c.rect(20, 26, 16, 1, skinL); c.rect(20, 27, 16, 1, skin)
     for ex in [22, 32] {
-        c.glowLine(Double(ex) + 1, 30.5, Double(ex) + 1, 30.5, core: C(0xFFF4A0, 0), glow: C(0xFFD040), coreR: 0.2,
-                   glowR: 2.6, strength: 0.45)
-        c.rect(ex, 29, 2, 3, glowEye); c.px(ex, 29, white)
+        c.glowLine(Double(ex) + 1, 30, Double(ex) + 1, 30, core: C(0xFFF4A0, 0), glow: C(0xFFD040), coreR: 0.2,
+                   glowR: 3.4, strength: 0.75)
+        c.rect(ex, 29, 3, 2, glowEye); c.px(ex, 29, white); c.px(ex + 1, 29, white)
+        c.rect(ex, 28, 3, 1, skinD)   // a straight, mechanical brow
     }
+    c.px(27, 31, skinD); c.px(28, 31, skinD)
 
     // The chest plate: orange where He-Clawd's is silver, lit along the top, and a dark control panel in the middle
     // with three little lights where the iron cross should be.
@@ -549,21 +578,18 @@ private func drawFaker(_ c: PixelCanvas, _ p: Pose) {
     for x in stride(from: 19, through: 35, by: 4) { c.px(x, 36, gold); c.px(x + 1, 36, goldD) }
     eterniaFur(c, 18, 37, 20, 1, base: fur, dark: furD, light: furL)
 
-    // The pageboy, He-Clawd's cut in red.
-    c.pattern(16, 21, [
+    // The pageboy, He-Clawd's cut in red, and a poor copy of it: cropped short, the fringe high on his brow and the
+    // sides thin, so his blue face and glowing eyes show where He-Clawd's hair hangs.
+    c.pattern(16, 20, [
         ".....HHHHHlHHHHHH......",
         "...HHHlHHHHHlHHHHHH....",
         "..HHhHHHHhHHHHHhHHHHH..",
         ".HHHhHHlHhHHHHHhHHHhHH.",
-        "HHHHhHHHHhHHHhHHhHHhHHH",
-        "HHHHHhHHHHhHHhHHHhHHhHH",
-        "HHh.hH.hHH.hH.hHH.hH.HH",
-        "HHh..................HH",
-        "HHh..................hH",
-        ".Hh..................h.",
+        "HHHhHH.hHH.hH.hHH.hHhHH",
+        "HHh...................H",
+        "HHh...................h",
         ".h....................h",
     ], ["H": hair, "h": hairD, "l": hairL])
-    c.rect(22, 28, 2, 1, hairD); c.rect(32, 28, 2, 1, hairD)
 
     if fizz >= 0 {
         // Sparks fizzing out of his ear (under the hair, on his far side), and a wisp of grey smoke rising off it.
@@ -633,8 +659,8 @@ private func drawPanthor(_ c: PixelCanvas, _ p: Pose) {
     // The tail: long and low from his haunch, curling up at the tip, swishing hard while he snarls.
     let tail = v4Tail((12.5, 30), dir: 105, bend: 10 - wag * 16, curl: 4, n: 5, step: 2.3, floor: 42.5 - Double(c.oy))
     for k in 1..<tail.count {
-        v4Line(c, tail[k - 1], tail[k], fur, r: k < 3 ? 1.1 : 0.85)
-        v4Line(c, (tail[k - 1].x, tail[k - 1].y - 0.5), (tail[k].x, tail[k].y - 0.5), furL, r: 0.3)
+        v4Line(c, tail[k - 1], tail[k], fur, r: k < 3 ? 1.7 : k < 5 ? 1.4 : 1.1)
+        v4Line(c, (tail[k - 1].x, tail[k - 1].y - 0.8), (tail[k].x, tail[k].y - 0.8), furL, r: 0.4)
     }
 
     // The haunch behind the block, rounded on top.
@@ -647,10 +673,12 @@ private func drawPanthor(_ c: PixelCanvas, _ p: Pose) {
     c.rect(37, top, 1, 38 - top, furD); c.rect(18, 37, 20, 1, furD)
     c.rect(22, 35, 12, 2, muzD)
 
-    // The ears: tall and pointed, pink-lined; laid flat back while he snarls.
+    // The ears: tall and pointed, pink-lined; while he snarls, pinned flat back against his head, low rounded flaps
+    // lying along the top of it in his own fur with the pink showing under them, nothing sticking up or out.
     if snarl > 0.4 {
-        c.pattern(15, top - 1, ["FFFF", ".FFF", "...F"], ["F": furD])
-        c.pattern(37, top - 1, ["FFFF", "FFF.", "F..."], ["F": furD])
+        c.pattern(18, top - 2, ["lFFFF.", "FFppFF"], ["F": fur, "l": furL, "p": C(0xC86A9A)])
+        c.pattern(32, top - 2, [".FFFFl", "FFppFF"], ["F": fur, "l": furL, "p": C(0xC86A9A)])
+        c.px(24, top - 1, furD); c.px(31, top - 1, furD)
     } else {
         c.pattern(19, top - 4, ["F.......", "FF......", "FpF.....", "FFFF...."], ["F": fur, "p": C(0xC86A9A)])
         c.pattern(29, top - 4, [".......F", "......FF", ".....FpF", "....FFFF"], ["F": fur, "p": C(0xC86A9A)])
@@ -709,13 +737,14 @@ private func drawPanthor(_ c: PixelCanvas, _ p: Pose) {
 
 // MARK: - Stinkor
 
-/// Stinkor: the skunk man, whose smell is his only weapon. Black fur with a white blaze from his crown down between
+/// Stinkor: the skunk man, whose smell is his only weapon. Slate black fur with a white blaze from his crown down between
 /// his eyes, small round ears, a pink nose; orange armour across his chest on black straps, a black belt with a
 /// silver buckle, white feet. Behind him stands his big bushy tail, black with a white stripe down it. Signature: he
 /// lifts his tail high over his back with a smug look, and a pale green stink cloud puffs out of it and drifts up
 /// and away, wavy lines rising off it.
 private func drawStinkor(_ c: PixelCanvas, _ p: Pose) {
-    let fur = C(0x4A4856), furD = C(0x2C2A34), furL = C(0x7A788E)
+    // The fur a slate black, a good step lighter than a dark desktop, with a pale sheen along its lit edges.
+    let fur = C(0x5E5C72), furD = C(0x3C3A4C), furL = C(0x9896B2)
     let wht = C(0xF2F2F4), whtD = C(0xBCBCC8)
     let orange = C(0xE8822A), orangeD = C(0xA8561A), orangeL = C(0xFFB868)
     let s = p.signature ?? -1
@@ -742,16 +771,17 @@ private func drawStinkor(_ c: PixelCanvas, _ p: Pose) {
         pts.append((rest[k].x + (high[k].x - rest[k].x) * lift + w, rest[k].y + (high[k].y - rest[k].y) * lift))
     }
     for k in 1..<pts.count {
-        let r = k < 4 ? 3.1 : 2.6
+        let r = k < 2 ? 3.4 : k < 5 ? 4.1 : 3.5
         v4Line(c, pts[k - 1], pts[k], fur, r: r)
     }
     for k in 1..<pts.count {
-        // Tufts along its edge, so it reads fluffy.
+        // Tufts along its outer edge, lit, so it reads fluffy.
         let q = pts[k]
-        c.px(Int(q.x.rounded(.down)) - 3, Int(q.y.rounded(.down)), furL)
+        c.px(Int(q.x.rounded(.down)) - 4, Int(q.y.rounded(.down)), furL)
+        c.px(Int(q.x.rounded(.down)) - 3, Int(q.y.rounded(.down)) - 1, furL)
     }
-    for k in 1..<pts.count { v4Line(c, pts[k - 1], pts[k], wht, r: 0.8) }
-    if let tip = pts.last { c.rect(Int(tip.x.rounded(.down)) - 1, Int(tip.y.rounded(.down)) - 1, 2, 2, wht) }
+    for k in 1..<pts.count { v4Line(c, pts[k - 1], pts[k], wht, r: k < 2 ? 0.8 : 1.3) }
+    if let tip = pts.last { c.rect(Int(tip.x.rounded(.down)) - 2, Int(tip.y.rounded(.down)) - 2, 4, 3, wht) }
 
     drawBody(c, Look(body: fur, shade: furD, arm: fur, eye: nil))
     c.rect(18, 27, 1, 5, furL)

@@ -12,7 +12,7 @@ let eterniaVillains2: [EterniaVillain: Persona] = [
     .beastClawd: Persona(name: "Beast Clawd", weapon: .saber, headTop: 20, signature: 3.0, draw: drawBeastClawd),
     .trapClawd: Persona(name: "Trap Clawd", weapon: .blaster, shot: .energy(core: C(0xFFF2A0), glow: C(0xFF8A1A)),
                         muzzle: (48, 33), handGun: false, headTop: 20, signature: 2.8, draw: drawTrapClawd),
-    .triClawdps: Persona(name: "Tri-Clawdps", weapon: .saber, headTop: 19, signature: 3.4, draw: drawTriClawdps),
+    .triClawdps: Persona(name: "Tri-Clawdps", weapon: .saber, headTop: 14, signature: 3.4, draw: drawTriClawdps),
     .merClawd: Persona(name: "Mer-Clawd", weapon: .saber, headTop: 17, signature: 3.0, draw: drawMerClawd),
     .kobraKhan: Persona(name: "Kobra Khan", weapon: .lightning,
                         magic: Magic(core: C(0xE4FFE0), glow: C(0x4ACB7A), jagged: false, waves: true),
@@ -31,12 +31,24 @@ private func v2Line(_ c: PixelCanvas, _ a: (x: Double, y: Double), _ b: (x: Doub
     c.glowLine(a.x, a.y, b.x, b.y, core: col, glow: v2None, coreR: r, glowR: r + 0.1)
 }
 
-/// A sword put away in its scabbard, hanging from the back of the belt behind the hip: black leather with a silver
-/// tip, the hilt showing above it. Drawn before the body, so the body hides its top.
-private func v2Scabbard(_ c: PixelCanvas, leather: Px, tip: Px, hilt: Px) {
-    v2Line(c, (17.5, 36.5), (12.5, 41.5), leather, r: 0.9)
-    c.rect(12, 41, 2, 1, tip)
-    v2Line(c, (18.5, 35.0), (16.0, 37.5), hilt, r: 0.8)
+/// A sword put away in its scabbard, sticking out back and down from behind the hip: a broad sheath of `leather`
+/// lit along its top edge, a metal throat band where the sword goes in, a band round its middle and a pointed metal
+/// chape on the end; the sword's crossguard sits square across the throat. Drawn before the body, so the body hides
+/// the grip.
+private func v2Scabbard(_ c: PixelCanvas, leather: Px, lit: Px, tip: Px, hilt: Px) {
+    let throat = (x: 17.5, y: 36.5), dir = seatedPose ? 174.0 : 158.0   // flatter when he sits, clear of the floor
+    func at(_ d: Double, _ side: Double = 0) -> (x: Double, y: Double) {
+        eterniaReach(eterniaReach(throat, dir, d), dir - 90, side)
+    }
+    v2Line(c, at(0), at(8), leather, r: 1.3)
+    v2Line(c, at(8), at(9.6), leather, r: 0.9)
+    v2Line(c, at(0.5, 0.9), at(8, 0.9), lit, r: 0.35)
+    v2Line(c, at(0.4), at(1.4), tip, r: 1.45)                          // the throat band
+    v2Line(c, at(4.6), at(5.3), tip, r: 1.4)                           // the middle band
+    v2Line(c, at(8.6), at(10.4), tip, r: 0.9)                          // the chape
+    let point = at(11)
+    c.px(Int(point.x.rounded(.down)), Int(point.y.rounded(.down)), tip)
+    v2Line(c, at(-0.6, 3.2), at(-0.6, -3.2), hilt, r: 0.75)            // the crossguard
 }
 
 // MARK: - Evil-Lynn
@@ -152,7 +164,7 @@ private func drawEvilLynn(_ c: PixelCanvas, _ p: Pose) {
 
 /// Beast Clawd: Skeleclawd's brute, who talks to animals. Shaggy orange-red fur all over, a mane of it in strands
 /// round a blue face with heavy brows and a pale blue snout; blue armour on his chest and wrists and blue boots, a
-/// strap of a belt and a ragged dark fur loincloth. He fights with a whip, which hangs from his fist to the floor when
+/// strap of a belt and a ragged dark fur loincloth. He fights with a thick plaited whip, which hangs from his fist to the floor when
 /// he isn't swinging it. Signature: he draws the whip back over his head, cracks it out in front of him with a spark
 /// at the tip, and roars, his mouth wide and his fangs out, the roar rolling away in front of him.
 private func drawBeastClawd(_ c: PixelCanvas, _ p: Pose) {
@@ -246,13 +258,21 @@ private func beastSignatureWhip(_ s: Double) -> (angle: Double, trail: [Double])
 /// off the tip. Put away (nil), it hangs from the fist to the floor and trails along it.
 private func beastWhip(_ c: PixelCanvas, at h: (x: Double, y: Double), angle: Double?, trail: [Double], crack: Bool,
                        t: Double) {
-    let leather = C(0x6A3E1E), grip = C(0x2A1A10)
+    let leather = C(0x5A3016), sheen = C(0xC08A4A), grip = C(0x2A1A10)
     let floor = Double(43 - c.oy)
+    /// The lash along `pts`: a thick plaited thong, two pixels wide for most of its length with a tan sheen down it,
+    /// thinning to the fall at the end, so it still reads at 1x swung up over his mane.
+    func thong(_ pts: [(x: Double, y: Double)]) {
+        let n = pts.count - 1
+        for i in 1...n {
+            let r = i <= n - 3 ? 0.95 : i <= n - 1 ? 0.75 : 0.5
+            v2Line(c, pts[i - 1], pts[i], leather, r: r)
+        }
+        for i in 1...max(1, n - 3) { v2Line(c, pts[i - 1], pts[i], sheen, r: 0.3) }
+    }
     guard let a = angle else {
         let pts: [(x: Double, y: Double)] = [(42, 36), (43, 38.5), (43.5, 41), (45, 42.5), (47.5, 43), (50, 43), (52, 42.5)]
-        for i in 1..<pts.count {
-            v2Line(c, (pts[i - 1].x, min(pts[i - 1].y, floor)), (pts[i].x, min(pts[i].y, floor)), leather)
-        }
+        thong(pts.map { (x: $0.x, y: min($0.y, floor - 0.4)) })
         return
     }
     let fast = trail.count >= 2
@@ -280,7 +300,7 @@ private func beastWhip(_ c: PixelCanvas, at h: (x: Double, y: Double), angle: Do
     }
     eterniaBar(c, h, a, from: -2, to: 2, grip, r: 0.9)
     let pts = lash(a, lag: lag)
-    for i in 1..<pts.count { v2Line(c, pts[i - 1], pts[i], leather, r: i > 6 ? 0.45 : 0.55) }
+    thong(pts)
     if crack, let tip = pts.last {
         for k in 0..<6 {
             let r = Double(k) * 60 + 25 * noise(k + Int(t * 20))
@@ -366,9 +386,10 @@ private func drawTrapClawd(_ c: PixelCanvas, _ p: Pose) {
 // MARK: - Tri-Clawdps
 
 /// Tri-Clawdps: Skeleclawd's lookout, who sees everything. Green armour from head to foot, black boots, a black belt
-/// with a silver buckle; his green helmet carries a gunmetal drum round his head at eye level with three round lenses
-/// set in it, gold, cyan and lime, two of them looking out of the front at a time. No red visor anywhere. He fights
-/// with a sword, sheathed at his back hip when it's put away. Signature: the drum turns right round, its seams
+/// with a silver buckle; his squared green helmet, a gunmetal crest standing up off it and a silver brow band, carries
+/// a gunmetal drum round his head at eye level with three round lenses set in it, gold, cyan and lime, two of them
+/// looking out of the front at a time. No red visor anywhere. He fights with a sword, sheathed in a gunmetal scabbard
+/// at his back hip when it's put away. Signature: the drum turns right round, its seams
 /// sliding past, and each eye glows its own colour as it comes round to the front.
 private func drawTriClawdps(_ c: PixelCanvas, _ p: Pose) {
     let green = C(0x3E8A3A), greenD = C(0x2A6428), greenL = C(0x62B456), plate = C(0x4E9E46)
@@ -378,7 +399,7 @@ private func drawTriClawdps(_ c: PixelCanvas, _ p: Pose) {
     let turning = s > 0.08 && s < 0.92
     let rot = 60 + (turning ? v2Ease((s - 0.08) / 0.84) * 360 : 0)
 
-    if p.melee == nil { v2Scabbard(c, leather: black, tip: silver, hilt: silver) }
+    if p.melee == nil { v2Scabbard(c, leather: drum, lit: drumL, tip: silver, hilt: silver) }
     drawLegs(c, Look(leg: green), step: p.step)
     drawBoots(c, black, step: p.step, rows: 3)
     if !seatedPose {
@@ -393,11 +414,21 @@ private func drawTriClawdps(_ c: PixelCanvas, _ p: Pose) {
     c.rect(18, 36, 20, 1, black); c.rect(27, 36, 2, 1, silver)
     c.rect(18, 37, 20, 1, greenD)
 
-    // The helmet: a green dome lit on the left with a ridge down its crown.
-    c.rect(23, 19, 10, 1, green); c.rect(21, 20, 14, 1, green); c.rect(20, 21, 16, 1, green); c.rect(19, 22, 18, 5, green)
-    c.rect(24, 19, 3, 1, greenL); c.rect(22, 20, 2, 1, greenL); c.rect(20, 22, 1, 3, greenL); c.rect(36, 22, 1, 5, greenD)
-    c.rect(27, 19, 2, 8, greenD); c.px(27, 19, plate)
-    c.rect(19, 26, 18, 1, greenD)
+    // The helmet: a squared green casque, not a dome, its sides straight down to the drum, lit on the left and shaded
+    // on the right; a gunmetal crest standing up off its crown, sweeping back, and a silver brow band riveted across
+    // it over the drum.
+    c.pattern(22, 14, [
+        ".......LD.",
+        ".....LDDDd",
+        "...LDDDDDd",
+        ".LDDDDDDDd",
+        "DDDDDDDDDd",
+    ], ["D": drum, "L": drumL, "d": drumD])
+    c.rect(21, 19, 14, 1, green); c.rect(20, 20, 16, 1, green); c.rect(19, 21, 18, 5, green)
+    c.rect(21, 19, 3, 1, greenL); c.px(20, 20, greenL); c.rect(19, 21, 1, 4, greenL); c.rect(36, 21, 1, 5, greenD)
+    c.rect(35, 20, 1, 1, greenD)
+    c.rect(18, 25, 20, 2, silver); c.rect(18, 25, 20, 1, C(0xE2E4EC)); c.rect(18, 26, 20, 1, C(0x7E8290))
+    for x in [20, 27, 34] { c.px(x, 26, drumD) }
 
     // The drum round his head at eye level: gunmetal, a lit rim along the top and a dark one under it, its seams
     // turning with it.
@@ -441,8 +472,8 @@ private func drawTriClawdps(_ c: PixelCanvas, _ p: Pose) {
 /// Mer-Clawd: the warlord of the ocean, a fish-man rather than a man. Teal-green scaly skin, a fishy face with big
 /// round yellow eyes, gills on his cheeks and a wide down-turned mouth with two fangs; a blue-green crest of fin along
 /// his crown and fanned fins either side of his head, lit along their spines. Blue armour on his chest and
-/// shoulders, a dark belt with a gold buckle, blue boots. He fights with a sword, sheathed at his back hip when it's
-/// put away. Signature: an orange fish leaps past behind him, up from the right in a spray of drops, over his head
+/// shoulders, a dark belt with a gold buckle, blue boots. He fights with a sword, sheathed in a gold-banded blue
+/// scabbard at his back hip when it's put away. Signature: an orange fish leaps past behind him, up from the right in a spray of drops, over his head
 /// and down on the left.
 private func drawMerClawd(_ c: PixelCanvas, _ p: Pose) {
     let skin = C(0x3AA88A), skinD = C(0x267A62), skinL = C(0x62CCA8)
@@ -452,7 +483,7 @@ private func drawMerClawd(_ c: PixelCanvas, _ p: Pose) {
     let s = p.signature ?? -1
 
     if s > 0.1 && s < 0.9 { merLeap(c, (s - 0.1) / 0.8) }
-    if p.melee == nil { v2Scabbard(c, leather: blueD, tip: gold, hilt: gold) }
+    if p.melee == nil { v2Scabbard(c, leather: blueD, lit: blueL, tip: gold, hilt: gold) }
     drawLegs(c, Look(leg: skin), step: p.step)
     drawBoots(c, blue, step: p.step, rows: 3)
     if !seatedPose {
@@ -623,7 +654,7 @@ private func drawKobraKhan(_ c: PixelCanvas, _ p: Pose) {
 
 /// Clawdful: a great red crab of a warrior in yellow boots. A broad red shell over his whole body, lit along its
 /// spiny top and shaded underneath, a pale belly plate in segments below it, two black eyes on stalks over it; a huge
-/// pincer on each arm, the front one his weapon, the back one held up. Signature: he lifts both pincers and snaps them
+/// pincer on each arm (a fat palm and two hooked jaws with a gap between them), the front one his weapon, the back one held up. Signature: he lifts both pincers and snaps them
 /// open and shut, a spark at the front one as it clacks.
 private func drawClawdful(_ c: PixelCanvas, _ p: Pose) {
     let shell = C(0xD8362A), shellD = C(0x9E2018), shellL = C(0xF2664A)
@@ -678,7 +709,7 @@ private func drawClawdful(_ c: PixelCanvas, _ p: Pose) {
     let a = snapping ? -40 - 20 * up : p.melee ?? -25
     clawdfulPincer(c, at: h, angle: a, open: open, trail: snapping ? [] : p.trail, shell: shell, dark: shellD, lit: shellL)
     if snapping && snap < 0.12 && up > 0.5 {
-        let tip = eterniaReach(h, a, 11)
+        let tip = eterniaReach(h, a, 13)
         for k in 0..<4 {
             let u = eterniaReach(tip, Double(k) * 90 + 45, 1.5), v = eterniaReach(tip, Double(k) * 90 + 45, 3)
             c.glowLine(u.x, u.y, v.x, v.y, core: C(0xFFF8E0), glow: C(0xFFD060), coreR: 0.3, glowR: 1, strength: 0.8)
@@ -686,21 +717,36 @@ private func drawClawdful(_ c: PixelCanvas, _ p: Pose) {
     }
 }
 
-/// A crab's pincer on an arm from `h` at `angle` degrees: a short forearm, a fat palm, a fixed lower finger and a
-/// moving upper one `open` degrees apart, lit along the palm. A fast swing leaves a smear (`trail`).
+/// A crab's pincer on an arm from `h` at `angle` degrees: a short forearm and a fat palm, lit along its top, and out
+/// of it two curved jaws with a clear gap between them, the upper one the moving finger (`open` degrees apart, more
+/// or less) and the lower one the fixed finger, each bowing out and hooking back in to a pale point, so it reads as a
+/// pincer and not a paddle. A fast swing leaves a smear (`trail`).
 private func clawdfulPincer(_ c: PixelCanvas, at h: (x: Double, y: Double), angle a: Double, open: Double,
                             trail: [Double], shell: Px, dark: Px, lit: Px) {
     for (i, t) in trail.enumerated() {
-        let p0 = eterniaReach(h, t, 4), p1 = eterniaReach(h, t, 12)
+        let p0 = eterniaReach(h, t, 4), p1 = eterniaReach(h, t, 14)
         c.glowLine(p0.x, p0.y, p1.x, p1.y, core: C(0xFFE8E0), glow: C(0xFFE8E0), coreR: 0.6, glowR: 2,
                    strength: 0.28 / Double(i + 1))
     }
+    let tipCol = C(0xFFD8C8)
     eterniaBar(c, h, a, from: -2, to: 3, dark, r: 1.3)
-    eterniaBar(c, h, a, from: 3, to: 6.5, shell, r: 2.5)
-    let j = eterniaReach(h, a, 6)
-    eterniaBar(c, j, a + open * 0.5, from: 0, to: 7, dark, r: 1.4)
-    eterniaBar(c, j, a - open * 0.5, from: 0, to: 8, shell, r: 1.4)
-    eterniaBar(c, j, a - open * 0.5, from: 5.5, to: 8.5, lit, r: 0.6)
-    let l0 = eterniaReach(eterniaReach(h, a - 90, 1.6), a, 3.5), l1 = eterniaReach(eterniaReach(h, a - 90, 1.6), a, 7)
+    eterniaBar(c, h, a, from: 2.5, to: 7, shell, r: 2.6)
+    let l0 = eterniaReach(eterniaReach(h, a - 90, 1.6), a, 3.2), l1 = eterniaReach(eterniaReach(h, a - 90, 1.6), a, 6.5)
     v2Line(c, l0, l1, lit, r: 0.5)
+    let j = eterniaReach(h, a, 6.5)
+    let g = 10 + open * 0.85
+    /// One jaw from the palm's edge (`side` -1 the top, 1 the bottom): out at `spread` degrees, then hooked back in.
+    func jaw(side: Double, spread: Double, len: Double, col: Px) {
+        let b = eterniaReach(j, a + 90 * side, 1.3)
+        let k = eterniaReach(b, a + spread * side, len)
+        let tip = eterniaReach(k, a + (spread - 42) * side, 3.4)
+        v2Line(c, b, k, col, r: 1.2)
+        v2Line(c, k, tip, col, r: 0.8)
+        c.px(Int(tip.x.rounded(.down)), Int(tip.y.rounded(.down)), tipCol)
+        // A dark inner edge along the jaw, facing the gap.
+        let ki = eterniaReach(k, a - 90 * side, 0.9), bi = eterniaReach(b, a - 90 * side, 0.9)
+        v2Line(c, bi, ki, dark, r: 0.3)
+    }
+    jaw(side: 1, spread: g * 0.55, len: 4.6, col: shell)
+    jaw(side: -1, spread: g, len: 4.2, col: shell)
 }
