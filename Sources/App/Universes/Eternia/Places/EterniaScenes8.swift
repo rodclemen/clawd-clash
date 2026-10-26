@@ -319,7 +319,9 @@ extension Scenes {
         // The gate: a great arch, dark inside with the cold glow of the hall far back, voussoirs of pale ice round
         // it and a row of icicles hanging in its mouth like a portcullis.
         for y in 39..<56 {
-            let r = y < 45 ? Int((36 - Double(45 - y) * Double(45 - y)).squareRoot().rounded()) : 6
+            let up = Double(45 - y)
+            let span: Double = 36 - up * up
+            let r = y < 45 ? Int(span.squareRoot().rounded()) : 6
             c.rect(60 - r - 2, y, 2 * r + 4, 1, ice[5])
             c.rect(60 - r, y, 2 * r, 1, y > 50 ? C(0x18304E) : deep)
         }

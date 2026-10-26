@@ -451,7 +451,8 @@ extension Scenes {
             // One flame, a mound of fire tallest in the middle, yellow at heart, orange, red at its ragged tips.
             for dx in -4...4 {
                 let lick = noise(dx * 7 + ph * 13 + i * 31) * 2.4
-                let h = Int((6.5 - Double(abs(dx)) * 1.3 + lick).rounded())
+                let rise: Double = 6.5 - Double(abs(dx)) * 1.3 + lick
+                let h = Int(rise.rounded())
                 guard h > 0 else { continue }
                 for j in 0..<h {
                     let k = Double(j) / Double(h)
