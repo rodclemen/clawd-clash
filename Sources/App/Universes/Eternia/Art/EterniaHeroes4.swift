@@ -34,6 +34,25 @@ private func turned(_ c: PixelCanvas, _ degrees: Double, about pivot: (x: Double
     c.paste(s.rotated(degrees, about: pivot, into: c.w, c.h, at: pivot))
 }
 
+/// Draws `art` (in sprite coordinates, no offsets) on a scratch canvas and lays it on `c` with every near-white pixel
+/// along its silhouette turned `rim`: a white coat inside the app's white outline otherwise has no edge at all.
+private func rimmed(_ c: PixelCanvas, _ rim: Px, _ art: (PixelCanvas) -> Void) {
+    let s = PixelCanvas(c.w, c.h)
+    art(s)
+    var edge: [(Int, Int)] = []
+    for y in 0..<s.h {
+        for x in 0..<s.w where s.isDrawn(x, y) {
+            let i = (y * s.w + x) * 4
+            guard s.buf[i + 3] == 255, min(s.buf[i], s.buf[i + 1], s.buf[i + 2]) >= 0xC0 else { continue }
+            if !s.isDrawn(x - 1, y) || !s.isDrawn(x + 1, y) || !s.isDrawn(x, y - 1) || !s.isDrawn(x, y + 1) {
+                edge.append((x, y))
+            }
+        }
+    }
+    for (x, y) in edge { s.px(x, y, rim) }
+    c.paste(s)
+}
+
 /// A cape hanging behind the left shoulder from row 27 to `hem`, its edge swaying.
 private func backCape(_ c: PixelCanvas, t: Double, speed: Double, _ col: Px, _ edge: Px, _ fold: Px, hem: Int = 41) {
     let last = min(hem, 43 - c.oy)
@@ -110,15 +129,12 @@ private func drawSheClawd(_ c: PixelCanvas, _ p: Pose) {
 
     c.oy += p.breathe
     drawBody(c, Look(), armRight: raise)
-    // The white tunic: a gold neckline lit along the top, folds, the far side shaded; the gold belt with its jewel;
-    // the short skirt hanging over her legs in pleats.
-    c.rect(18, 33, 20, 4, tunic); c.rect(37, 33, 1, 4, tunicD)
-    c.pattern(18, 32, [
-        "GGGGGGg......gGGGGGG",
-        ".gGGGGGGg..gGGGGGGg.",
-    ], ["G": gold, "g": goldD])
-    c.px(19, 32, goldL); c.px(20, 32, goldL)
-    c.rect(21, 34, 1, 2, tunicF); c.rect(33, 34, 1, 2, tunicF)
+    // The white tunic: cut low, so a band of Clawd shows under her face before it starts (white right under the eyes
+    // reads as a beard); a solid gold neckline lit along the top, folds, the far side shaded; the gold belt with its
+    // jewel; the short skirt hanging over her legs in pleats.
+    c.rect(18, 34, 20, 3, tunic); c.rect(37, 34, 1, 3, tunicD)
+    c.rect(18, 34, 20, 1, gold); c.rect(18, 34, 7, 1, goldL); c.rect(34, 34, 4, 1, goldD)
+    c.rect(21, 35, 1, 1, tunicF); c.rect(33, 35, 1, 1, tunicF)
     c.rect(18, 36, 20, 1, gold); c.rect(18, 36, 6, 1, goldL); c.rect(27, 36, 2, 1, jewel)
     for y in 37...38 where y + c.oy <= 42 {
         c.rect(18, y, 20, 1, tunic)
@@ -244,11 +260,13 @@ private func drawAdorra(_ c: PixelCanvas, _ p: Pose) {
     c.oy += p.breathe
     drawBody(c, Look(arm: tunic), armRight: raise)
     if thinking { c.rect(22, 31, 2, 1, clawdOrange); c.rect(32, 31, 2, 1, clawdOrange) }   // looking up at the blade
-    // The tunic: sleeves to the wrist, the gold V at her neck, a fold either side; the brown belt and the red skirt
-    // in pleats over her legs.
-    c.rect(18, 32, 20, 5, tunic); c.rect(37, 32, 1, 5, tunicD)
-    c.rect(18, 32, 20, 1, gold); c.rect(18, 32, 6, 1, C(0xFFE07A)); c.rect(36, 32, 2, 1, C(0xA87C1C))
-    c.rect(20, 33, 1, 3, tunicF); c.rect(35, 33, 1, 3, tunicF)
+    // The tunic: sleeves to the wrist, cut low enough that Clawd shows under her face (white right under the eyes
+    // reads as a beard), a thin gold neckline with a little point at the middle, a fold either side; the brown belt
+    // and the red skirt in pleats over her legs.
+    c.rect(18, 34, 20, 3, tunic); c.rect(37, 34, 1, 3, tunicD)
+    c.rect(18, 34, 20, 1, gold); c.rect(18, 34, 6, 1, C(0xFFE07A)); c.rect(35, 34, 3, 1, C(0xA87C1C))
+    c.px(27, 35, gold); c.px(28, 35, C(0xA87C1C))   // the neckline's little point
+    c.px(20, 35, tunicF); c.px(35, 35, tunicF)
     c.rect(15, 35, 3, 1, tunicD); c.rect(38, 35 - raise, 3, 1, tunicD)   // the cuffs
     c.rect(18, 36, 20, 1, belt); c.px(27, 36, gold); c.px(28, 36, C(0xA87C1C))
     for y in 37...39 where y + c.oy <= 42 {
@@ -299,6 +317,9 @@ private func drawAdorra(_ c: PixelCanvas, _ p: Pose) {
 
 // MARK: - The horses
 
+/// The edge the horses' white coats and wings get, inside the app's outline.
+private let horseRim = C(0x9CA2B8)
+
 private struct Horse {
     var coat = C(0xF4F2EC), coatD = C(0xC8C6C2), coatL = C(0xFFFFFF)
     var mane: Px, maneD: Px, maneL: Px
@@ -307,14 +328,15 @@ private struct Horse {
 }
 
 /// A horse's legs and hooves on Clawd's four legs: white, a shaded fetlock, grey hooves. `fold` lifts and bends the
-/// front pair forward (rearing); `paw` lifts the front leg by that much (pawing the ground).
-private func horseLegs(_ c: PixelCanvas, _ h: Horse, step: Int, fold: Bool = false, paw: Int = 0) {
+/// front pair forward (rearing); `paw` lifts the front leg by that much (pawing the ground); `only` picks which legs.
+private func horseLegs(_ c: PixelCanvas, _ h: Horse, step: Int, fold: Bool = false, paw: Int = 0,
+                       only: Set<Int> = [0, 1, 2, 3]) {
     if seatedPose {
         drawLegs(c, Look(leg: h.coat), step: step)
         for lx in [19, 23, 31, 35] { c.rect(lx + 2, 39, 1, 1, h.hoof) }
         return
     }
-    for (i, lx) in [19, 23, 31, 35].enumerated() {
+    for (i, lx) in [19, 23, 31, 35].enumerated() where only.contains(i) {
         let front = i >= 2
         if fold && front {
             // Bent at the knee, the hoof tucked forward.
@@ -407,13 +429,17 @@ private func drawSpirit(_ c: PixelCanvas, _ p: Pose) {
     let tossK = s > 0.6 && s < 0.95 ? sin((s - 0.6) / 0.35 * .pi) : 0
     let nod = p.walking ? sin(p.t * 8 * .pi) * 2 : pawing ? 8 : -20 * tossK
 
-    horseLegs(c, h, step: p.step, paw: paw)
-    if pawing && paw == 0 {
-        // The dust off the struck ground, light and see-through.
-        for k in 0..<3 { c.rect(37 + k * 2, 42 - k % 2, 2, 1, C(0xE8DCC0, 0.6)) }
+    let step = p.step, breathe = p.breathe, t = p.t
+    // A grey-blue rim round his white coat, so the edge holds inside the white outline.
+    rimmed(c, horseRim) { c in
+        horseLegs(c, h, step: step, paw: paw)
+        if pawing && paw == 0 {
+            // The dust off the struck ground, light and see-through.
+            for k in 0..<3 { c.rect(37 + k * 2, 42 - k % 2, 2, 1, C(0xE8DCC0, 0.6)) }
+        }
+        c.oy += breathe
+        horseBody(c, h, t: t, nod: nod, toss: tossK)
     }
-    c.oy += p.breathe
-    horseBody(c, h, t: p.t, nod: nod, toss: tossK)
 }
 
 // MARK: - Swift Wind
@@ -435,14 +461,19 @@ private func drawSwiftWind(_ c: PixelCanvas, _ p: Pose) {
         nod = max(-16, min(22, (a + 60) * 0.25))
         lunge = a > -20 ? 2 : 0
     }
-    let tilt = -18 * rear
+    let tilt = -16 * rear
     let breathe = p.breathe
     let step = p.step
     let flying = p.flying
     let t = p.t
-    turned(c, tilt, about: (22, 43)) { s in
+    // Rearing, the hind legs stay planted upright on the ground and only the rest of him turns up off them (turning
+    // the hind legs too left them a stair-stepped clump).
+    let planted = rear > 0.05 && !flying && !seatedPose
+    rimmed(c, horseRim) { c in
+        if planted { horseLegs(c, h, step: -1, only: [0, 1]) }
+        turned(c, tilt, about: (22, 39)) { s in
         s.ox = lunge
-        horseLegs(s, h, step: step, fold: rear > 0.3 || flying)
+        horseLegs(s, h, step: step, fold: rear > 0.3 || flying, only: planted ? [2, 3] : [0, 1, 2, 3])
         s.oy += breathe
         // The far wing behind him, then the body, then the near wing over it.
         let root = (27.0, 27.0)
@@ -455,7 +486,7 @@ private func drawSwiftWind(_ c: PixelCanvas, _ p: Pose) {
                        ["G": C(0xF0C850), "g": C(0xB08A2A), "L": C(0xFFF0B0)])
         }
         wing(s, root: root, edge: -158 + 58 * spread, feathers: 165 - 50 * spread, length: 14 + 5 * spread, near: true)
-    }
+    } }
     if !p.trail.isEmpty, let a = p.melee {
         // A streak behind the horn on a fast charge.
         let n = max(-16, min(22, (a + 60) * 0.25)) * .pi / 180
@@ -569,10 +600,10 @@ private func drawBow(_ c: PixelCanvas, _ p: Pose) {
 
 // MARK: - Glimmer
 
-/// Glimmer: the Princess of Bright Moon. Long dark-red hair down her back and over her shoulder, a pink tunic with
-/// pink sleeves, a purple belt with a pink gem, a purple skirt and purple boots. Her magic is a bright white ray with
-/// a pink glow from her palm. Signature: she holds out her palm and a glowing ball of light swells in it, sparkles
-/// circling it, then fades.
+/// Glimmer: the Princess of Bright Moon. Long dark-red hair falling to her knees behind her and over her shoulder, a
+/// pink tunic with pink sleeves, a purple belt with a pink gem, a purple skirt and purple boots, and always a little
+/// ball of light bobbing over her palm. Her magic is a bright white ray with a pink glow from her palm. Signature: she
+/// holds out her palm and the ball of light swells in it, sparkles circling it, then fades back to its little glow.
 private func drawGlimmer(_ c: PixelCanvas, _ p: Pose) {
     let hair = C(0x9A2A3E), hairD = C(0x681A2A), hairL = C(0xC44A5E)
     let pink = C(0xEC70B0), pinkD = C(0xB84A86), pinkL = C(0xFFA0CC)
@@ -582,8 +613,13 @@ private func drawGlimmer(_ c: PixelCanvas, _ p: Pose) {
     let palm = ball > 0.05 ? 3 : 0
     let raise = max(p.armRaise, palm)
 
-    // Her long hair down her back, in strands.
-    for (i, x) in [15, 16, 17].enumerated() { c.rect(x, 27, 1, 11 - i % 2, i % 2 == 0 ? hair : hairD) }
+    // Her long hair down her back to her knees, in strands that sway, lit down the outer one.
+    let sway = Int((sin(p.t * 2.4) * 0.8).rounded())
+    for (i, x) in [12, 13, 14, 15, 16, 17].enumerated() {
+        let top = 27 + max(0, 2 - i), len = 13 - abs(i - 2) / 2 - (i == 0 ? 2 : 0)
+        let col = i == 0 ? hairD : i == 1 ? hairL : i % 2 == 0 ? hair : hairD
+        c.rect(x + (i < 2 ? sway : 0), top, 1, len, col)
+    }
     drawLegs(c, Look(), step: p.step)
     drawBoots(c, purple, step: p.step, rows: 3)
     if !seatedPose {
@@ -626,15 +662,21 @@ private func drawGlimmer(_ c: PixelCanvas, _ p: Pose) {
         ".h....................h.",
     ], ["H": hair, "h": hairD, "l": hairL])
 
+    if ball <= 0.05 && p.zap != true {
+        // Her little light: always a small glowing ball over her palm, bobbing; her signature makes it swell.
+        let bx = 42.5, by = Double(29 - raise + Int((sin(p.t * 3) * 0.8).rounded())) + 0.5
+        c.glowLine(bx, by, bx, by, core: C(0xFFFFFF, 0.97), glow: C(0xFF5AB0, 0.85), coreR: 1.1, glowR: 3.4)
+        c.px(Int(bx) + 3, Int(by.rounded()) - 3, C(0xFFE8F4, 0.6 + 0.4 * sin(p.t * 9)))
+    }
     if ball > 0.05 {
         // The ball of light in her palm: a white core in a pink glow, see-through, sparkles going round it.
-        let bx = 41.0, by = Double(33 - raise) - 3.5
+        let bx = 42.5, by = Double(33 - raise) - 5
         let pulse = 0.9 + 0.1 * sin(p.t * 14)
-        c.glowLine(bx, by, bx, by, core: C(0xFFFFFF, 0.95 * ball), glow: C(0xFF6AB8, 0.85 * ball), coreR: 1.2 * ball,
-                   glowR: (1.6 + 2.6 * ball) * pulse)
+        c.glowLine(bx, by, bx, by, core: C(0xFFFFFF, 0.95 * ball), glow: C(0xFF6AB8, 0.85 * ball), coreR: 1.1 + 1.1 * ball,
+                   glowR: (3.4 + 3.2 * ball) * pulse)
         for k in 0..<3 {
             let a = p.t * 5 + Double(k) * 2.1
-            let x = Int((bx + cos(a) * 5).rounded()), y = Int((by + sin(a) * 3).rounded())
+            let x = Int((bx + cos(a) * 7).rounded()), y = Int((by + sin(a) * 4).rounded())
             c.px(x, y, C(0xFFE8F4, 0.9 * ball))
         }
     }
@@ -821,17 +863,27 @@ private func drawKowl(_ c: PixelCanvas, _ p: Pose) {
     c.rect(19, 27, 2, 1, furL); c.rect(23, 33, 1, 1, furD); c.rect(33, 33, 1, 1, furD)
 
     if folded {
-        // The wings folded across his belly, one over the other.
-        c.pattern(17, 33, [
-            "WWWWWWWWWw.........",
-            ".wWWWWWWWWWw.......",
-            "..wwWWWWWWWWWw.....",
-        ], ["W": fur, "w": furD])
-        c.pattern(23, 34, [
-            ".......wWWWWWWWWWW",
-            ".....wWWWWWWWWWWw.",
-            "...wWWWWWWWWWww...",
-        ], ["W": furL, "w": furD])
+        // The wings folded across his belly like crossed arms, one from each side sloping down to the middle: the
+        // far one dark, the near one pale over it, each ending in three splayed feather-tips, so they read as two
+        // wings and not one bar.
+        c.pattern(15, 31, [
+            "DD...........",
+            "DdDD.........",
+            ".DddDD.......",
+            "..DDddDDD.D..",
+            "...DDDddDDD..",
+            ".....DDDdDDD.",
+            ".......DD.D.D",
+        ], ["D": furD, "d": C(0x56586A)])
+        c.pattern(27, 31, [
+            "...........LL",
+            ".........LLWL",
+            ".......LLWWL.",
+            "..L.LLLWWLL..",
+            "..LLLWWLLL...",
+            ".LLLWLLL.....",
+            "L.L.LL.......",
+        ], ["L": furL, "W": C(0xD4D6DE)])
     } else {
         // The little wings: three feathers each, out at his sides, flapping in flight.
         c.pattern(12, 31 - flap, ["..WWWW", ".WWLWW", "WWWWWW", "wW.wW.", "w..w.."], ["W": fur, "L": furL, "w": furD])

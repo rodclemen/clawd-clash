@@ -102,6 +102,34 @@ private func h6AngelWing(_ c: PixelCanvas, x: Int, y: Int, main: Px, shade: Px, 
     ], ["W": main, "s": shade, "E": edge, "T": tip])
 }
 
+/// Where Queen Angella's wings turn from (her shoulders), the far one and the near one.
+private let h6FarRoot = (x: 24.0, y: 26.0), h6NearRoot = (x: 19.0, y: 27.0)
+
+/// Where point `q` lands when turned `degrees` (positive: clockwise) about `pivot`, as `h6Turned` turns art.
+private func h6Turn(_ q: (x: Double, y: Double), _ degrees: Double, about pivot: (x: Double, y: Double)) -> (Double, Double) {
+    let r = degrees * .pi / 180, dx = q.x - pivot.x, dy = q.y - pivot.y
+    return (pivot.x + dx * cos(r) - dy * sin(r), pivot.y + dx * sin(r) + dy * cos(r))
+}
+
+/// Draws `art` on a scratch canvas and lays it on `c` with every near-white pixel along its silhouette turned `rim`:
+/// white hair inside the app's white outline otherwise melts into it and reads as a hood.
+private func h6Rimmed(_ c: PixelCanvas, _ rim: Px, _ art: (PixelCanvas) -> Void) {
+    let s = PixelCanvas(c.w, c.h)
+    art(s)
+    var edge: [(Int, Int)] = []
+    for y in 0..<s.h {
+        for x in 0..<s.w where s.isDrawn(x, y) {
+            let i = (y * s.w + x) * 4
+            guard s.buf[i + 3] == 255, min(s.buf[i], s.buf[i + 1], s.buf[i + 2]) >= 0xC0 else { continue }
+            if !s.isDrawn(x - 1, y) || !s.isDrawn(x + 1, y) || !s.isDrawn(x, y - 1) || !s.isDrawn(x, y + 1) {
+                edge.append((x, y))
+            }
+        }
+    }
+    for (x, y) in edge { s.px(x, y, rim) }
+    c.paste(s)
+}
+
 /// The bottom of leg `i` this frame (the lifted pair a row higher while walking).
 private func h6Foot(_ i: Int, _ step: Int) -> Int { step >= 0 && i % 2 == step ? 42 : 43 }
 
@@ -123,17 +151,24 @@ private func drawQueenAngella(_ c: PixelCanvas, _ p: Pose) {
     let gold = C(0xF0C040), goldD = C(0xB08420), goldL = C(0xFFE88A), gem = C(0xF070B8)
     let wht = C(0xFAFAFF), whtD = C(0xA8A4C4), tip = C(0xF0D070)
     let s = p.signature ?? -1
+    // In flight the wings beat through the lower part of their range; the signature (which wins over the beat) opens
+    // them all the way, so it reads as a change even while she flies.
     var spread = s < 0 ? 0 : habitArc(s, hold: 0.45)
-    if p.flying { spread = 0.5 + 0.5 * sin(p.t * 9) }
+    if p.flying && s < 0 { spread = 0.12 + 0.28 * (0.5 + 0.5 * sin(p.t * 9)) }
     let casting = p.zap != nil
 
-    // The two wings behind her, one swept higher than the other so both show: folded up her back at rest, opened
-    // wide and back.
+    // The two wings behind her. At rest they're folded up her back, the far one a shade greyer and standing higher
+    // and further right than the near one, so its top shows over it. Opened, they part to either side: the far one
+    // swings up and over behind her crown to the right, the near one sweeps down and out to the left, a big change
+    // in her shape even at 1x.
     let w = spread
-    h6Turned(c, 12 * w, about: (23, 26)) {
-        h6AngelWing($0, x: 9, y: 8, main: C(0xDCDCEA), shade: C(0x8E8AAA), edge: C(0x9C98B8), tip: C(0xD0B060))
+    let farTurn = 14 + 62 * w, nearTurn = -10 - 52 * w
+    let farLit = w > 0.6   // opened out from behind her, the far wing catches the light too
+    h6Turned(c, farTurn, about: h6FarRoot) {
+        h6AngelWing($0, x: 11, y: 5, main: farLit ? C(0xF0F0FA) : C(0xD6D4E6), shade: farLit ? whtD : C(0x8480A4),
+                    edge: C(0x8E8AAE), tip: farLit ? tip : C(0xD0B060))
     }
-    h6Turned(c, -12 - 34 * w, about: (19, 27)) {
+    h6Turned(c, nearTurn, about: h6NearRoot) {
         h6AngelWing($0, x: 5, y: 10, main: wht, shade: whtD, edge: C(0xB4B0CC), tip: tip)
     }
     // Her hair down her back, in strands.
@@ -202,7 +237,8 @@ private func drawQueenAngella(_ c: PixelCanvas, _ p: Pose) {
     if s > 0.3 && s < 0.7 {
         // A twinkle at each wing-tip while they're open.
         let tw = 0.5 + 0.5 * sin(p.t * 14)
-        for (x, y) in [(5.0, 18.0), (23.0, 8.0)] {
+        let tips = [h6Turn((x: 21.5, y: 5.5), farTurn, about: h6FarRoot), h6Turn((x: 6, y: 21), nearTurn, about: h6NearRoot)]
+        for (x, y) in tips {
             c.glowLine(x, y, x, y, core: C(0xFFFFFF, 0.95 * tw), glow: C(0xFFD040, 0.8 * tw), coreR: 0.6, glowR: 2.2)
         }
     }
@@ -211,7 +247,7 @@ private func drawQueenAngella(_ c: PixelCanvas, _ p: Pose) {
 // MARK: - Clawdstaspella
 
 /// Clawdstaspella: the sorceress-queen of Mystacor. Long copper-brown hair, a thin gold circlet with a violet gem, and
-/// her great stiff collar, lilac and ridged, standing up behind her head in a fan of points. A long violet robe with a
+/// her great stiff collar, lilac and ribbed, standing up behind her head in a solid fan with a scalloped violet edge. A long violet robe with a
 /// magenta sash and hem, wide lilac cuffs. Her magic is hypnotic lilac rings with a violet glow. Signature: the
 /// hypno-spin: she twirls on the spot twice, rings of lilac light rising round her as she turns.
 private func drawClawdstaspella(_ c: PixelCanvas, _ p: Pose) {
@@ -243,16 +279,23 @@ private func clawdstaspellaBody(_ c: PixelCanvas, _ p: Pose, back: Bool) {
     let gold = C(0xF0C040), goldL = C(0xFFE88A)
     let raise = p.armRaise
 
-    // The stiff collar, a fan of ridged points standing up behind her head from shoulder to shoulder.
-    let n = 13
-    for i in 0..<n {
-        let a = -168 + 156 * Double(i) / Double(n - 1)
-        let r = i % 2 == 0 ? 15.5 : 13.0
-        eterniaBar(c, (28, 31), a, from: 4, to: r, i % 2 == 0 ? collar : collarD, r: 1.5)
-    }
-    for i in stride(from: 0, to: n, by: 2) {
-        let a = -168 + 156 * Double(i) / Double(n - 1)
-        eterniaBar(c, (28, 31), a, from: 14, to: 15.6, rim, r: 0.8)
+    // The stiff collar standing up behind her head from shoulder to shoulder: one solid fan of stiffened cloth (a
+    // fan of separate points read as a spiky mane), its edge in five soft scallops with a dark violet hem, ribs
+    // running out to each scallop, lit on the left.
+    let o = (x: 28.0, y: 31.0)
+    for y in 14...31 {
+        for x in 11...45 {
+            let dx = Double(x) + 0.5 - o.x, dy = Double(y) + 0.5 - o.y
+            let a = atan2(dy, dx) * 180 / .pi
+            guard a > -166 && a < -14 else { continue }
+            let k = (a + 166) / 152 * 5                       // 0…5 across the five scallops
+            let bump = sin(frac(k) * .pi)                     // round tops, a dip between each
+            let edge = 13.2 + 2.2 * bump
+            let d = hypot(dx, dy)
+            guard d <= edge else { continue }
+            let rib = abs(frac(k) - 0.5) < 0.09 && d > 6
+            c.px(x, y, d > edge - 1.1 ? rim : rib ? collarD : a < -120 ? C(0xE6D8FC) : collar)
+        }
     }
     // Her hair down her back, in strands.
     for (i, x) in [15, 16, 17].enumerated() { c.rect(x, 27, 1, 12 - i % 2, i % 2 == 0 ? hair : hairD) }
@@ -304,9 +347,9 @@ private func clawdstaspellaBody(_ c: PixelCanvas, _ p: Pose, back: Bool) {
 
 // MARK: - Frosta
 
-/// Frosta: the ice princess of Snows. Long white hair, shaded blue-grey in strands, a crown of ice-blue icicles
-/// standing up from her brow, a white bodice with an ice-blue snowflake brooch, an ice-blue skirt with a hem of white
-/// icicles, white boots and pale blue stockings. She blasts ice from her hands. Signature: she freezes the floor round
+/// Frosta: the ice princess of Snows. Long white hair, shaded blue-grey in strands and swept back behind her
+/// shoulders, a crown of ice-blue icicles standing up from her brow, an ice-blue bodice and sleeves with a white
+/// snowflake brooch, a white skirt with a hem of ice-blue icicles, white boots and pale blue stockings. She blasts ice from her hands. Signature: she freezes the floor round
 /// her and skates a little circle on it, out, round and back, her blades scratching white lines.
 private func drawFrosta(_ c: PixelCanvas, _ p: Pose) {
     let s = p.signature ?? -1
@@ -328,7 +371,7 @@ private func drawFrosta(_ c: PixelCanvas, _ p: Pose) {
             c.rect(min(20, 20 + Int(glide)), 45, reach + 16, 1, C(0xE8FAFF, 0.9))
         }
     }
-    h6Spun(c, k, shift: Int(glide.rounded())) { c in frostaBody(c, p, skating: skating) }
+    h6Spun(c, k, shift: Int(glide.rounded())) { c in h6Rimmed(c, C(0x8A9AC0)) { frostaBody($0, p, skating: skating) } }
 }
 
 private func frostaBody(_ c: PixelCanvas, _ p: Pose, skating: Bool) {
@@ -358,11 +401,13 @@ private func frostaBody(_ c: PixelCanvas, _ p: Pose, skating: Bool) {
         }
     }
     c.oy += p.breathe
-    drawBody(c, Look(arm: wht))
-    // The white bodice, a fold, the far side shaded; the snowflake brooch; the ice-blue skirt with its icicle hem.
-    c.rect(18, 32, 20, 4, wht); c.rect(18, 32, 20, 1, whtL); c.rect(37, 32, 1, 4, whtD)
-    c.rect(21, 33, 1, 3, whtD); c.rect(34, 33, 1, 3, whtD)
-    c.pattern(26, 33, ["S.S", ".I.", "S.S"], ["S": iceD, "I": iceL]); c.px(27, 33, iceD); c.px(27, 35, iceD)
+    drawBody(c, Look(arm: ice))
+    // The ice-blue gown. Its bodice is cut low so Clawd shows under her face (white under the eyes, inside her white
+    // hair, reads as a beard): a pale trim along its top, a fold, the far side shaded, the white snowflake brooch; a
+    // deep blue sash; the skirt with its white icicle hem.
+    c.rect(18, 33, 20, 3, ice); c.rect(18, 33, 20, 1, iceL); c.rect(37, 33, 1, 3, iceD)
+    c.rect(21, 34, 1, 2, iceD); c.rect(34, 34, 1, 2, iceD)
+    c.pattern(26, 33, ["S.S", ".I.", "S.S"], ["S": whtL, "I": iceD]); c.px(27, 33, whtL); c.px(27, 35, whtL)
     c.rect(18, 36, 20, 1, iceD)
     for y in 37...39 where y + c.oy <= 42 {
         let f = (y - 37) / 2
@@ -377,23 +422,24 @@ private func frostaBody(_ c: PixelCanvas, _ p: Pose, skating: Bool) {
             if (x / 2) % 2 == 0 && 41 + c.oy <= 42 { c.px(x, 41, whtD) }
         }
     }
-    c.rect(15, 35, 3, 1, ice); c.rect(38, 35, 3, 1, ice)   // the cuffs
+    c.rect(15, 35, 3, 1, whtL); c.rect(38, 35, 3, 1, whtL)   // the cuffs
 
-    // The hair: white, straight and long, a short fringe, shaded in blue-grey strands.
+    // The hair: white, straight and long, a short fringe, in strands of white and blue-grey. It frames her face only
+    // to the cheek, then is swept back behind her shoulders, so it never closes round under her face like a beard.
     c.pattern(15, 20, [
-        ".....HHHHHHHHHHHHH......",
-        "...HHHHlHHHHHHlHHHHH....",
-        "..HHHhHHHHhHHHHHhHHHHH..",
-        ".HHhHHHHhHHHHhHHHHhHHHH.",
-        ".HHhHHHhHHHhHHHhHHHhHHH.",
-        "HHhHhhHhhhHhhhHhhHhhhHHH",
-        "HHh..................hHH",
-        "HHh..................hHH",
-        "HHh..................hHH",
-        "HHh..................hHH",
-        "HhH..................hHH",
-        "Hh...................hH.",
-        ".h....................h.",
+        ".....HHHHHHHHHHHHH.......",
+        "...HHHHlHHHHHHlHHHHH.....",
+        "..HHHhHHHHhHHHHHhHHHHH...",
+        ".HHhHHHHhHHHHhHHHHhHHHH..",
+        ".HHhHHHhHHHhHHHhHHHhHHHH.",
+        "HHhHhhHhhhHhhhHhhHhhhHhHH",
+        "HhH....................hH",
+        "HhH....................hH",
+        "HhH.....................h",
+        "HhH......................",
+        "hH.......................",
+        "hH.......................",
+        ".h.......................",
     ], ["H": hair, "h": hairD, "l": hairL])
     // The icicle crown: a band of ice across her brow, icicles standing up from it, the middle one tallest, each lit
     // down one side.
@@ -411,7 +457,7 @@ private func frostaBody(_ c: PixelCanvas, _ p: Pose, skating: Bool) {
     ], ["I": ice, "i": iceD, "L": iceL, "D": iceD])
 
     // The near hand, thrust out to fire, and the frost gathering round it.
-    if thrust > 0 { c.rect(41, 33, 2, 3, wht); c.rect(41, 35, 2, 1, ice) }
+    if thrust > 0 { c.rect(41, 33, 2, 3, ice); c.rect(41, 35, 2, 1, whtL) }
     if frost > 0.02 {
         let hx = 42.0 + Double(thrust), hy = 34.0
         c.glowLine(hx, hy, hx, hy, core: C(0xFFFFFF, 0.9 * frost), glow: C(0x7CD0FF, 0.75 * frost), coreR: 0.8, glowR: 2.6)
@@ -427,7 +473,8 @@ private func frostaBody(_ c: PixelCanvas, _ p: Pose, skating: Bool) {
 /// Sea Hawk: the Rebellion's pirate captain. A red bandana tied tight over his dark-brown hair, its knot and tails
 /// fluttering behind, an open brown leather waistcoat over his bare chest, white shirt-sleeves, a black belt with a gold
 /// buckle, buff breeches and tall black boots with turned-down cuffs. His cutlass is curved, with a brass basket hilt.
-/// Signature: he swings in on a rope, back and forth, lets go and lands.
+/// Signature: he swings in on a rope hung from a spar, his back hand up on it and the cutlass brandished in the other,
+/// back and forth, lets go and lands.
 private func drawSeaHawk(_ c: PixelCanvas, _ p: Pose) {
     let s = p.signature ?? -1
     let swinging = s >= 0 && s < 0.86
@@ -435,26 +482,62 @@ private func drawSeaHawk(_ c: PixelCanvas, _ p: Pose) {
     if swinging {
         if s < 0.1 {
             let f = s / 0.1
-            theta = 16 * f * f * (3 - 2 * f); lift = Int((6 * f).rounded())
+            theta = 24 * f * f * (3 - 2 * f); lift = Int((6 * f).rounded())
         } else {
             let v = (s - 0.1) / 0.76
-            theta = 16 * cos(.pi * 2.5 * v) * (1 - 0.6 * v); lift = 6
+            theta = 24 * cos(.pi * 2.5 * v) * (1 - 0.6 * v); lift = 6
         }
     } else if s >= 0.86 && s < 0.94 {
         lift = Int((6 * (1 - (s - 0.86) / 0.08)).rounded())
     }
+    let anchor = (x: 16.5, y: 3.0)
     if s >= 0.86 {
         // The rope he let go of, swinging back up out of reach and fading.
         let f = (s - 0.86) / 0.14
-        let end = eterniaReach((39.5, 3), 90 + 30 * f, 14 - 4 * f)
-        c.glowLine(39.5, 3, end.x, end.y, core: C(0xC8A060, 1 - f), glow: h6None, coreR: 0.6, glowR: 0.65)
+        let end = eterniaReach(anchor, 90 + 40 * f, 15 - 5 * f)
+        seaHawkSpar(c, at: anchor, alpha: 1 - f)
+        seaHawkRope(c, from: anchor, to: end, alpha: 1 - f)
     }
-    if !swinging && lift == 0 {
-        seaHawkBody(c, p, lift: 0, rope: false)
+    guard swinging else {
+        seaHawkBody(c, p, lift: lift, rope: false)
         return
     }
-    let l = lift
-    h6Turned(c, theta, about: (39.5, 3)) { k in seaHawkBody(k, p, lift: l, rope: swinging) }
+    // On the rope he swings as a pendulum from where it's tied, kept upright (turning the whole sprite stair-steps
+    // every edge): carried sideways along the arc and a little up at its ends.
+    let r = theta * .pi / 180, arm = 18.0
+    let dx = Int((sin(r) * arm).rounded()), dy = Int(((1 - cos(r)) * arm).rounded())
+    let hand = (x: 16.5 + Double(dx), y: 20.0 - Double(lift - p.breathe + dy))
+    seaHawkSpar(c, at: anchor)
+    seaHawkRope(c, from: anchor, to: hand, alpha: 1)
+    c.ox += dx; c.oy -= dy
+    seaHawkBody(c, p, lift: lift, rope: true)
+    c.ox -= dx; c.oy += dy
+}
+
+/// The rope: two pixels thick, laid in a braid (its two strands swapping light and dark every row) so it reads as
+/// rope and not a pole, running down from `a` to `b`.
+private func seaHawkRope(_ c: PixelCanvas, from a: (x: Double, y: Double), to b: (x: Double, y: Double), alpha: Double) {
+    let lit = C(0xE0BC78, alpha), dark = C(0x8A6630, alpha)
+    let y0 = Int(a.y.rounded()), y1 = Int(b.y.rounded())
+    guard y1 > y0 else { return }
+    var lastX: Int?
+    for y in y0...y1 {
+        let f = Double(y - y0) / Double(y1 - y0)
+        let x = Int(floor(a.x + (b.x - a.x) * f - 0.5))
+        // Steep or not, keep the braid joined: fill the step across from the row above.
+        if let lx = lastX, abs(x - lx) > 1 {
+            for xx in min(x, lx)...max(x, lx) { c.px(xx, y, xx % 2 == 0 ? lit : dark) }
+        }
+        c.px(x, y, y % 2 == 0 ? lit : dark); c.px(x + 1, y, y % 2 == 0 ? dark : lit)
+        lastX = x
+    }
+}
+
+/// The spar the rope hangs from: a short, dark length of yardarm across the top of the frame, the rope's knot on it.
+private func seaHawkSpar(_ c: PixelCanvas, at a: (x: Double, y: Double), alpha: Double = 1) {
+    let x = Int(a.x.rounded()), y = Int(a.y.rounded())
+    c.rect(x - 9, y - 1, 18, 2, C(0x5A3A22, alpha)); c.rect(x - 9, y - 1, 18, 1, C(0x7A5232, alpha))
+    c.rect(x - 1, y - 1, 3, 3, C(0xC8A060, alpha)); c.px(x - 1, y - 1, C(0xE0BC78, alpha))   // the knot
 }
 
 private func seaHawkBody(_ c: PixelCanvas, _ p: Pose, lift: Int, rope: Bool) {
@@ -466,7 +549,7 @@ private func seaHawkBody(_ c: PixelCanvas, _ p: Pose, lift: Int, rope: Bool) {
     let gold = C(0xE8B840)
     let airborne = lift > 0
     let step = airborne ? -1 : p.step
-    let raise = rope ? 10 : 0
+    let hang = rope ? 14 : 0
     c.oy -= lift
 
     // The bandana's knot and its two tails, fluttering out behind his head.
@@ -491,13 +574,18 @@ private func seaHawkBody(_ c: PixelCanvas, _ p: Pose, lift: Int, rope: Bool) {
         }
     }
     c.oy += p.breathe
-    drawBody(c, Look(arm: shirt), armRight: raise)
+    // On the rope his back hand is up, gripping it.
+    drawBody(c, Look(arm: shirt), armLeft: hang)
     // The open waistcoat over his bare chest, white shirt-sleeves; the belt and its buckle.
     c.rect(18, 32, 5, 5, vest); c.rect(33, 32, 5, 5, vest)
     c.rect(22, 32, 1, 5, vestL); c.rect(33, 32, 1, 5, vestL); c.rect(37, 32, 1, 5, vestD)
     c.px(20, 34, vestD); c.px(35, 34, vestD)
     c.rect(18, 37, 20, 1, C(0x1E1A22)); c.rect(26, 37, 3, 1, gold)
-    c.rect(15, 35, 3, 1, shirtD)                                  // the back cuff
+    if rope {
+        c.rect(15, 19, 3, 3, clawdOrange); c.rect(15, 22, 3, 1, shirtD)   // the fist round the rope, the cuff
+    } else {
+        c.rect(15, 35, 3, 1, shirtD)                                       // the back cuff
+    }
     // The bandana: tight over the top of his head, a lit fold across his brow, his dark hair below it at the sides.
     c.pattern(17, 21, [
         ".....RRRRRRRRRR.......",
@@ -510,15 +598,9 @@ private func seaHawkBody(_ c: PixelCanvas, _ p: Pose, lift: Int, rope: Bool) {
     c.pattern(17, 27, ["HH...................H", "Hh..................HH", "H...................Hh"],
               ["H": hair, "h": hairD])
 
-    if rope {
-        // His hand up on the rope, the rope running up to where it's tied.
-        c.glowLine(39.5, 3 + Double(lift - p.breathe), 39.5, Double(33 - raise), core: C(0xC8A060), glow: h6None,
-                   coreR: 0.6, glowR: 0.65)
-        c.rect(38, 33 - raise, 3, 3, clawdOrange)
-        return
-    }
-    let a: Double = p.melee ?? (seatedPose ? 20 : 72)
-    h6Cutlass(c, p, angle: a, length: p.melee == nil ? 9 : 12, smear: true)
+    // The cutlass: brandished up and forward while he swings, at his side or swinging otherwise.
+    let a: Double = rope ? -40 : p.melee ?? (seatedPose ? 20 : 72)
+    h6Cutlass(c, p, angle: a, length: p.melee == nil && !rope ? 9 : 12, smear: !rope)
 }
 
 /// A cutlass in the fist at `angle`: a curved blade, its back lit, sweeping up towards the tip; a brass basket hilt
