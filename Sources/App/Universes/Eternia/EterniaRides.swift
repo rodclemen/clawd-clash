@@ -45,7 +45,7 @@ let eterniaRides: [Ride] = [.eterniaWindRaider, .eterniaSwiftWind, .eterniaRoton
                             .eterniaHordeRocket]
 
 /// The ride that picks `c` up when its agent is done; nil: it walks (or flies) off on its own.
-/// - The Masters, Gwildor too: the Wind Raider.
+/// - The Masters, Gwildor too: the Wind Raider. Not Granamyr: a dragon that size flies off on his own wings.
 /// - She-Clawd, Adorra and the Great Rebellion: Swift Wind. Not Spirit or Swift Wind himself: the same horse in two
 ///   guises, never on stage together, so neither waits for the other.
 /// - Skeleclawd and the Evil Warriors, Jitsu, the film's mercenaries and their Dark Troopers: the Roton.
@@ -72,7 +72,7 @@ func eterniaRide(_ c: Cast) -> Ride? {
     switch EterniaHero(rawValue: c.index) {
     case .heClawd?, .orkko?, .princeAddam?, .battleKat?, .cringer?, .teelah?, .manAtClawds?, .sorceress?, .kingRandor?,
          .queenMarlena?, .stratos?, .ramClawd?, .manEClawds?, .mekaneck?, .buzzOff?, .clawdfist?, .roboto?, .mossClawd?,
-         .syClawdne?, .snoutSpout?, .zodac?, .granamyr?, .gwildor?:
+         .syClawdne?, .snoutSpout?, .zodac?, .gwildor?:
         return .eterniaWindRaider
     case .sheClawd?, .adorra?, .bow?, .glimmer?, .madameRazz?, .kowl?, .queenAngella?, .clawdstaspella?, .frosta?,
          .seaHawk?, .mermista?, .perfuma?, .peekablue?, .netossa?, .flutterina?, .stonedar?:
