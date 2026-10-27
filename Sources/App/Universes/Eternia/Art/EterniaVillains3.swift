@@ -494,7 +494,7 @@ private func drawMantenna(_ c: PixelCanvas, _ p: Pose) {
 private func drawImp(_ c: PixelCanvas, _ p: Pose) {
     let imp = C(0x8A4EC0), impD = C(0x62348E), impL = C(0xAE78E0), belly = C(0xE0A0DA), bellyD = C(0xB872B8)
     let wing = C(0x4E2878), wingL = C(0x9A6ACA), eyeY = C(0xFFE04A), ink = C(0x141018)
-    let s = p.signature ?? -1
+    let s = p.signature ?? eterniaHabitK(p.who) ?? -1   // or on the stage's cue (EterniaHabits.swift)
     let stool = s > 0.22 && s < 0.78
     let puffs = [s > 0.14 && s < 0.34 ? (s - 0.14) / 0.2 : -1, s > 0.7 && s < 0.9 ? (s - 0.7) / 0.2 : -1]
 

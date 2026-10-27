@@ -140,7 +140,7 @@ private func katArt(_ c: PixelCanvas, _ p: Pose, battle: Bool, rise: Int) {
     let stripe = C(0xE8862A), stripeD = C(0xB45E1A)
     let muz = C(0xDCE4A4), muzD = C(0xB0BA78), nose = C(0xE86A8A)
     let red = C(0xC8302A), redD = C(0x8A1E1A), redL = C(0xE8584A), gold = C(0xE0B040)
-    let s = p.signature ?? -1
+    let s = p.signature ?? eterniaHabitK(p.who) ?? -1   // or hiding behind a hero (EterniaHabits.swift)
     let rearing = rise > 0
     let roar = battle && s > 0.3 && s < 0.78
     let cower = battle ? 0 : eterniaRamp(s, 0.05, 0.15, 0.85, 0.95)

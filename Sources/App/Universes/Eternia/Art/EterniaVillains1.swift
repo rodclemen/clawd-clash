@@ -5,7 +5,7 @@ import Foundation
 let eterniaVillains1: [EterniaVillain: Persona] = [
     .skeleclawd: Persona(name: "Skeleclawd", weapon: .lightning,
                          magic: Magic(core: C(0xF4F070), glow: C(0x8A3ADC)),
-                         pivot: (44, 15), headTop: 16, signature: 3.2, callout: "Fools! Greyskull will be mine!",
+                         pivot: (44, 15), headTop: 16, signature: 5.0, callout: "Fools! Greyskull will be mine!",
                          draw: drawSkeleclawd),
 ]
 
@@ -15,12 +15,17 @@ let eterniaVillains1: [EterniaVillain: Persona] = [
 /// down its crown; a blue body, a black harness crossed over his chest with a little bone skull at the crossing,
 /// purple fur briefs, black bracers and dark purple boots. He carries the Havoc Staff, a purple shaft topped with a
 /// ram's skull, its horns curled, and his forked yellow and violet bolts come out of it. Signature: he shakes his fist
-/// and cackles, his jaw clacking.
+/// and cackles, his jaw clacking; once a fight is over, it ends with his retreat, vanishing in a purple puff and
+/// turning up again when it clears (EterniaHabits.swift).
 private func drawSkeleclawd(_ c: PixelCanvas, _ p: Pose) {
     let blue = C(0x3A62B8), blueD = C(0x284898), hood = C(0x6A3A9A), hoodD = C(0x4A2470), hoodL = C(0x8A5ABA)
     let bone = C(0xE8D85A), boneD = C(0xB8A834), boneL = C(0xFFF09A), ink = C(0x141018)
     let strap = C(0x1E1A22), strapL = C(0x3E3A46), fur = C(0x6A3A8A), furD = C(0x48246A), furL = C(0x8A5AAA)
-    let s = p.signature ?? -1
+    let sig = p.signature ?? -1
+    let retreat = eterniaSkeleclawdRetreat(sig)
+    defer { if let r = retreat { eterniaDrawRetreatPuff(c, r: r, t: p.t) } }
+    if let r = retreat, eterniaRetreatGone(r) { return }
+    let s = sig < eterniaRetreatStart ? sig / eterniaRetreatStart : -1   // the fist shaken, before the retreat
     let shake = s > 0.08 && s < 0.92
     let fist = shake ? 6 + Int((sin(p.t * 22) * 1.5).rounded()) : 0
     let jaw = shake && Int(p.t * 10) % 2 == 0

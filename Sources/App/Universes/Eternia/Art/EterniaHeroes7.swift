@@ -618,7 +618,7 @@ private func drawLooKee(_ c: PixelCanvas, _ p: Pose) {
     let fur = C(0xF0C838), furD = C(0xC09A20), furL = C(0xFFE476), belly = C(0xFFF0B4)
     let tuft = C(0xD8782A), tuftD = C(0xA85418), inner = C(0xF0A0A8)
     let leaf = C(0x3A9A48), leafD = C(0x266E32), leafL = C(0x62C46A)
-    let s = p.signature ?? -1
+    let s = p.signature ?? eterniaHabitK(p.who) ?? -1   // or on the stage's cue (EterniaHabits.swift)
     // 0…0.15 the branch comes up, 0.15…0.45 he's hidden, 0.45…0.8 he peeks over it, then it goes down.
     var cover = -1   // the top row of the branch in front of him, or none
     if s >= 0 && s < 0.15 { cover = 44 - Int((s / 0.15 * 22).rounded()) }

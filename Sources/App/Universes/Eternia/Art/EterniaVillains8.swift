@@ -452,13 +452,14 @@ private func drawDarkTrooper(_ c: PixelCanvas, _ p: Pose) {
     let s = p.signature ?? -1
     let aim = s > 0.08 && s < 0.9
     let up = aim ? Int((min(1, (s - 0.08) / 0.12, (0.9 - s) / 0.1) * 3).rounded()) : 0
+    let step = eterniaMarchStep(p.who) ?? p.step   // marching on the spot with the others (EterniaHabits.swift)
 
     // Black legs with a gunmetal knee, black boots a shade darker, a lit toe.
-    drawLegs(c, Look(leg: black), step: p.step)
-    drawBoots(c, blackD, step: p.step, rows: 2)
+    drawLegs(c, Look(leg: black), step: step)
+    drawBoots(c, blackD, step: step, rows: 2)
     if !seatedPose {
         for (i, lx) in [19, 23, 31, 35].enumerated() {
-            let bottom = p.step >= 0 && i % 2 == p.step ? 42 : 43
+            let bottom = step >= 0 && i % 2 == step ? 42 : 43
             c.px(lx, bottom - 4, gun); c.px(lx + 1, bottom - 4, blackL)
             c.px(lx + 1, bottom, blackL)
         }
@@ -511,4 +512,5 @@ private func drawDarkTrooper(_ c: PixelCanvas, _ p: Pose) {
         c.glowLine(54, Double(y0) + 1.5, 68, Double(y0) + 1.5, core: C(0xFF4030, 0.55), glow: C(0xFF2010, 0.12),
                    coreR: 0.3, glowR: 1)
     }
+    eterniaMarchKnees(c, p.who)   // knees up, marching with the others (EterniaHabits.swift)
 }

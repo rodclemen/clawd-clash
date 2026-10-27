@@ -195,4 +195,5 @@ private func drawOrkko(_ c: PixelCanvas, _ p: Pose) {
             }
         }
     }
+    eterniaOrkkoMishap(c, p)   // his magic gone wrong (EterniaHabits.swift)
 }

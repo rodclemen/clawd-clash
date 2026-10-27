@@ -1030,7 +1030,7 @@ private func drawGwildor(_ c: PixelCanvas, _ p: Pose) {
     c.ox -= 2; c.oy -= 2
 
     // His near arm, in its sleeve, and the Cosmic Key in his hand: at his side, or held up high and played.
-    let hx = 42, hy = 33 - raise
+    let hx = eterniaClutchingKey(p.who) ? 38 : 42, hy = 33 - raise   // held in close while he hides (EterniaHabits.swift)
     c.rect(38, hy, 5, 3, robe); c.rect(38, hy, 5, 1, robeL)
     if raise > 3 { c.rect(40, hy + 3, 3, min(raise, 8), robe); c.rect(42, hy + 3, 1, min(raise, 8), robeD) }
     c.rect(hx + 1, hy + 1, 2, 2, skin)

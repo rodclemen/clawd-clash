@@ -385,10 +385,11 @@ private func drawTwoBad(_ c: PixelCanvas, _ p: Pose) {
     let green = C(0x5AAE3E), greenD = C(0x3A7E26), greenL = C(0x88D262)
     let red = C(0x9A2632), redL = C(0xC84452)
     let gold = C(0xE0B040), goldL = C(0xFFE08A)
-    let s = p.signature ?? -1
+    let s = p.signature ?? eterniaHabitK(p.who) ?? -1   // or on the stage's cue (EterniaHabits.swift)
     let argue = v4Ramp(s, 0.05, 0.14, 0.86, 0.95)
     let turned = argue > 0.4
-    let talker = Int(max(0, s) * 12) % 2   // 0: the blue head has the floor, 1: the green one
+    // 0: the blue head has the floor, 1: the green one (on the stage, in turn with the lines they shout).
+    let talker = eterniaTwoBadTalker(p.who) ?? Int(max(0, s) * 12) % 2
 
     // The legs: blue on his left, green on his right, red boots.
     if seatedPose {
@@ -747,7 +748,7 @@ private func drawStinkor(_ c: PixelCanvas, _ p: Pose) {
     let fur = C(0x5E5C72), furD = C(0x3C3A4C), furL = C(0x9896B2)
     let wht = C(0xF2F2F4), whtD = C(0xBCBCC8)
     let orange = C(0xE8822A), orangeD = C(0xA8561A), orangeL = C(0xFFB868)
-    let s = p.signature ?? -1
+    let s = p.signature ?? eterniaHabitK(p.who) ?? -1   // or on the stage's cue (EterniaHabits.swift)
     let lift = v4Ramp(s, 0.06, 0.2, 0.84, 0.95)
     let cloud = v4Ramp(s, 0.18, 0.3, 0.8, 0.98)
 
