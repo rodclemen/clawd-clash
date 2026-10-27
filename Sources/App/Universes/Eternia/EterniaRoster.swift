@@ -167,7 +167,7 @@ extension Location {
     static let eterniaTrolla = Location("eterniaTrolla")         // Orkko's home moon
     static let eterniaUndersea = Location("eterniaUndersea")     // Mer-Clawd's undersea kingdom
     static let eterniaBeastIsland = Location("eterniaBeastIsland")
-    static let eterniaTemple = Location("eterniaTemple")         // the Temple of Shokoti
+    static let eterniaTemple = Location("eterniaTemple")         // the House of Shokoti, the House of Darkness
     static let eterniaBrightMoon = Location("eterniaBrightMoon")
     static let eterniaMystacor = Location("eterniaMystacor")
     static let eterniaCastleChill = Location("eterniaCastleChill")
