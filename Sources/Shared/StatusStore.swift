@@ -25,6 +25,8 @@ struct SessionRecord: Codable {
     var client: String?    // where Claude Code runs: CLAUDE_CODE_ENTRYPOINT ("cli", "claude-desktop", "claude-vscode"…)
     var regenerated: Double? // a Doctor's last regeneration (its context compacted), for the golden flare
     var abducted: Double?    // an FBI agent's last missing time (its context compacted), for the abduction
+    var transformed: Double? // its leader's last change into its other guise, or try at one (its context compacted)
+    var moral: Double?       // when its leader last stepped forward with a lesson, on finishing (Stop)
     var context: Double?     // how near its next compaction, 0…1, where the AI's hooks say (Qwen's Stop, our pi extension)
     var transcript: String?  // its session log, where the hooks name it and the app reads it (Gemini CLI's chat file)
     var background: [String]? // what it left running in the background (a render, a build), until it's woken up again
@@ -385,6 +387,18 @@ enum StatusStore {
                 guard agentId == nil, let leader = s.sessions[session]?.leader else { break }
                 // An FBI agent in The Clawd Files loses some time instead: abducted, and set back down.
                 if Universe.of(leader).abductees.contains(leader) { s.sessions[session]?.abducted = now; break }
+                // In Clawds of the Universe, one of a pair of guises turns into the other (Prince Addam into He-Clawd,
+                // and back the next time), unless the other already leads a session or works as an agent: nobody meets
+                // their own secret identity. Then the flash plays and they stay as they are.
+                if Universe.of(leader).transforms, let pair = Universe.of(leader).guises.first(where: { $0.contains(leader) }),
+                   let other = pair.subtracting([leader]).first {
+                    let roster = s.roster
+                    let elsewhere = s.sessions.filter { $0.key != session }.values.compactMap(\.leader)
+                        + s.agents.map { $0.cast ?? StatusStore.heroBase + $0.character }
+                    if !elsewhere.contains(where: { roster.adopt($0) == other }) { s.sessions[session]?.leader = other }
+                    s.sessions[session]?.transformed = now
+                    break
+                }
                 let order = Universe.of(leader).regenerations
                 guard let i = order.firstIndex(of: leader) else { break }
                 let used = Set(s.sessions.filter { $0.key != session }.values.compactMap(\.leader))
@@ -398,6 +412,13 @@ enum StatusStore {
                 s.sessions[session]?.lastTool = nil
                 s.sessions[session]?.activity = nil
                 if let r = clip(json["last_assistant_message"], 240) { s.sessions[session]?.reply = r }
+                // Now and then a leader who gives lessons steps forward with one as it finishes (Clawds of the
+                // Universe's moral of the story), never twice within half an hour.
+                if event == "Stop", agentId == nil, let leader = s.sessions[session]?.leader,
+                   let chance = Universe.of(leader).morals[leader],
+                   (s.sessions[session]?.moral).map({ now - $0 > 1800 }) ?? true, Double.random(in: 0..<1) < chance {
+                    s.sessions[session]?.moral = now
+                }
             case "SubagentStart":
                 touchSession(session)
                 let id = agentId ?? UUID().uuidString

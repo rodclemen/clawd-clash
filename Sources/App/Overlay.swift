@@ -37,6 +37,8 @@ private struct Actor {
     var watched: CGFloat = 0     // a Weeping Angle: seconds it's been held still by someone looking at it
     var regenerated: Double?     // a Doctor's session: when it last regenerated (the golden flare plays for a moment)
     var abducted: Double?        // an FBI agent's session: when it last lost time (the abduction plays for a moment)
+    var transformed: Double?     // a session whose leader last turned into its other guise (the flash plays for a moment)
+    var moral: Double?           // a session whose leader last gave a lesson on finishing (it's up for a moment)
 
     var isLeader: Bool { if case .leader = kind { return true } else { return false } }
     var cast: Cast { switch kind { case .leader(let c), .agent(let c): return c } }
@@ -852,6 +854,8 @@ final class OverlayController: NSObject, NSMenuDelegate, NSApplicationDelegate, 
                 actors[idx].sitting = sitting; actors[idx].detail = detail
                 actors[idx].regenerated = u.session?.record?.regenerated
                 actors[idx].abducted = u.session?.record?.abducted
+                actors[idx].transformed = u.session?.record?.transformed
+                actors[idx].moral = u.session?.record?.moral
             } else {
                 // Newcomers walk in from the side, one at a time (from agent-view's walk-in through the door).
                 var startX = target, born = now
@@ -868,6 +872,8 @@ final class OverlayController: NSObject, NSMenuDelegate, NSApplicationDelegate, 
                 a.sitting = sitting; a.detail = detail
                 a.regenerated = u.session?.record?.regenerated
                 a.abducted = u.session?.record?.abducted
+                a.transformed = u.session?.record?.transformed
+                a.moral = u.session?.record?.moral
                 actors.append(a)
             }
         }
@@ -920,6 +926,13 @@ final class OverlayController: NSObject, NSMenuDelegate, NSApplicationDelegate, 
             // `--missing-time`: the sessions' contexts are compacted two seconds in (The Clawd Files' FBI agents lose time,
             // Stevie Clawdberg's time travellers hit 88 mph, Clawd Slayer's Tabula Rasa eight forget who they are).
             if CommandLine.arguments.contains("--missing-time") { rec.abducted = start + 2 }
+            // `--transform`: they change into their other guise two seconds in (Clawds of the Universe), as a compaction
+            // would; `--moral`: each gives a lesson two seconds in, as on finishing.
+            if CommandLine.arguments.contains("--transform"), Universe.of(leader).transforms,
+               let other = Universe.of(leader).guises.first(where: { $0.contains(leader) })?.subtracting([leader]).first {
+                rec.leader = other; rec.transformed = start + 2
+            }
+            if CommandLine.arguments.contains("--moral") { rec.moral = start + 2 }
             // On "Idle", spread them over the idle stages: standing, sitting (2 min+), asleep (5 min+).
             rec.since = playgroundMood == .idle ? start - Double(60 + i * 160) : start - Double(20 + i * 35)
             rec.model = "claude-opus-5-5"
@@ -1278,6 +1291,9 @@ final class OverlayController: NSObject, NSMenuDelegate, NSApplicationDelegate, 
                 if let r = actor.regenerated, let reg = actor.cast.universe.module.regeneration, now - r < reg.length {
                     reg.draw(canvas, (now - r) / reg.length, t)
                 }
+                if let r = actor.transformed, let tr = actor.cast.universe.module.transformation, now - r >= 0, now - r < tr.length {
+                    tr.draw(canvas, (now - r) / tr.length, t, actor.cast)
+                }
                 scale = ls; y = ground
             case .agent(let who):
                 let role = roles[actor.key]
@@ -1409,6 +1425,16 @@ final class OverlayController: NSObject, NSMenuDelegate, NSApplicationDelegate, 
             }
             if let b = bunTalk { line = b.line; overHead = true }
             if let said = flinch.line { line = said; overHead = true }
+            // A lesson on finishing (Clawds of the Universe's moral of the story), the same one all the while it's up.
+            if actor.isLeader, let m = actor.moral, now - m >= 0, now - m < moralLength, actor.walkDir == 0 {
+                let lessons = actor.cast.universe.module.morals
+                if !lessons.isEmpty { line = lessons[abs(Int(m)) % lessons.count] }
+            }
+            // "I have the power!": what a leader says as it turns into its other guise.
+            if actor.isLeader, let r = actor.transformed, let tr = actor.cast.universe.module.transformation,
+               now - r >= 0, now - r < tr.length, let said = tr.says(actor.cast) {
+                line = said; overHead = true
+            }
             if hushed, let said = line { line = StageQuirks.hushed(said) }
             if let caption = away?.caption { line = caption; overHead = true }
             if let line {

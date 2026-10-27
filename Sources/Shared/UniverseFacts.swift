@@ -26,6 +26,9 @@ struct UniverseFacts {
     var homebound: [Int: String] = [:]
     /// What happens to a session's leader when its context is compacted.
     var compaction: UniverseCompaction? = nil
+    /// Who now and then steps forward with a short lesson when their session finishes (Stop), as id → the chance on
+    /// each finish; never twice within half an hour for the same session (`StatusStore`'s Stop, the module's `morals`).
+    var morals: [Int: Double] = [:]
 }
 
 /// What a compaction does to a session's leader (`StatusStore`'s PreCompact).
@@ -34,6 +37,9 @@ enum UniverseCompaction {
     case regenerate(order: [Int])
     /// The Clawd Files, Stevie Clawdberg, Clawd Slayer: `who` are gone for a moment and come back the same.
     case away(who: Set<Int>)
+    /// Clawds of the Universe: a leader who is one of a pair of `guises` turns into the other (and back again at the
+    /// next compaction), unless the other is already on stage; then only the flash plays.
+    case transform
 }
 
 /// A universe as the registry lists it: its constant, key and title, and its facts. Each universe's facts file has one

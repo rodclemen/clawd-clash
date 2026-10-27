@@ -9,6 +9,12 @@ Its first three universes started as separate apps. Their changelogs from before
 
 Doctor Clawd, the fourth, was made for Clawd Clash ([doctor-clawd](https://github.com/rodclemen/doctor-clawd)), so its whole history is below, from 3.1.0.
 
+## Unreleased
+
+### Added
+- **A third kind of compaction, the transformation** (`compaction: .transform`), the engine request for Clawds of the Universe: when a session's leader is one of a pair of guises, compacting its context turns it into the other, and the next compaction turns it back, in a flash the universe draws (`transformation`, with a line over its head). Nobody meets their own secret identity: if the other guise already leads a session or works as an agent, only the flash plays and the leader stays as it is. `--transform` shows it in the Playground.
+- **The moral of the story** (`morals` in a universe's facts, the lessons in its module), also for Clawds of the Universe: now and then, when a session finishes its work, its leader steps forward with a short lesson in its speech line, as every Filmation episode ended. Each leader has its own chance on each finish, and never twice within half an hour for the same session. `--moral` shows it in the Playground.
+
 ## 4.1.1 (2026-10-25)
 
 ### Added

@@ -131,7 +131,7 @@ case "ids":
         lines.append("universe \(u.rawValue) key=\(u.key) title=\(u.title) base=\(u.base) villains=\(u.villainCount) heroes=\(u.heroCount) hem=\(u.hem)")
         lines.append("  agentOnly=\(ids(u.agentOnly)) claudeSide=\(u.claudeSide.map(String.init) ?? "nil") rivals=\(ids(u.rivals))")
         lines.append("  guises=\(u.guises.map(ids).joined(separator: " | ")) homebound=\(u.homebound.sorted { $0.key < $1.key }.map { "\($0.key):\($0.value)" })")
-        lines.append("  abductees=\(ids(u.abductees)) regenerations=\(u.regenerations) released=\(u.isReleased)")
+        lines.append("  abductees=\(ids(u.abductees)) regenerations=\(u.regenerations) transforms=\(u.transforms) morals=\(u.morals.count) released=\(u.isReleased)")
         for c in Theme.of(u).cast {
             let p = c.persona
             lines.append("  cast \(c.id) \(c.name) weapon=\(p.weapon) variant=\(p.magic.variant) drills=\(c.drills.map { "\($0)" }.sorted())")

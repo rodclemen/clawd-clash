@@ -97,6 +97,11 @@ struct TemplateUniverse: UniverseModule {
     /// What a regeneration looks like (with `compaction: .regenerate` in the facts), drawn over the character already
     /// in its next face: Doctor Clawd's.
     var regeneration: (length: Double, draw: (_ c: PixelCanvas, _ k: Double, _ t: Double) -> Void)? { nil }
+    /// What a change into a leader's other guise looks like (with `compaction: .transform` in the facts), drawn over the
+    /// character in its new guise, and what it says: Clawds of the Universe's "By the power of Greyskull!".
+    var transformation: Transformation? { nil }
+    /// The lessons the leaders in the facts' `morals` give, now and then, when their session finishes.
+    var morals: [String] { [] }
     /// Little things certain characters do on stage, whoever else is about: move only while nobody looks
     /// (`unseenMovers`), a jump and a shiver (`jitter`), something drawn beside them (`prop`), a word to someone nearby
     /// (`remark`), nobody has a voice while they're there (`hushers`), their signature once a fight is over

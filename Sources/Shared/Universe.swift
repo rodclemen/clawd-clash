@@ -98,6 +98,17 @@ struct Universe: Hashable, Comparable, CaseIterable, Codable, RawRepresentable {
         return []
     }
 
+    /// Whether a leader with another guise turns into it when its session is compacted (`StatusStore`'s PreCompact),
+    /// and back at the next: Clawds of the Universe's Prince Addam and He-Clawd.
+    var transforms: Bool {
+        if case .transform? = facts.compaction { return true }
+        return false
+    }
+
+    /// Who now and then gives a lesson when their session finishes, as global id → the chance on each finish
+    /// (`StatusStore`'s Stop).
+    var morals: [Int: Double] { Dictionary(uniqueKeysWithValues: facts.morals.map { (base + $0.key, $0.value) }) }
+
     /// Whether people can pick it: Settings, Random, Clawd Royale and the screen saver only offer released universes.
     /// An unreleased one exists for the tools (the workbench, the docs and promo renderers) until it's ready.
     var isReleased: Bool { true }

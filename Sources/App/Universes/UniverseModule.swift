@@ -42,6 +42,10 @@ protocol UniverseModule {
     /// What a regeneration looks like (`UniverseCompaction.regenerate`): drawn over the character, already in its next
     /// face, `k` (0…1) through `length` seconds.
     var regeneration: (length: Double, draw: (_ c: PixelCanvas, _ k: Double, _ t: Double) -> Void)? { get }
+    /// What a change into a leader's other guise looks like (`UniverseCompaction.transform`), and what they say.
+    var transformation: Transformation? { get }
+    /// The lessons a leader in `morals` (the facts) gives when their session finishes, one picked each time.
+    var morals: [String] { get }
     /// What Tools/RenderDocs draws for the README besides the roster and places: the desktop line-up and the social
     /// preview. Empty: neither is drawn.
     var docs: DocsInfo { get }
@@ -70,6 +74,8 @@ extension UniverseModule {
     var rides: [Ride] { [] }
     var drills: [Cast: BespokeDrill] { [:] }
     var regeneration: (length: Double, draw: (_ c: PixelCanvas, _ k: Double, _ t: Double) -> Void)? { nil }
+    var transformation: Transformation? { nil }
+    var morals: [String] { [] }
     var docs: DocsInfo { DocsInfo() }
     var sceneFlip: SceneFlip? { nil }
     var isTemplate: Bool { false }
@@ -163,6 +169,21 @@ struct StageQuirks {
     /// No-break spaces, so the text keeps its width when it's measured.
     static func hushed(_ line: String) -> String { String(repeating: "\u{00A0}", count: max(3, line.count)) }
 }
+
+/// A leader turning into its other guise when its session is compacted (`UniverseCompaction.transform`): Clawds of
+/// the Universe's "By the power of Greyskull!".
+struct Transformation {
+    /// How long it plays, in seconds.
+    let length: Double
+    /// Drawn over the character, already in its new guise (`into`; still the old one if the other was on stage, so it
+    /// couldn't change), `k` (0…1) through it.
+    let draw: (_ c: PixelCanvas, _ k: Double, _ t: Double, _ into: Cast) -> Void
+    /// What it says over its head while it plays, if anything ("I have the power!").
+    var says: (_ into: Cast) -> String? = { _ in nil }
+}
+
+/// How long a leader's lesson stays up when its session finishes (the module's `morals`), in seconds.
+let moralLength = 5.0
 
 /// How long a compaction plays on stage (`SessionRecord.abducted` to set down), in seconds: the missing-time clock
 /// every `compactionLook` runs on.

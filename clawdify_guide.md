@@ -207,7 +207,7 @@ Show the list and the homes, and wait for approval.
 
 Propose whichever of these fit. Each one is something your folder gives the engine through the module (Step 7 has the table), so none of them means editing a shared file:
 1. **The ride.** Who gets picked up or dropped off, and by what: the Millennial Falcon, the Clawdjet, the TARDIS that materialises, the FBI sedan, the Mystery Machine's cousin. A ride is a `Ride` of your own in `<Prefix>Rides.swift`: it flies in, drives in along the ground, or materialises where it stands (`arrival`), and you draw it nose to the right. The theme's `ride:` closure picks who takes it, and the module's `rides` lists it for Preview. Slayer's school bus and two cars are worked examples.
-2. **A compaction mechanic** (optional). When a Claude Code or pi session compacts its context, something in-universe happens to its leader. There are two kinds, set as `compaction` in your facts: **regenerate** (Doctor Clawd: the next face in a list, same session) or **away** (The Clawd Files' abduction, Stevie Clawdberg's 88 mph, Clawd Slayer's forgetting spell: gone for a moment, back the same). The module draws it: `regeneration` for the first, `compactionLook` for the second. Limit it to a clear group of characters.
+2. **A compaction mechanic** (optional). When a Claude Code or pi session compacts its context, something in-universe happens to its leader. There are three kinds, set as `compaction` in your facts: **regenerate** (Doctor Clawd: the next face in a list, same session), **away** (The Clawd Files' abduction, Stevie Clawdberg's 88 mph, Clawd Slayer's forgetting spell: gone for a moment, back the same) or **transform** (Clawds of the Universe: a leader with another guise turns into it, and back at the next compaction, never while the other is on stage). The module draws it: `regeneration`, `compactionLook` or `transformation`. Limit it to a clear group of characters.
 3. **Habits and stage quirks:** idle behaviour unique to a character. The engine already has `moonwalkers` and a set of `quirks` any universe can use: moving only while nobody looks (the Weeping Angle), a jump and a shiver near something (Captain Clawd), a prop drawn beside someone (T. Wrecks's glass of water), a remark to someone nearby, a hush that takes everyone's voice (the Gentlemen), a signature after every duel (Mayor Wilclawds). There's also `shootOuts`, where one bolt now and then gets through (Han shoots first). Habits that only change a character's own drawing (Slayer's full moon) stay in its art.
 4. **Bespoke practice drills:** what characters do when working alone (Dalicks "Elevate!", Doctor Four's jelly babies), as the module's `drills`. Also decide who **floats cross-legged in meditation** (`meditation`: magic users by default, nobody, magic users and saber-wielders, or chosen heroes). Doctor Clawd and The Clawd Files don't; in Clawd Slayer only the witches do.
 
@@ -371,6 +371,8 @@ Drawing, in short (the template's art files and the header of `Sources/App/Pose.
 | `placeCaption` | A caption that types the place's name in at each scene change (The Clawd Files'). | the usual name |
 | `compactionLook(k:cast:)` | What a compacted leader looks like while it's away, `k` 0…1 through it (with `compaction: .away` in the facts). | nothing to see |
 | `regeneration` | What a regeneration looks like, drawn over the character in its next face (with `compaction: .regenerate`). | nil |
+| `transformation` | What a change into the other guise looks like, and its line (with `compaction: .transform`). | nil |
+| `morals` | The lessons leaders give now and then when their session finishes (who, and how often: `morals` in the facts). | none |
 | `quirks` | `StageQuirks`: `unseenMovers`, `jitter`, `prop`, `remark`, `hushers`, `afterDuel`. | none |
 | `shootOuts` | Pairs where one bolt now and then gets through: shooter, target, what each says, and whether the shooter draws a gun for it. | none |
 | `rides` | Every ride, for Preview's sheet. Who takes which is `theme.ride`. | none |
@@ -435,7 +437,7 @@ Why: the core is the part everybody shares. If each universe slips its own `if` 
 | Practice | `BespokeDrill`, `Meditation` and the drill helpers | `Drills.swift` |
 | Stage | `StageQuirks`, `ShootOut`, `moonwalkers` | `UniverseModule.swift` |
 | Transitions | `Trip`, `TransitionSet`, `ShownTrip`, `PlaceCaption` | `UniverseModule.swift`, `ComicTransition.swift` |
-| Compaction | `UniverseCompaction` (`.regenerate`, `.away`), `CompactionLook`, `regeneration` | `Sources/Shared/UniverseFacts.swift`, `UniverseModule.swift` |
+| Compaction | `UniverseCompaction` (`.regenerate`, `.away`, `.transform`), `CompactionLook`, `regeneration`, `Transformation` | `Sources/Shared/UniverseFacts.swift`, `UniverseModule.swift` |
 | HEM | `HemCostume` | `Universes/Hem.swift` |
 | Promo | the promo kit: `Shot`, `Mix`, `brawl`, `windowShot`, `statusOf`, `agentsOf`, `everyAI`, the hook shot, the end card | `Tools/RenderPromo/Kit/` |
 

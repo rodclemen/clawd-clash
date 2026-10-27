@@ -48,10 +48,14 @@ enum TemplateFacts {
         //   , guises: [[UniverseFacts.heroBase + TemplateHero.a.rawValue, UniverseFacts.heroBase + TemplateHero.b.rawValue]]
         // Someone who only ever appears at home, as id and place key (Smaug the Stashed, at the Lonely Mountain):
         //   , homebound: [TemplateVillain.dragon.rawValue: "templateLair"]
-        // What a compaction does to a session's leader, one of two kinds (the module draws it: `compactionLook` or
-        // `regeneration` in TemplateUniverse.swift):
+        // What a compaction does to a session's leader, one of three kinds (the module draws it: `regeneration`,
+        // `compactionLook` or `transformation` in TemplateUniverse.swift):
         //   , compaction: .regenerate(order: [...])   // Doctor Clawd: the next face in the list, same session
         //   , compaction: .away(who: [...])           // The Clawd Files: gone for a moment, back the same
+        //   , compaction: .transform                  // Clawds of the Universe: into the other of its `guises`, and back
+        // Who now and then gives a lesson when their session finishes, as id and the chance each time (the lines are
+        // the module's `morals`):
+        //   , morals: [UniverseFacts.heroBase + TemplateHero.a.rawValue: 0.125]
     )
 }
 #endif   // CLAWD_TEMPLATE
