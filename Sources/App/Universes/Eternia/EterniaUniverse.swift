@@ -68,11 +68,10 @@ struct EterniaUniverse: UniverseModule {
             villains: "eterniaVillains", [eterniaVillains1, eterniaVillains2, eterniaVillains3, eterniaVillains4,
                                           eterniaVillains5, eterniaVillains6, eterniaVillains7, eterniaVillains8])
     }
-    /// The trips between places (EterniaWipes.swift): `pick` chooses the next, `every` lists one of each kind for
-    /// Tools/Transitions. nil would leave plain edge and clock wipes, as only Star Clawds keeps.
+    /// The twelve trips between places, each ending in the new place's name carved in stone: EterniaTrips.swift.
     var transitions: TransitionSet? {
-        TransitionSet(pick: { last, cast, _, to in EterniaTrip.pick(after: (last as? EterniaTrip)?.kind, cast: cast, to: to) },
-                      every: { _, _ in ShownTrip.all(EterniaWipe.allCases) { EterniaTrip(kind: $0) } })
+        TransitionSet(pick: { last, cast, from, to in EterniaTrip.pick(after: (last as? EterniaTrip)?.kind, cast: cast, from: from, to: to) },
+                      every: { from, to in ShownTrip.all(EterniaWipe.allCases) { EterniaTrip(kind: $0, from: from, to: to) } })
     }
 
     // MARK: Have defaults
