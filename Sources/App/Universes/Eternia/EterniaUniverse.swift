@@ -104,14 +104,14 @@ struct EterniaUniverse: UniverseModule {
     /// (`unseenMovers`), a jump and a shiver (`jitter`), something drawn beside them (`prop`), a word to someone nearby
     /// (`remark`), nobody has a voice while they're there (`hushers`), their signature once a fight is over
     /// (`afterDuel`). See `StageQuirks`.
-    var quirks: StageQuirks { StageQuirks() }
+    var quirks: StageQuirks { eterniaQuirks }   // EterniaHabits.swift
     /// Pairs who face off and now and then end with one bolt getting through (Han shoots first): a `ShootOut` with
     /// the shooter, the target and their lines.
     var shootOuts: [ShootOut] { [] }
     /// Every ride, for Preview's sheet (who takes which is `theme.ride`).
-    var rides: [Ride] { [] }
+    var rides: [Ride] { eterniaRides }   // EterniaRides.swift
     /// Characters' own practice sets, done now and then among the general drills (`BespokeDrill`).
-    var drills: [Cast: BespokeDrill] { [:] }
+    var drills: [Cast: BespokeDrill] { eterniaBespokeDrills }   // EterniaDrills.swift
     /// Places where, now and then, the whole scene turns over in the window and the screen saver (`SceneFlip`); nil:
     /// never.
     var sceneFlip: SceneFlip? { nil }

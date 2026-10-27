@@ -135,13 +135,8 @@ let eterniaTheme = Theme(
                  : .eterniaHome(of: EterniaHero(rawValue: c.index) ?? .heClawd)
     },
     nemeses: eterniaNemeses.map { (.hero($0.0), .villain($0.1)) },
-    // Who gets picked up when their agent is done, and by what: nil walks off on foot, as everyone does here. A ride is
-    // a `Ride` of this universe's own (`static let` in an extension of `Ride`, listed in the module's `rides`), drawn
-    // nose to the right; see Slayer/SlayerUniverse.swift and SlayerRides.swift for a bus and two cars that drive in.
-    ride: { c in
-        guard c.universe == .eternia else { return nil }
-        return nil
-    },
+    // Who gets picked up when their agent is done, and by what: EterniaRides.swift.
+    ride: eterniaRide,
     menuIcon: eterniaMenuIcon,
     // Who stands in for a session in Status Symbols: usually the universe's lead hero.
     legend: .hero(EterniaHero.heClawd))
