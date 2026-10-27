@@ -65,7 +65,16 @@ enum EterniaFacts {
         rivals: [EterniaVillain.skeleclawd.rawValue, EterniaVillain.hordakk.rawValue],
         // The secret identities: one hero in two guises, never on stage together (compaction swaps them, phase 4).
         guises: [(EterniaHero.princeAddam, EterniaHero.heClawd), (.cringer, .battleKat), (.adorra, .sheClawd),
-                 (.spirit, .swiftWind)].map { [UniverseFacts.heroBase + $0.0.rawValue, UniverseFacts.heroBase + $0.1.rawValue] as Set }
+                 (.spirit, .swiftWind)].map { [UniverseFacts.heroBase + $0.0.rawValue, UniverseFacts.heroBase + $0.1.rawValue] as Set },
+        // "By the power of Greyskull!": when a session led by one of a pair compacts, they change into the other, and
+        // back at the next (EterniaPower.swift draws it).
+        compaction: .transform,
+        // The moral of the story: now and then, when a hero's session finishes, they step forward with a lesson, about
+        // one finish in eight; Orkko, the Sorceress and Man-At-Clawds, who gave the most in the show, one in four.
+        // Villains don't give lessons (EterniaPower.swift has the lines).
+        morals: Dictionary(uniqueKeysWithValues: EterniaHero.allCases.filter { $0 != .hem && $0 != .looKee }.map { h in
+            (UniverseFacts.heroBase + h.rawValue, [EterniaHero.orkko, .sorceress, .manAtClawds].contains(h) ? 0.25 : 0.125)
+        })
         // Everything below is optional: uncomment what your universe needs. Ids here are local: a villain's is its
         // rawValue, a hero's `UniverseFacts.heroBase + rawValue`.
         //
@@ -80,9 +89,5 @@ enum EterniaFacts {
         //   , guises: [[UniverseFacts.heroBase + EterniaHero.a.rawValue, UniverseFacts.heroBase + EterniaHero.b.rawValue]]
         // Someone who only ever appears at home, as id and place key (Smaug the Stashed, at the Lonely Mountain):
         //   , homebound: [EterniaVillain.dragon.rawValue: "eterniaLair"]
-        // What a compaction does to a session's leader, one of two kinds (the module draws it: `compactionLook` or
-        // `regeneration` in EterniaUniverse.swift):
-        //   , compaction: .regenerate(order: [...])   // Doctor Clawd: the next face in the list, same session
-        //   , compaction: .away(who: [...])           // The Clawd Files: gone for a moment, back the same
     )
 }

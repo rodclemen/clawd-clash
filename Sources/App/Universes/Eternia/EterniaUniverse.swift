@@ -100,6 +100,11 @@ struct EterniaUniverse: UniverseModule {
     /// What a regeneration looks like (with `compaction: .regenerate` in the facts), drawn over the character already
     /// in its next face: Doctor Clawd's.
     var regeneration: (length: Double, draw: (_ c: PixelCanvas, _ k: Double, _ t: Double) -> Void)? { nil }
+    /// "By the power of Greyskull!": a secret identity changing into the other self on compaction, and what they say
+    /// (EterniaPower.swift).
+    var transformation: Transformation? { eterniaTransformation }
+    /// The moral of the story, a hero's lesson now and then on finishing (EterniaPower.swift).
+    var morals: [String] { eterniaMorals }
     /// Little things certain characters do on stage, whoever else is about: move only while nobody looks
     /// (`unseenMovers`), a jump and a shiver (`jitter`), something drawn beside them (`prop`), a word to someone nearby
     /// (`remark`), nobody has a voice while they're there (`hushers`), their signature once a fight is over
