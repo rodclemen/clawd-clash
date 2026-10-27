@@ -1006,7 +1006,8 @@ extension Scenes {
         let sky = top >= 30 ? PixelCanvas(c.w, c.h) : c
         for k in 0..<(top >= 30 ? 6 : 4) {
             let span = c.w + 60 * q
-            let start = Int(noise(k * 7 + 70) * Double(span)), drift = Int(t * Double(q) * (1.2 + Double(k % 3) * 0.5))
+            let speed: Double = 1.2 + Double(k % 3) * 0.5
+            let start = Int(noise(k * 7 + 70) * Double(span)), drift = Int(t * Double(q) * speed)
             let x = (start + drift) % span - 30 * q
             let y = lane + Int(noise(k * 7 + 71) * Double(laneH)) * q
             let r = (top >= 30 ? 3 + Int(noise(k * 7 + 72) * 3) : 2) * q

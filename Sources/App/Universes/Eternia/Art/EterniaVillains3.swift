@@ -519,7 +519,8 @@ private func drawImp(_ c: PixelCanvas, _ p: Pose) {
         // The bat wing folded behind him: a lit bone along the top edge, the membrane scalloped below it.
         let lift = flutter ? 3 : 0
         for x in 9...17 {
-            let top = 27 - Int((Double(4 + lift) * Double(18 - x) / 9).rounded())
+            let rise: Double = Double(4 + lift) * Double(18 - x) / 9
+            let top = 27 - Int(rise.rounded())
             let bottom = 32 - ((x - 9) % 3 == 0 ? 1 : 0)
             c.rect(x, top, 1, max(1, bottom - top), wing)
             c.px(x, top, wingL)
