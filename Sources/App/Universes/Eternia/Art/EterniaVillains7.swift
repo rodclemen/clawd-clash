@@ -2,7 +2,7 @@ import Foundation
 
 // Villains: the other foes of Eternia (King Hiss, Count Marzo, Shokoti) and Jitsu, Skeleclawd's martial artist,
 // drawn the same way as EterniaVillains1.swift. Each is told apart by a colour pair and a head: King Hiss's gold cobra
-// crown over a pale human mask, Count Marzo's bald dome and big red beard, Shokoti's tall gold fan of a headdress, and
+// crown over a pale human mask, Count Marzo's bald dome and big red beard, Shokoti's blue skin and horned bronze headdress, and
 // Jitsu's black topknot and orange headband, with the huge gold hand held up beside him.
 
 let eterniaVillains7: [EterniaVillain: Persona] = [
@@ -12,7 +12,7 @@ let eterniaVillains7: [EterniaVillain: Persona] = [
                          pivot: (43, 35), headTop: 20, signature: 3.2, draw: drawCountMarzo),
     .shokoti: Persona(name: "Shokoti", weapon: .lightning,
                       magic: Magic(core: C(0xFFCC2A), glow: C(0xC0701A), jagged: false),
-                      headTop: 12, signature: 3.6, draw: drawShokoti),
+                      headTop: 16, signature: 3.6, draw: drawShokoti),
     .jitsu: Persona(name: "Jitsu", weapon: .saber, headTop: 17, signature: 3.4, draw: drawJitsu),
 ]
 
@@ -292,107 +292,96 @@ private func drawCountMarzo(_ c: PixelCanvas, _ p: Pose) {
 
 // MARK: - Shokoti
 
-/// Shokoti: the evil priestess of the desert temple. A tall gold headdress fanned out round her head like a burst of
-/// rays, set on a gold band with a ruby at the brow; long black hair down either side of a pale face with dark-lined
-/// eyes; a long black robe to the ground under a broad gold collar, a gold panel down the front of the skirt and
-/// gold cuffs. Her magic is a wavering gold ray in a deep amber glow (the plan's black glow read as gaps on a dark
-/// desktop). Signature: she raises both arms high, her long black sleeves falling back, and her headdress blazes: the
-/// whole fan turns white-gold, a warm halo swells behind it and beams of light shoot out past its tips.
+/// Shokoti: the witch of the House of Darkness, as in the cartoon. Pale blue skin, blank white eyes under dark lids
+/// and two little fangs; long thick black hair falling past her shoulders; a bronze headdress, a band across her brow
+/// with a crescent standing on it and two horns curving up and out from its ends; a black leotard trimmed in purple
+/// with a bone skull for a buckle, purple gloves and boots, and a red cape hanging behind her. Her magic is a
+/// wavering gold ray in a deep amber glow (a black glow read as gaps on a dark desktop). Signature: she raises both
+/// arms high, her cape spreads out behind her like wings, and her blank eyes blaze white.
 private func drawShokoti(_ c: PixelCanvas, _ p: Pose) {
-    let robe = C(0x1E1A24), robeL = C(0x3E3848), robeD = C(0x0E0C12)
-    let gold = C(0xE8B830), goldD = C(0xA87A18), goldL = C(0xFFE58A)
-    let skin = C(0xE4D4C4), skinD = C(0xB8A490)
-    let hair = C(0x16141A), hairL = C(0x3A3446)
+    let skin = C(0x9CC0E8), skinD = C(0x6A8EBE)
+    let hair = C(0x16141C), hairL = C(0x3A3648)
+    let bronze = C(0xC08A44), bronzeL = C(0xEAC07A), bronzeD = C(0x7A5424)
+    let suit = C(0x1C1622), trim = C(0x7A44AA), glove = C(0x5A2A8A), boot = C(0x3A1E58)
+    let cape = C(0xC0202A), capeL = C(0xE84A4E), capeD = C(0x7A1218)
+    let bone = C(0xEEE6D8)
     let s = p.signature ?? -1
     let up: Double = s > 0.04 && s < 0.96 ? habitArc((s - 0.04) / 0.92, hold: 0.55) : 0
     let blaze = up > 0.6 ? (up - 0.6) / 0.4 * (0.8 + 0.2 * sin(p.t * 12)) : 0
     let raise = p.armRaise
 
-    // The headdress's glow while she raises her arms: a warm see-through halo close behind it, and solid beams of
-    // gold light shooting out past the long rays' tips, flickering in turn, so it reads on any desktop.
-    if blaze > 0 {
-        c.glowLine(27.5, 20, 27.5, 20, core: C(0xFFF6C0, 0), glow: C(0xFFD050), coreR: 0.2, glowR: 7,
-                   strength: 0.6 * blaze)
-        for k in 1..<8 {
-            let a = Double.pi + (Double(k) + 0.5) * .pi / 9
-            let long = (k + Int(p.t * 8)) % 2 == 0
-            let r1 = 13.5 + (long ? 3 : 2) * blaze
-            v7Line(c, (27.5 + cos(a) * 12.5, 25 + sin(a) * 12.5), (27.5 + cos(a) * r1, 25 + sin(a) * r1),
-                   long ? C(0xFFF4B8) : C(0xFFD050), r: 0.5)
+    // The red cape behind her, out past her sides and down to her heels, its edges swaying; spread wide like wings
+    // while she raises her arms.
+    let last = min(41, 43 - c.oy)
+    if last >= 27 {
+        for y in 27...last {
+            let k = Double(y - 27) / 14
+            let sway = sin(p.t * p.capeSpeed + k * 2.2) * k * 1.2
+            let spread = up * (7 - 5 * k) * min(1, k * 4)
+            let l = Int((16 - k * 3 - spread + sway).rounded()), r = Int((39 + k * 3 + spread + sway).rounded())
+            c.rect(l, y, r - l + 1, 1, cape)
+            c.px(l, y, capeL); c.px(r, y, capeD)
+            if y > 30 { c.px(l + 2, y, capeD); c.px(r - 2, y, capeD) }
         }
     }
-    drawLegs(c, Look(leg: robeD), step: p.step)
+    drawLegs(c, Look(leg: boot), step: p.step)
     c.oy += p.breathe
-    drawBody(c, Look(body: skin, shade: skinD, arm: robe, eye: nil), armRight: up > 0 ? 0 : raise)
+    drawBody(c, Look(body: skin, shade: skinD, arm: glove, eye: nil), armRight: up > 0 ? 0 : raise)
 
-    // The headdress: a fan of gold rays round the back of her head, long rays and short dark ones in turn, the long
-    // ones lit at their tips (white-gold while it blazes).
-    let cx = 27.5, cy = 25.0
-    for y in 11...23 {
-        for x in 13...42 {
-            let dx = Double(x) + 0.5 - cx, dy = Double(y) + 0.5 - cy
-            guard dy < 0 else { continue }
-            let d = (dx * dx + dy * dy).squareRoot()
-            let ph = frac((atan2(dy, dx) + .pi) / (.pi / 9))
-            let ray = ph > 0.28 && ph < 0.72
-            let lim = ray ? 13.2 : 10.2
-            guard d <= lim else { continue }
-            let tip = ray && d > lim - 1.6
-            let lit = blaze > 0.3
-            c.px(x, y, tip ? (lit ? C(0xFFFFF4) : goldL) : ray ? (lit ? C(0xFFF2B0) : gold) : (lit ? gold : goldD))
-        }
-    }
-    // Her black hair over the crown, the gold band across her brow and the ruby set in it.
-    c.rect(23, 20, 10, 1, hair); c.rect(21, 21, 14, 1, hair); c.rect(19, 22, 18, 2, hair)
-    for x in stride(from: 22, through: 34, by: 3) { c.px(x, 21, hairL); c.px(x - 1, 22, hairL) }
-    c.rect(18, 24, 20, 2, gold); c.rect(18, 24, 7, 1, goldL); c.rect(18, 25, 20, 1, goldD); c.rect(18, 24, 1, 2, goldL)
-    c.rect(27, 24, 2, 2, C(0xC8203A)); c.px(27, 24, C(0xFF7A8A))
-    // Long black hair down either side of her face, in strands.
-    c.pattern(16, 26, [
-        "HHH..................HHH",
-        "HlHH................HHlH",
-        "HlHH................HHlH",
+    // Long thick black hair: low over the crown and down past her shoulders either side.
+    c.pattern(16, 23, [
+        "....HHHHHHHHHHHHHHHH....",
+        "..HHHHlHHHHHHHHHHlHHHH..",
+        ".HHlHHHHHHHHHHHHHHHHlHH.",
+        "HHHH................HHHH",
         "HlH..................HlH",
         "HHl..................lHH",
         "HlH..................HlH",
+        "HlH..................HlH",
+        "HHl..................lHH",
+        "HlH..................HlH",
+        "HHl..................lHH",
+        "HlH..................HlH",
+        ".HH..................HH.",
         ".H....................H.",
     ], ["H": hair, "l": hairL])
-    // Dark-lined eyes with gold on the lids, and a calm cold mouth.
-    for ex in [22, 32] { c.rect(ex, 29, 2, 3, ink); c.rect(ex - 1, 28, 4, 1, goldD) }
-    c.px(24, 30, ink); c.px(31, 30, ink)
-    c.rect(26, 32, 4, 1, skinD)
-
-    // The broad gold collar over her shoulders, a row of beads in it, and the black robe below.
-    c.rect(18, 33, 20, 5, robe); c.rect(18, 34, 1, 4, robeL); c.rect(37, 33, 1, 5, robeD)
-    c.rect(18, 33, 20, 1, gold); c.rect(18, 33, 6, 1, goldL)
-    for x in stride(from: 19, through: 36, by: 2) { c.px(x, 34, gold) }
-    c.rect(20, 35, 16, 1, gold); c.rect(20, 35, 1, 1, goldL); c.rect(35, 35, 1, 1, goldD)
-    c.rect(18, 37, 20, 1, goldD); c.rect(27, 37, 2, 1, goldL)
-    // The long skirt, flaring to the ground, a gold panel down its front, a fold either side of each leg.
-    for y in 38...43 where y + c.oy <= 42 {
-        let flare = (y - 38) / 2
-        c.rect(18 - flare, y, 20 + 2 * flare, 1, robe)
-        c.px(18 - flare, y, robeL); c.px(37 + flare, y, robeD)
-        if y >= 39 { for x in [21, 24, 32, 35] { c.px(x, y, robeL) } }
-        c.rect(26, y, 4, 1, y % 2 == 0 ? gold : goldD); c.px(26, y, goldL)
-        if y + c.oy == 42 { c.rect(18 - flare, y, 20 + 2 * flare, 1, goldD) }
+    // The bronze headdress: the band across her brow, the crescent standing on it, the horns curving up and out.
+    c.rect(18, 26, 20, 1, bronze); c.rect(18, 26, 7, 1, bronzeL); c.px(37, 26, bronzeD)
+    let moon = blaze > 0.3 ? C(0xFFF4C0) : bronzeL
+    c.pattern(25, 21, ["B....B", "BB..BB", ".BBBB."], ["B": moon])
+    c.rect(27, 24, 2, 2, bronze); c.px(28, 25, bronzeD)
+    for (side, x0) in [(-1.0, 18.5), (1.0, 37.5)] {
+        for i in 0...10 {
+            let t = Double(i) / 10
+            let x = x0 + side * (2.5 * t + 1.5 * t * t), y = 26.5 - 10.5 * t + 2 * t * t
+            let col = t > 0.75 ? bronzeL : side < 0 ? bronze : bronzeD
+            v7Line(c, (x, y), (x, y), col, r: 1.1 - 0.6 * t)
+        }
     }
-    c.rect(15, 35, 3, 1, gold)
+
+    // Blank white eyes under dark lids slanting down to the middle, and two little fangs in a dark mouth.
+    for (ex, inner) in [(22, 24), (32, 32)] {
+        c.rect(ex, 29, 2, 2, C(0xF4F8FF)); c.rect(ex - 1, 28, 4, 1, ink); c.px(inner, 29, ink)
+    }
+    if blaze > 0 {
+        for ex in [23.0, 33.0] {
+            c.glowLine(ex, 29.5, ex, 29.5, core: C(0xFFFFFF, 0), glow: C(0xE8F0FF), coreR: 0.2, glowR: 3, strength: 0.7 * blaze)
+        }
+    }
+    c.rect(25, 32, 6, 1, C(0x2A1630)); c.px(26, 33, bone); c.px(29, 33, bone)
+
+    // The black leotard, purple trim round the neck and a purple belt with a bone skull for a buckle.
+    c.rect(18, 34, 20, 4, suit); c.rect(18, 34, 20, 1, trim); c.rect(18, 35, 1, 3, C(0x3A3048))
+    c.rect(18, 36, 20, 1, trim)
+    c.pattern(26, 35, [".BB.", "BKKB", ".BB."], ["B": bone, "K": ink])
 
     if up > 0 {
-        // Both arms raised high, her long black sleeves falling back from her hands, gold at the cuffs.
+        // Both arms raised high, purple-gloved hands open.
         let lh = (x: 16 - 4 * up, y: 34 - 15 * up), rh = (x: 39.5 + 4 * up, y: 34 - 15 * up)
-        v7Line(c, (16.5, 34), (lh.x, lh.y + 1), robe, r: 1.5)
-        v7Line(c, (16.0, 35), (lh.x - 1, lh.y + 4), robeL, r: 0.5)
-        v7Line(c, (39.0, 34), (rh.x, rh.y + 1), robe, r: 1.5)
-        v7Line(c, (40.0, 35), (rh.x + 1, rh.y + 4), robeL, r: 0.5)
-        let lx = Int(lh.x.rounded()), ly = Int(lh.y.rounded()), rx = Int(rh.x.rounded()), ry = Int(rh.y.rounded())
-        c.rect(lx - 1, ly, 3, 1, gold); c.rect(lx - 1, ly - 2, 2, 2, skin)
-        c.rect(rx - 1, ry, 3, 1, gold); c.rect(rx, ry - 2, 2, 2, skin)
-    } else {
-        // Her front hand, pale out of its gold cuff.
-        c.rect(38, 35 - raise, 3, 1, gold)
-        c.rect(40, 33 - raise, 1, 2, skin)
+        v7Line(c, (16.5, 34), (lh.x, lh.y + 1), skin, r: 1.3)
+        v7Line(c, (39.0, 34), (rh.x, rh.y + 1), skin, r: 1.3)
+        v7Line(c, (lh.x, lh.y + 3), (lh.x, lh.y), glove, r: 1.3)
+        v7Line(c, (rh.x, rh.y + 3), (rh.x, rh.y), glove, r: 1.3)
     }
 }
 
