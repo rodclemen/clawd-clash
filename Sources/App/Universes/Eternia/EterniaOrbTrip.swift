@@ -15,10 +15,11 @@ extension EterniaTrip {
     func drawOrb(_ ctx: CGContext, old: CGImage, new: CGImage, k: Double, in r: CGRect) {
         let art = EterniaArt(r)
         let c = art.c, w = art.w, h = art.h
-        let cx = Double(w) / 2, cy = (Double(h) * 0.44).rounded()
+        // On the window's short strip the orb fills more of the height, so it reads there.
+        let cx = Double(w) / 2, cy = (Double(h) * (art.wide ? 0.45 : 0.44)).rounded()
         let reachX = max(cx, Double(w) - cx), reachY = max(cy, Double(h) - cy)
         let full = (reachX * reachX + reachY * reachY).squareRoot() + 2
-        let small = (Double(h) * 0.34).rounded()
+        let small = (Double(h) * (art.wide ? 0.41 : 0.34)).rounded()
         let shrink = Self.ease(Self.span(k, 0, 0.3)), grow = Self.span(k, 0.72, 1)
         let growE = grow * grow * (3 - 2 * grow)
         let rad = shrink < 1 ? full + (small - full) * shrink : small + (full - small) * growE
@@ -67,28 +68,33 @@ extension EterniaTrip {
             }
         }
 
-        // The glass: a dark rim, a deeper teal just inside it, and the shine on its top left.
+        // The glass: a bold dark outline, a band of teal rim inside it lit on the top left, a darker line inside that,
+        // the shine curving round its top left with a bright spot, and a glint low on the right.
         let rimR = rad
-        let edge = C(0x0E2430), glass = C(0x1E6A7E), shine = C(0xE8FFFC), shineD = C(0xA8F0F0)
-        let ry0 = max(0, Int(cy - rimR - 1)), ry1 = min(h - 1, Int(cy + rimR + 1))
-        let rx0 = max(0, Int(cx - rimR - 1)), rx1 = min(w - 1, Int(cx + rimR + 1))
-        let thick = max(1.0, (rad / 24).rounded())
+        let edge = C(0x0E2430), glass = C(0x1E6A7E), rimC = C(0x3AA8BC), rimL = C(0x9AF0F0)
+        let shine = C(0xE8FFFC), shineD = C(0xA8F0F0)
+        let ry0 = max(0, Int(cy - rimR - 2)), ry1 = min(h - 1, Int(cy + rimR + 2))
+        let rx0 = max(0, Int(cx - rimR - 2)), rx1 = min(w - 1, Int(cx + rimR + 2))
+        let thick = max(2.0, (rad / 18).rounded())
+        let line = rad - 1.5, band = line - thick, arc = rad * 0.74
         if rx0 <= rx1 && ry0 <= ry1 && rad < full {
             for y in ry0...ry1 {
                 for x in rx0...rx1 {
                     let dx = Double(x) + 0.5 - cx, dy = Double(y) + 0.5 - cy
                     let d = (dx * dx + dy * dy).squareRoot()
-                    if d >= rad - thick && d < rad + 1 { c.px(x, y, edge) }
-                    else if d >= rad - thick * 2 && d < rad - thick { c.px(x, y, glass) }
-                    else if d >= rad * 0.72 && d < rad * 0.72 + thick {
-                        let a = atan2(dy, dx)
-                        if a > -2.6 && a < -1.75 { c.px(x, y, shine) } else if a >= -1.75 && a < -1.5 { c.px(x, y, shineD) }
-                    }
+                    let a = atan2(dy, dx)
+                    if d >= line && d < rad + 1 { c.px(x, y, edge) }
+                    else if d >= band && d < line { c.px(x, y, a > -2.7 && a < -1.2 ? rimL : rimC) }
+                    else if d >= band - 1 && d < band { c.px(x, y, glass) }
+                    else if d >= arc && d < arc + thick {
+                        if a > -2.65 && a < -1.75 { c.px(x, y, shine) } else if a >= -1.75 && a < -1.45 { c.px(x, y, shineD) }
+                    } else if d >= arc && d < arc + 1 && a > 0.45 && a < 1.05 { c.px(x, y, shineD) }
                 }
             }
-            // A bright spot of shine.
-            let sx = Int(cx - rad * 0.45), sy = Int(cy - rad * 0.5), sp = Int(thick) + 1
+            // A bright spot of shine, and a smaller one beside it.
+            let sx = Int(cx - rad * 0.42), sy = Int(cy - rad * 0.48), sp = Int(thick) + 1
             c.rect(sx, sy, sp, sp, shine)
+            c.rect(sx + sp + 1, sy - sp / 2 - 1, max(1, sp / 2), max(1, sp / 2), shine)
         }
 
         // The gold cradle round its lower half, three prongs up its sides, a collar and her dark staff below.

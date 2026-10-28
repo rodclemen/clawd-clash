@@ -78,20 +78,17 @@ extension EterniaTrip {
         if lift > 0 {
             let kindle = Self.span(k, 0.26, 0.36)
             let shaft = C(0x5A2E7A), shaftL = C(0x7A4A9A), shaftD = C(0x3E1E58)
-            c.rect(sx + 12 * s, sy + 22 * s, 6 * s, h, shaftD)
+            c.rect(sx + 12 * s, sy + 22 * s, 6 * s, h, C(0x141018))
             c.rect(sx + 12 * s + 1, sy + 22 * s, 6 * s - 2, h, shaft)
+            c.rect(sx + 16 * s, sy + 22 * s, 2 * s - 1, h, shaftD)
             c.rect(sx + 13 * s, sy + 22 * s, s, h, shaftL)
             let eye: Px = kindle <= 0 ? C(0x141018) : kindle < 0.5 ? C(0x8A7A20) : C(0xF4F070)
-            havocBlocks(c, sx, sy, s, havocSkull, [
-                "k": C(0x141018), "H": C(0x8A8478), "h": C(0x5E5A50), "l": C(0xB0AA9A),
-                "B": C(0xD8D4C8), "L": C(0xF4F2EA), "d": C(0xA8A496), "K": C(0x141018),
-                "E": eye, "n": C(0x2A2420), "T": C(0xF4F2EA),
-            ])
+            havocDrawSkull(c, sx, sy, s, eye: eye)
             if kindle >= 1 {
                 // White hearts in the eyes, and sparks crackling round them.
                 let flick = Int(k * 60)
                 for side in [0, 1] {
-                    let ex = sx + (side == 0 ? 12 : 18) * s, ey = sy + 10 * s + s / 2
+                    let ex = sx + (side == 0 ? 111 : 189) * s / 10, ey = sy + 106 * s / 10
                     c.rect(ex - s / 2, ey - s / 2, s, s, C(0xFFFFF0))
                     for j in 0..<5 where noise(flick * 13 + j * 5 + side) > 0.45 {
                         let a = Double(j) * 1.2566 + noise(flick + j) * 0.8
@@ -111,7 +108,7 @@ extension EterniaTrip {
                 let at = 0.42 + 0.025 * Double(i)
                 guard k >= at && k < at + 0.11 else { continue }
                 let side = i % 2
-                let ex = Double(sx + (side == 0 ? 12 : 18) * s), ey = Double(sy + 10 * s) + Double(s) / 2
+                let ex = Double(sx) + (side == 0 ? 11.1 : 18.9) * Double(s), ey = Double(sy) + 10.6 * Double(s)
                 let a = (side == 0 ? Double.pi : 0) + (noise(i * 7 + 90) - 0.5) * 2.4
                 let len = Double(w + h)
                 let violet = i % 3 == 1
@@ -166,16 +163,6 @@ private func havocRuns(_ cell: [Int], _ i: Int, art: EterniaArt) -> [CGRect] {
     return art.runs { x, y in cell[y * w + x] == i }
 }
 
-/// A design drawn with each of its dots `s` art pixels square.
-private func havocBlocks(_ c: PixelCanvas, _ x: Int, _ y: Int, _ s: Int, _ rows: [String], _ palette: [Character: Px]) {
-    for (j, row) in rows.enumerated() {
-        for (i, ch) in row.enumerated() {
-            guard let col = palette[ch] else { continue }
-            c.rect(x + i * s, y + j * s, s, s, col)
-        }
-    }
-}
-
 /// A straight chunky line, `thick` art pixels square at each step.
 private func havocLine(_ c: PixelCanvas, _ x0: Double, _ y0: Double, _ x1: Double, _ y1: Double, thick: Int, _ col: Px) {
     let dx = x1 - x0, dy = y1 - y0
@@ -218,34 +205,104 @@ private func havocBolt(_ c: PixelCanvas, _ x0: Double, _ y0: Double, _ x1: Doubl
     havocLine(c, f.0, f.1, mid.0, mid.1, thick: max(1, thick - 2), core)
 }
 
-/// The ram's skull on top of the Havoc Staff, front on, 30 dots wide and 23 high: ridged horns sweeping out off
-/// the narrow crown and curling round in a spiral either side, the eye sockets (`E`, kindled as it casts) just under
-/// them, the long tapering snout with its nostrils, and the teeth. Built from the left half, mirrored, the light only on the left.
-private let havocSkull: [String] = {
-    let left = [
-        "...kkkkkk......",
-        ".kkHhHhHhkk..kk",
-        "kHhHhHhHhHhkkLB",
-        "kHhkkkkkkhHhkLB",
-        "kHk.....kkhHkLB",
-        "khk......kHhkBB",
-        "kHk..kkk.kHkBBB",
-        "khk.kHhk.khkBBB",
-        "kHkk.kHk.kHkdBB",
-        ".kHhkkhkkHkKKBB",
-        "..kHhHhHhkKEEBB",
-        "...kkkkkkkKKKBB",
-        ".........kdBBBB",
-        ".........kdBBBB",
-        "..........kdBBB",
-        "..........kdBBB",
-        "..........kdBBB",
-        "...........kdBB",
-        "...........kdnB",
-        "...........kdnB",
-        "...........kdBB",
-        "............kTk",
-        "............kkk",
+/// A bit of the ram's skull on top of the Havoc Staff, as `havocSkullBit` finds it.
+private enum HavocBit { case none, horn, hornD, hornL, ridge, bone, boneD, boneL, socket, nostril, tooth, gap }
+
+/// The ram's skull on top of the Havoc Staff, front on, as a shape to test against: (`u`, `v`) in dots from the
+/// top-left of its 30 × 23 box, the middle at 15, the horns reaching a couple of dots out past either side. A domed
+/// cranium, angry eye sockets slanting down to the middle, cheekbones jutting under them, the long snout tapering
+/// down to its nostrils and a row of teeth at the tip; and the ridged horns off the crown, sweeping out and round in
+/// a tight curl either side. Lit from the left, shaded on the right and underneath, as on Skeleclawd's own art.
+private func havocSkullBit(_ u: Double, _ v: Double) -> HavocBit {
+    let x = u - 15, ax = abs(x)
+    // The eye sockets, cut off along a brow that slants down towards the middle.
+    let ex = (ax - 3.9) / 2.3, ey = (v - 10.3) / 1.7
+    let brow: Double = 8.7 + 0.42 * (4.6 - ax)
+    if ex * ex + ey * ey < 1 && v > brow { return .socket }
+    // The nostrils near the tip of the snout.
+    let nx = (ax - 1.25) / 0.7, ny = (v - 17.4) / 1.3
+    if nx * nx + ny * ny < 1 { return .nostril }
+    let bone = havocBone(x, ax, v)
+    return bone != .none ? bone : havocHorn(x, v)
+}
+
+/// The bone of the skull (cranium, cheekbones, snout and teeth), lit and shaded.
+private func havocBone(_ x: Double, _ ax: Double, _ v: Double) -> HavocBit {
+    // The teeth along the tip, under the snout.
+    if v >= 20.6 && v < 22.4 && ax < 2.5 {
+        let f = (x + 15) - (x + 15).rounded(.down)
+        return f < 0.22 ? .gap : .tooth
+    }
+    let cx = x / 7.6, cy = (v - 7.4) / 5.4
+    let cranium = cx * cx + cy * cy
+    let kx = (ax - 6.1) / 2.3, ky = (v - 11.7) / 1.8
+    let cheek = kx * kx + ky * ky
+    let hw: Double = 5.4 - (v - 9) * 0.21
+    let tipY = (v - 19.8) / 1.5
+    let tip = v > 19.8 ? hw * max(0, 1 - tipY * tipY).squareRoot() : hw
+    let snout = v > 8.5 && v < 21.3 && ax < tip
+    guard cranium < 1 || cheek < 1 || snout else { return .none }
+    // The light: the left of the dome and a run down the left of the snout's ridge.
+    let lx = (x + 3.4) / 2.1, ly = (v - 4.4) / 1.3
+    if lx * lx + ly * ly < 1 { return .boneL }
+    if x > -1.1 && x < -0.3 && v > 12.5 && v < 16 { return .boneL }
+    // The shade: the right of the dome, the right of the snout, under the cheekbones and the sockets.
+    if cranium < 1 && cranium > 0.45 && x > 1.5 && v < 9 { return .boneD }
+    if cheek < 1 && v > 12.4 { return .boneD }
+    if snout && x > tip - 1.3 && v > 9 { return .boneD }
+    if v > 12.1 && v < 13.1 && ax > 1.8 && ax < 4.6 && x > 0 { return .boneD }
+    if v > 18.9 && v < 20.6 && ax < tip && x > -0.5 { return .boneD }
+    return .bone
+}
+
+/// The horns: a ridged band from the crown, sweeping out, down and round in a tight curl, thinning to its tip; the
+/// outer edge of the left one lit, the inner edge of each shaded.
+private func havocHorn(_ x: Double, _ v: Double) -> HavocBit {
+    let side: Double = x < 0 ? -1 : 1
+    let px = x * -side, py = v   // as the left horn
+    let rx = px - -10.3, ry = py - 8.9
+    let rho = (rx * rx + ry * ry).squareRoot()
+    let theta = atan2(ry, rx)
+    let root = -0.745, turn = 2 * Double.pi, end = 6.0
+    var phi = (root - theta).truncatingRemainder(dividingBy: turn)
+    if phi < 0 { phi += turn }
+    guard phi <= end else { return .none }
+    let mid: Double = 8.5 - 1.1 * phi
+    let half: Double = (4.4 - 0.48 * phi) / 2
+    let off = rho - mid
+    if off >= half { return .none }
+    // Inside the band, the curl's inner face, a dark spiral line along its edge.
+    if off <= -half { return off > -half - 0.4 ? .ridge : .hornD }
+    let step = phi / 0.55
+    let along = (step - step.rounded()) * 0.55 * mid
+    if abs(along) < 0.32 && phi > 0.3 { return .ridge }
+    if off < -half * 0.35 { return .hornD }
+    if off > half * 0.4 && side < 0 && ry < 0.5 { return .hornL }
+    return .horn
+}
+
+/// The skull drawn at `s` art pixels to the dot, its top-left at (`x`, `y`), outlined in ink all round and where the
+/// bone lies over the horns; the sockets filled with `eye`.
+private func havocDrawSkull(_ c: PixelCanvas, _ x: Int, _ y: Int, _ s: Int, eye: Px) {
+    let ink = C(0x141018)
+    let pal: [HavocBit: Px] = [
+        .horn: C(0x8A8478), .hornD: C(0x5E5A50), .hornL: C(0xB0AA9A), .ridge: C(0x3E3A34),
+        .bone: C(0xD8D4C8), .boneD: C(0xA8A496), .boneL: C(0xF4F2EA), .nostril: C(0x2A2420),
+        .tooth: C(0xF4F2EA), .gap: ink, .socket: eye,
     ]
-    return left.map { $0 + String($0.reversed()).replacingOccurrences(of: "L", with: "B") }
-}()
+    let ds = Double(s), d = 1 / ds
+    for j in -s..<(24 * s) {
+        for i in (-3 * s)..<(33 * s) {
+            let u = (Double(i) + 0.5) / ds, v = (Double(j) + 0.5) / ds
+            let bit = havocSkullBit(u, v)
+            guard bit != .none, var col = pal[bit] else { continue }
+            let near = [havocSkullBit(u - d, v), havocSkullBit(u + d, v), havocSkullBit(u, v - d), havocSkullBit(u, v + d)]
+            let horny: (HavocBit) -> Bool = { $0 == .horn || $0 == .hornD || $0 == .hornL || $0 == .ridge }
+            if near.contains(.none) { col = ink }
+            else if bit == .socket && near.contains(where: { $0 != .socket }) { col = ink }
+            else if !horny(bit) && bit != .socket && near.contains(where: horny) { col = ink }
+            else if bit == .tooth && near.contains(where: { $0 == .bone || $0 == .boneD || $0 == .boneL }) { col = ink }
+            c.px(x + i, y + j, col)
+        }
+    }
+}

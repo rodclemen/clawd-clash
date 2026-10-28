@@ -43,6 +43,10 @@ extension EterniaTrip {
         ctx.drawShot(open > 0 ? new : old, in: r)
         if open < 1 {
             let red = C(0xE0282A), redS = C(0xB81C22), redL = C(0xFF5A4A), redD = C(0x7A1012), ink = C(0x2A0A0C)
+            // Closing, the wings meet down the middle in an inked seam, the line they part along.
+            let seam = close > 0, mx = Int(cxEnd.rounded())
+            // The outline two art pixels thick once the bat is big, so it holds against the wall of red.
+            let o: Double = bat.s >= 10 ? 2 : 1
             for y in 0..<h {
                 for x in 0..<w {
                     // Opening, each half slides out to its own side and the gap between shows the new place.
@@ -55,14 +59,19 @@ extension EterniaTrip {
                     let sy = Double(y) + 0.5
                     let part = bat.part(sx, sy)
                     guard part != .none else { continue }
-                    let rim = bat.part(sx - 1, sy) == .none || bat.part(sx + 1, sy) == .none
-                        || bat.part(sx, sy - 1) == .none || bat.part(sx, sy + 1) == .none
+                    let nb = [bat.part(sx - o, sy), bat.part(sx + o, sy), bat.part(sx, sy - o), bat.part(sx, sy + o)]
+                    let onBody = part == .body || part == .bodyS
+                    let rim = nb.contains(.none)
+                        || (onBody && nb.contains { $0 != .body && $0 != .bodyS && $0 != .eye })
+                        || (seam && open <= 0 && !onBody && part != .eye && (x == mx || (o > 1 && x == mx - 1)))
                     let col: Px
                     if rim { col = ink } else {
                         switch part {
                         case .rib: col = redD
                         case .shade: col = redS
                         case .lit: col = redL
+                        case .bodyS: col = redS
+                        case .eye: col = ink
                         default: col = red
                         }
                     }
@@ -108,13 +117,14 @@ private struct HordeBat {
     var upper: Double, lower: Double, len: Double
     var body: Bool, lit: Bool
 
-    enum Part { case none, membrane, shade, rib, lit }
+    enum Part { case none, membrane, shade, rib, lit, body, bodyS, eye }
 
     /// Which part of the bat the point (`x`, `y`) is on.
     func part(_ x: Double, _ y: Double) -> Part {
-        if body && onBody(x, y) { return .membrane }
+        if body, let b = bodyPart(x, y) { return b }
         let dy = y - (cy - 0.2 * s)
-        for side in [1.0, -1.0] {
+        // Each wing keeps to its own half, so that closed they meet down the middle rather than overlap.
+        for side in [x < cx ? -1.0 : 1.0] {
             let dx = (x - (cx + side * 0.9 * s)) * side
             let a = atan2(dy, dx)
             guard a >= upper && a <= lower else { continue }
@@ -127,13 +137,25 @@ private struct HordeBat {
             let rib = max(1.0, 0.16 * s)
             let off = min(between, 1 - between) * step * d
             if lit && (a - upper) * d < max(1.0, 0.1 * s) { return .lit }
-            if off < rib / 2 { return .rib }
+            let nearest = u.rounded()
+            if off < rib / 2 && nearest > 0 && nearest < 3 { return .rib }   // the fingers; the edges are outlined
             return Int(u) % 2 == 0 ? .membrane : .shade
         }
         return .none
     }
 
-    /// The head, ears, body and feet.
+    /// The head, ears, body and feet, shaded down the right; the two slit eyes in the head.
+    private func bodyPart(_ x: Double, _ y: Double) -> Part? {
+        guard onBody(x, y) else { return nil }
+        for side in [-1.0, 1.0] {
+            let ex = (x - (cx + side * 0.5 * s)) / (0.34 * s)
+            let ey = (y - (cy - 1.25 * s) + side * (x - cx) * 0.25) / (0.15 * s)
+            if ex * ex + ey * ey < 1 { return .eye }
+        }
+        return x > cx + 0.45 * s ? .bodyS : .body
+    }
+
+    /// Whether the point is on the head, ears, body or feet.
     private func onBody(_ x: Double, _ y: Double) -> Bool {
         let hx = (x - cx) / (1.3 * s), hy = (y - (cy - 1.2 * s)) / (1.2 * s)
         if hx * hx + hy * hy < 1 { return true }
