@@ -187,9 +187,7 @@ private func drawAnvil(_ c: PixelCanvas, _ who: Cast, _ d: DrillPlay, _ t: Doubl
         // The blade on it, hot: orange through to yellow-white where it's just been struck.
         let since = working ? (f >= 0.6 ? f - 0.6 : f + 0.4) : 1
         let heat = max(0, 1 - since * 1.4)
-        let hot = heat > 0.6 ? C(0xFFF0B0) : heat > 0.25 ? C(0xFFC040) : C(0xF07A20)
-        c.rect(46, 35, 10, 2, C(0xD8501A)); c.rect(47, 35, 8, 1, hot); c.px(56, 36, C(0xB03A12))
-        c.glowLine(47, 35.5, 55, 35.5, core: C(0xFFB040, 0), glow: C(0xFF8A20, 0.25 + 0.3 * heat), coreR: 0.1, glowR: 2.2)
+        eterniaAnvilBlade(c, heat: heat, e: d.e)
     }
     standing(c, who, t: t) { p in if working { p.melee = angle; p.trail = trail } }
 
@@ -211,6 +209,29 @@ private func drawAnvil(_ c: PixelCanvas, _ who: Cast, _ d: DrillPlay, _ t: Doubl
         c.rect(sx, sy, 2, 2, col)
         let tx = vx > 0 ? sx - 1 : sx + 2, ty = vy - 68 * k > 0 ? sy + 2 : sy - 1
         c.px(tx, ty, k < 0.5 ? yellow : orange)
+    }
+}
+
+/// The hot blade on the anvil, all solid pixels: a dark-red outline, an orange body, its edge white-hot to yellow to
+/// orange as `heat` 1…0 falls off after a blow, and its glow a chunky rim of flame-coloured pixels above it that is
+/// widest and tallest just after the blow and shrinks to a few flickering embers as it cools (never a faded halo).
+private func eterniaAnvilBlade(_ c: PixelCanvas, heat: Double, e: Double) {
+    let rim = C(0x8A1E0A), body = C(0xE8601A), white = C(0xFFF6D0), yellow = C(0xFFD040), orange = C(0xFF8A20)
+    let edge = heat > 0.6 ? white : heat > 0.25 ? yellow : C(0xFFA030)
+    // The blade: outlined, the point out to the right, the tang into the tongs' side at the left.
+    c.rect(45, 34, 12, 1, rim); c.rect(44, 35, 1, 2, rim); c.px(57, 35, rim); c.px(57, 36, rim)
+    c.rect(45, 35, 12, 2, body); c.rect(46, 35, 10, 1, edge); c.px(56, 36, C(0xB83A12))
+    // The glow: a row of flame pixels resting on the blade's back, and over it, when hot, a second broken row.
+    let flick = Int(e * 9) % 2
+    if heat > 0.25 {
+        c.rect(45, 33, 12, 1, heat > 0.6 ? yellow : orange)
+        for x in stride(from: 46 + flick, through: 55, by: 2) { c.px(x, 33, heat > 0.6 ? white : yellow) }
+        c.px(44, 34, orange); c.px(57, 34, orange)
+    } else {
+        for x in stride(from: 46 + flick * 2, through: 55, by: 4) { c.px(x, 33, orange) }
+    }
+    if heat > 0.6 {
+        for x in stride(from: 46 + 2 * flick, through: 55, by: 3) { c.px(x, 32, yellow) }
     }
 }
 

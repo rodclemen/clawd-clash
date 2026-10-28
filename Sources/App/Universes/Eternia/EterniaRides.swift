@@ -359,13 +359,11 @@ private func eterniaDrawRoton(_ c: PixelCanvas, ramp: Double, moving: Bool, t: D
     let purple = C(0x5A2E86), purpleL = C(0x8A56C0), purpleD = C(0x341A50), black = C(0x1A1420)
     let blade = C(0xD8DCE6), bladeD = C(0x7A7E8C), bone = C(0xE8DCA8), boneD = C(0xA89A68)
     let red = C(0xFF3A2A)
-    // The exhaust: grey puffs drifting back off the stacks.
+    // The exhaust: cel puffs of smoke chuffing off the stacks and drifting back, each a solid lobed puff with a dark
+    // outline and a flat shadow side, swelling as it leaves and then tearing into a trailing wisp.
     if moving {
-        for i in 0..<3 {
-            let k: Double = (t * 1.5 + Double(i) / 3).truncatingRemainder(dividingBy: 1)
-            let x = 9 - Int(k * 5), y = 4 - Int(k * 2)
-            c.circle(x, y + 2, k < 0.5 ? 1 : 2, C(0x9A94A6, 0.6 * (1 - k)))
-        }
+        let ks: [Double] = (0..<2).map { (t * 1.5 + Double($0) / 2).truncatingRemainder(dividingBy: 1) }
+        for k in ks.sorted(by: >) { eterniaRotonPuff(c, k: k) }
     }
     // The stacks.
     c.rect(9, 6, 2, 6, black); c.rect(12, 7, 2, 5, black); c.px(9, 6, bladeD); c.px(12, 7, bladeD)
@@ -434,6 +432,22 @@ private func eterniaDrawRoton(_ c: PixelCanvas, ramp: Double, moving: Bool, t: D
     } else {
         c.rect(15, 18, 7, 4, purpleD); c.rect(16, 19, 5, 2, purple)
         c.px(15, 18, purpleL); c.px(21, 21, black)
+    }
+}
+
+/// One puff of the Roton's exhaust, `k` 0…1 from the stack top to gone: a small puff over the stacks, a bigger
+/// two-lobed one drifting back and up, then a wisp tearing away into a tail. Solid pixels, never faded.
+private func eterniaRotonPuff(_ c: PixelCanvas, k: Double) {
+    let pal: [Character: Px] = ["O": C(0x2E2838), "L": C(0xD4CCE0), "S": C(0x8C82A0)]
+    // Back along the hull more than up: the canvas's top edge is only a few rows over the stacks.
+    let back: Double = k * 10
+    let x = 9 - Int(back.rounded())
+    if k < 0.3 {
+        c.pattern(x, 3, [".OO.", "OLLO", "OLSO", ".OO."], pal)
+    } else if k < 0.68 {
+        c.pattern(x - 2, 2, ["..OO.OO.", ".OLLOLLO", "OLLLLLSO", "OLLLLSSO", ".OSSSSO.", "..OOOO.."], pal)
+    } else {
+        c.pattern(x - 2, 1, ["...OOO..", "..OLLSO.", ".OLLSSOO", "OLSOOOSO", ".OO...O."], pal)
     }
 }
 
