@@ -24,9 +24,12 @@ extension EterniaTrip {
         let castleX = Int(Double(w) * (art.wide ? 0.63 : 0.64)) - 60, castleY = foot - 55
         let hx = Int(Double(w) * (art.wide ? 0.34 : 0.27))  // the sword's middle
         let tipY = art.wide ? 10 : 18                       // where its tip comes to rest
-        // The sword is drawn `su` to a pixel: twice on the window's short strip, so it stays bold there, with a
-        // shorter blade so the fist still shows; `edge` rows from its tip to the crossguard.
-        let su = art.wide ? 2 : u, blade = art.wide ? 28 : 37, edge = 3 + blade
+        // The sword is drawn `su` to a pixel: twice on the window's short strip, so it stays bold there. Its blade
+        // takes up all the height the hand doesn't: below the crossguard the screen saver shows the grip, the fist,
+        // the bracer and a stub of forearm (22 rows), the window the grip and the top of the fist (12 rows).
+        // `edge` is the rows from its tip to the crossguard.
+        let su = art.wide ? 2 : u, below = art.wide ? 12 : 22
+        let blade = (h - tipY) / su - 3 - below, edge = 3 + blade
         let heart = (x: Double(hx), y: Double(tipY + edge / 2 * su))   // the blade's middle, where the white-out starts
 
         // The end: the new place, the white breaking up over it.

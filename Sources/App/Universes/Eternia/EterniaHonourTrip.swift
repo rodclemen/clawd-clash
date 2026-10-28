@@ -24,9 +24,11 @@ extension EterniaTrip {
         let jewel = Self.span(k, 0.22, 0.3), climb = Self.ease(Self.span(k, 0.28, 0.56))
         let flood = Self.span(k, 0.55, 0.8), settle = Self.span(k, 0.8, 1)
         let spin = k * 2.4 * 1.6 * (1 - 0.5 * settle)       // turns of the whirl
-        // The sword is drawn `su` to a pixel: twice on the window's short strip, so it stays bold there, with a
-        // shorter blade so the fist still shows.
-        let su = art.wide ? 2 : u, blade = art.wide ? 28 : 35
+        // The sword is drawn `su` to a pixel: twice on the window's short strip, so it stays bold there. Its blade
+        // takes up all the height the hand doesn't: below the crossguard the screen saver shows the grip, the fist,
+        // the bracer and a stub of forearm (22 rows), the window the grip and the top of the fist (12 rows).
+        let su = art.wide ? 2 : u, below = art.wide ? 12 : 22
+        let blade = (h - rest) / su - 3 - below
         let top = rest + Int((1 - raise) * Double(h - rest + 4))
         let tip = (x: Double(hx), y: Double(top + su))
 
