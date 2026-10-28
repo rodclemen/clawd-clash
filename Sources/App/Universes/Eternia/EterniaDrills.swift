@@ -196,22 +196,27 @@ private func drawAnvil(_ c: PixelCanvas, _ who: Cast, _ d: DrillPlay, _ t: Doubl
     // The sparks off each blow, flying up and out, falling back, gone before they reach the frame's edge.
     guard working, f >= 0.6, f < 0.9 else { return }
     let k = (f - 0.6) / 0.3, n = Int(floor(d.e / period))
-    if k < 0.15 {   // the flash of the blow
-        c.glowLine(51, 34, 51, 34, core: C(0xFFFFFF, 0.9), glow: C(0xFFD060), coreR: 0.8, glowR: 3.5, strength: 1 - k / 0.15)
+    let white = C(0xFFFFFF), yellow = C(0xFFE040), orange = C(0xFF8A20)
+    if k < 0.15 {   // the flash of the blow: a solid four-pointed burst
+        c.pattern(48, 31, ["...Y...", "...W...", "..YWY..", "YWWWWWY", "..YWY..", "...W...", "...Y..."],
+                  ["W": white, "Y": yellow])
     }
-    for i in 0..<9 {
-        let vx = (noise(n * 31 + i * 7) - 0.35) * 30, vy = 14 + noise(n * 17 + i * 3) * 14
+    for i in 0..<8 {
+        let vx = (noise(n * 31 + i * 7) - 0.4) * 44, vy = 26 + noise(n * 17 + i * 3) * 16
         let x = 51 + vx * k, y = 34 - vy * k + 34 * k * k
-        guard y < 43, y > 2, x > 2, x < 69 else { continue }
-        let tail = (x - vx * 0.07, y + (vy - 68 * k) * 0.07)
-        c.glowLine(tail.0, tail.1, x, y, core: (i % 3 == 0 ? C(0xFFFFFF) : C(0xFFE070)).alpha(1 - k * 0.6),
-                   glow: C(0xFF9A20, 0.6 * (1 - k)), coreR: 0.45, glowR: 1.3)
+        guard y < 42, y > 2, x > 2, x < 68 else { continue }
+        // A chunky spark, 2 across: white-hot when fresh, yellow then orange as it cools, a pixel of tail behind.
+        let col = k < 0.35 ? (i % 3 == 0 ? white : yellow) : k < 0.7 ? yellow : orange
+        let sx = Int(x.rounded()), sy = Int(y.rounded())
+        c.rect(sx, sy, 2, 2, col)
+        let tx = vx > 0 ? sx - 1 : sx + 2, ty = vy - 68 * k > 0 ? sy + 2 : sy - 1
+        c.px(tx, ty, k < 0.5 ? yellow : orange)
     }
 }
 
 // MARK: - Orkko
 
-/// Orkko juggling three glowing balls in his raised hand, up and round in a loop; at the top of a throw one of them
+/// Orkko juggling three bright balls in his raised hand, up and round in a loop; at the top of a throw one of them
 /// turns into a fish with a pop of sparkles, which flops down on the floor in front of him, wriggles, and vanishes in
 /// another pop, and the trick starts over with three balls.
 private func drawJuggling(_ c: PixelCanvas, _ who: Cast, _ d: DrillPlay, _ t: Double) {
@@ -224,7 +229,9 @@ private func drawJuggling(_ c: PixelCanvas, _ who: Cast, _ d: DrillPlay, _ t: Do
     let lift = -3 + (sin(lt * 2.4) > 0 ? -1 : 0) + breath(who, t)
     let hand = (x: 40.5, y: 31.0 + Double(lift))
     let round = 4.4, f = frac(d.e / round), throwT = 1.1
-    let cols: [(Px, Px)] = [(C(0xFFF6A0), C(0xE040C0)), (C(0xA0F8FF), C(0x2AA8E8)), (C(0xC8FFA0), C(0x4CC83A))]
+    let cols: [(Px, Px, Px)] = [(C(0xFFB0F0), C(0xE040C0), C(0x9A2088)), (C(0xB0F0FF), C(0x2AA8E8), C(0x1A6AA8)),
+                                (C(0xFFF6A0), C(0xF0C830), C(0xB08A18))]
+    let ballRim = C(0x2A1830)
     // Where a ball is, 0…1 through its loop: thrown up the inside and over, caught on the outside, carried back in.
     func at(_ u: Double) -> (x: Double, y: Double) {
         if u < 0.78 {
@@ -250,10 +257,10 @@ private func drawJuggling(_ c: PixelCanvas, _ who: Cast, _ d: DrillPlay, _ t: Do
             continue
         }
         if i == 0 && f < 0.04 && d.e > round { sparklePop(c, x: p.x, y: p.y, k: f / 0.04) }
-        let (core, glow) = cols[i]
-        let bx = Int(p.x.rounded()) - 1, byy = Int(p.y.rounded()) - 1
-        c.glowLine(p.x, p.y, p.x, p.y, core: C(0, 0), glow: glow.alpha(0.55), coreR: 0.1, glowR: 2.8)
-        c.rect(bx, byy, 2, 2, core); c.px(bx + 1, byy + 1, glow)
+        // A solid round ball, 5 across: its colour, a shine on the upper left, shade under, a dark rim.
+        let (lit, main, shade) = cols[i]
+        let bx = Int(p.x.rounded()) - 2, byy = Int(p.y.rounded()) - 2
+        c.pattern(bx, byy, [".kkk.", "kLBBk", "kBBdk", "kBddk", ".kkk."], ["k": ballRim, "L": lit, "B": main, "d": shade])
     }
     if f > goneAt && f < goneAt + 0.05 { sparklePop(c, x: hand.x + 14, y: 41, k: (f - goneAt) / 0.05) }
 }
@@ -282,8 +289,8 @@ private func sparklePop(_ c: PixelCanvas, x: Double, y: Double, k: Double) {
 
 // MARK: - Ram Clawd
 
-/// Ram Clawd charging a wall: a stone wall out in front, he hunkers down, charges at it head first, slams into it
-/// (the wall shudders, grit falls off it), bounces back off in a hop, stands there dizzy with stars round his helmet,
+/// Ram Clawd charging a wall: a long stone wall out in front, he hunkers down, charges at it head first, slams into
+/// it (the wall shudders, cracks, and a block tumbles off its end), bounces back off in a hop, stands there dizzy with stars round his helmet,
 /// and walks back to where he started.
 private func drawWallCharge(_ c: PixelCanvas, _ who: Cast, _ d: DrillPlay, _ t: Double) {
     let r = setRamp(d)
@@ -299,30 +306,20 @@ private func drawWallCharge(_ c: PixelCanvas, _ who: Cast, _ d: DrillPlay, _ t: 
     else if f < 0.56 { let k = (f - 0.42) / 0.14; dx = 7 - 8 * ease(k); hop = 4 * sin(k * .pi) }
     else if f < 0.86 { dx = -1 }
     else { dx = -1 + ease((f - 0.86) / 0.12); running = f < 0.98 }
+    // He steps back a few paces as the set starts, to give the wall room to run on out of the frame.
+    let back = -3 * ease((r - 0.15) / 0.45)
+    if r > 0.15 && r < 0.6 { running = true }
+    dx += back
 
-    // The wall: blocks of grey stone in courses, lit along the top of each, mortar between. It shudders on impact.
+    // The wall: a long, low wall of stone blocks running on out of the frame, laid in courses with the joints
+    // staggered, a row of capstones along the top. It shudders when he hits it, and every hit cracks it further and
+    // knocks a block off its top end, which tumbles down into the rubble at its foot.
     if r > 0.15 {
         let shake = f >= 0.38 && f < 0.46 ? (Int(t * 40) % 2 == 0 ? 1 : 0) : 0
-        let stone = C(0x8A7E6E), stoneD = C(0x5A5046), stoneL = C(0xB0A490)
-        let x0 = 58 + shake
-        c.rect(x0, 16, 9, 28, stone)
-        for row in 0..<7 {
-            let y = 16 + row * 4
-            c.rect(x0, y, 9, 1, stoneL)
-            c.rect(x0, y + 3, 9, 1, stoneD)
-            c.rect(x0 + (row % 2 == 0 ? 4 : 2), y + 1, 1, 2, stoneD)
-            if row % 2 == 1 { c.rect(x0 + 6, y + 1, 1, 2, stoneD) }
-        }
-        c.rect(x0 + 8, 16, 1, 28, stoneD)
-        if f >= 0.4 && f < 0.7 {
-            // Grit shaken off the face, falling.
-            let k = (f - 0.4) / 0.3
-            for i in 0..<4 {
-                let y = 20 + Double(i) * 4 + k * k * 24
-                guard y < 43 else { continue }
-                c.px(57 - i % 2, Int(y), i % 2 == 0 ? stoneL : stone)
-            }
-        }
+        // Hits so far this set (counted up to where he stops charging, so the damage stays put as the set ends).
+        let eh = max(0, min(d.e, d.length - 0.45))
+        let hits = Int(floor(eh / period)) + (frac(eh / period) >= 0.4 ? 1 : 0)
+        ramWall(c, x0: 55 + shake, hits: hits, fall: f >= 0.4 && f < 0.56 ? (f - 0.4) / 0.16 : -1)
     }
 
     let body = PixelCanvas(c.w, c.h)
@@ -342,8 +339,8 @@ private func drawWallCharge(_ c: PixelCanvas, _ who: Cast, _ d: DrillPlay, _ t: 
         // The clonk: a white burst where his horn meets the stone.
         let k = (f - 0.38) / 0.06
         for (ax, ay) in [(-1.0, -1.0), (-1.0, 1.0), (-1.4, 0.0), (0.0, -1.4), (0.0, 1.4)] {
-            let x = 57 + ax * (1 + k * 3), y = 24 + ay * (1 + k * 3)
-            c.px(Int(x.rounded()), Int(y.rounded()), C(0xFFF8D8, 1 - k * 0.5))
+            let x = 54 + ax * (1 + k * 3), y = 28 + ay * (1 + k * 3)
+            c.px(Int(x.rounded()), Int(y.rounded()), C(0xFFF8D8))
         }
     }
     if f >= 0.5 && f < 0.86 {
@@ -356,6 +353,60 @@ private func drawWallCharge(_ c: PixelCanvas, _ who: Cast, _ d: DrillPlay, _ t: 
             c.px(sx, sy, col); c.px(sx - 1, sy, col.alpha(0.7)); c.px(sx + 1, sy, col.alpha(0.7))
             c.px(sx, sy - 1, col.alpha(0.7)); c.px(sx, sy + 1, col.alpha(0.7))
         }
+    }
+}
+
+/// Ram Clawd's wall, its near end at `x0`: capstones along the top over four courses of grey stone blocks, joints
+/// staggered, each block lit along its top; it runs on out past the frame's edge. `hits` so far crack its face and
+/// knock blocks off its top end into a heap of rubble at its foot; `fall` 0…1 tumbles down the one just knocked off.
+private func ramWall(_ c: PixelCanvas, x0: Int, hits: Int, fall: Double) {
+    let stone = C(0x8A7E6E), stoneD = C(0x5A5046), stoneL = C(0xB0A490), cap = C(0x9C9080), crack = C(0x2A2420)
+    let gone = min(hits, 3)
+    // The courses: rows 30 to 43, three rows each (lit top, face, mortar), joints every 6, offset by 3 a course.
+    for (n, y) in [30, 33, 36, 39, 42].enumerated() {
+        let rows = y == 42 ? 2 : 3
+        c.rect(x0, y, c.w - x0, rows, stone)
+        c.rect(x0, y, c.w - x0, 1, stoneL)
+        if rows == 3 { c.rect(x0, y + 2, c.w - x0, 1, stoneD) }
+        var jx = x0 + (n % 2 == 0 ? 6 : 3)
+        while jx < c.w { c.rect(jx, y, 1, rows, stoneD); jx += 6 }
+    }
+    c.rect(x0, 30, 1, 14, stoneL)   // the lit near end
+    // The capstones: a row of long blocks overhanging the near end by one.
+    c.rect(x0 - 1, 28, c.w - x0 + 1, 2, cap); c.rect(x0 - 1, 28, c.w - x0 + 1, 1, stoneL)
+    var jx = x0 + 6
+    while jx < c.w { c.rect(jx, 28, 1, 2, stoneD); jx += 7 }
+    // Blocks knocked off the top end, one a hit: the end capstone, the half block under it, the next capstone.
+    let holes: [(Int, Int, Int, Int)] = [(x0 - 1, 28, 7, 2), (x0, 30, 3, 3), (x0 + 6, 28, 7, 2)]
+    for i in 0..<gone {
+        let h = holes[i]
+        c.move(columns: h.0..<(h.0 + h.2), rows: h.1..<(h.1 + h.3), dy: c.h)
+    }
+    // The crack, longer with every hit, zigzagging down and back from where his horns land.
+    let path = [(1, 31), (2, 32), (2, 33), (3, 34), (4, 35), (4, 36), (5, 37), (6, 38), (6, 39), (7, 40), (8, 41), (8, 42)]
+    for (x, y) in path.prefix(min(path.count, hits * 5)) { c.px(x0 + x, y, crack) }
+    if hits >= 2 { c.px(x0 + 3, 33, crack); c.px(x0 + 4, 32, crack) }
+    // The rubble at its foot: a lump for every block that's come down.
+    let landed = fall >= 0 ? gone - 1 : gone
+    let lumps: [(Int, Int, Int)] = [(-4, 42, 3), (-7, 42, 2), (-2, 41, 2)]
+    for i in 0..<max(0, min(landed, 3)) {
+        let l = lumps[i]
+        c.rect(x0 + l.0, l.1, l.2, 43 - l.1 + 1, stone); c.rect(x0 + l.0, l.1, l.2, 1, stoneL)
+        c.px(x0 + l.0 + l.2 - 1, 43, stoneD)
+    }
+    // The block coming down now: off the top end, tumbling over as it drops to the ground in front.
+    if fall >= 0 && gone > 0 {
+        let k = min(1, fall)
+        let bx = Double(x0) - 1 - 4 * k, by = 28 + 13 * k * k
+        let flat = Int(k * 6) % 2 == 0
+        let ix = Int(bx.rounded()), iy = Int(by.rounded())
+        if flat {
+            c.rect(ix, iy, 5, 2, cap); c.rect(ix, iy, 5, 1, stoneL); c.px(ix + 4, iy + 1, stoneD)
+        } else {
+            c.rect(ix, iy - 1, 2, 4, cap); c.rect(ix, iy - 1, 1, 4, stoneL); c.px(ix + 1, iy + 2, stoneD)
+        }
+        // Grit off the broken top, falling with it.
+        c.px(x0 + 1, 30 + Int(k * 10), stoneL); c.px(x0 - 2, 31 + Int(k * 7), stone)
     }
 }
 
@@ -568,27 +619,76 @@ private func drawRifleDrill(_ c: PixelCanvas, _ who: Cast, _ d: DrillPlay, _ t: 
 
 // MARK: - Skeleclawd
 
-/// A copy of `src` at half its size: each 2×2 block becomes the colour most of it is (any drawn colour beating an
-/// empty one), so a sprite shrinks without losing its thin bits.
-private func halfSize(_ src: PixelCanvas) -> PixelCanvas {
-    let out = PixelCanvas(src.w, src.h)
-    for y in 0..<(src.h / 2) {
-        for x in 0..<(src.w / 2) {
-            var seen: [(Px, UInt32, Int)] = []
-            for (dx, dy) in [(0, 0), (1, 0), (0, 1), (1, 1)] {
-                let i = ((y * 2 + dy) * src.w + x * 2 + dx) * 4
-                let a = src.buf[i + 3]
-                guard a > 0 else { continue }
-                let m = 255 / Double(a)
-                let px = Px(r: UInt8(min(255, Double(src.buf[i]) * m)), g: UInt8(min(255, Double(src.buf[i + 1]) * m)),
-                            b: UInt8(min(255, Double(src.buf[i + 2]) * m)), a: a)
-                let key = UInt32(px.r) << 24 | UInt32(px.g) << 16 | UInt32(px.b) << 8 | UInt32(a)
-                if let j = seen.firstIndex(where: { $0.1 == key }) { seen[j].2 += 1 } else { seen.append((px, key, 1)) }
+/// Screeech perched small, as the vulture he is, his top-left at (`x`, `y`), facing left: hunched green wings up
+/// over his back like shoulders, ragged at their tips; a bald plum head poking forward on a thin neck out of a
+/// lavender ruff, a hooked yellow beak, an angry eye under a heavy brow, and four thin yellow legs with talons (his
+/// own art's colours). `cry`: he flings his wings up and screeches back, beak open, rings of sound off it.
+private func perchedScreeech(_ c: PixelCanvas, x: Int, y: Int, cry: Bool, t: Double) {
+    let pal: [Character: Px] = [
+        "P": C(0x7A3A9E), "D": C(0x56247A), "p": C(0xA060C4), "R": C(0xC09ADA), "r": C(0x9A72B8),
+        "G": C(0x4CA83A), "g": C(0x2E7424), "L": C(0x86D45E), "B": C(0xF0B830), "b": C(0xB4801A),
+        "T": C(0xE0A834), "t": C(0xA8761E), "k": C(0x1A1420), "W": C(0xFFFFFF), "M": C(0xC0304A),
+    ]
+    let legs = [
+        "........T.T.T.T...",
+        "........T.T.T.T...",
+        ".......tTtTtTtTt..",
+    ]
+    let body = [
+        "......r.rRRRRgGgGg",
+        "......rRRRRRgGgGgG",
+        ".......rRRRRggGgGg",
+        ".......rRRRgg.g.g.",
+        "........rRrg..g...",
+    ]
+    if cry {
+        // Wings flung up over his back, ragged at the ends; beak open.
+        c.pattern(x, y - 7, [
+            ".........L....L...",
+            "........gL...LgL..",
+            "........gGL.LGg.L.",
+            ".......g.GLLLGg.G.",
+            ".......gGGGLGGGgG.",
+            "........gGGLGGGG..",
+            "........gGGGGGGg..",
+        ], pal)
+        c.pattern(x, y, [
+            "........gGGGGGGg..",
+            "..DPPD..rgGGGGg...",
+            ".DPpPPP.rRgGGGgg..",
+            "BBkWPPP.rRRgGgGg..",
+            "B.MDPP..rRRRgGgGg.",
+            "BMb.PP.rRRRRGgGgG.",
+            "bb...PPrRRRRgGgGgG",
+            "......PPRRRRRgGgGg",
+            ".......rRRRRRRgGgG",
+        ] + body + legs, pal)
+        // Rings of sound off the open beak, solid, out towards Skeleclawd.
+        let f = frac(t * 3)
+        for k in 0..<2 {
+            let rr = 3.0 + (f + Double(k)) * 4
+            for dd in stride(from: -45.0, through: 45.0, by: 15) {
+                let a = (180 + dd) * .pi / 180
+                c.px(Int((Double(x) + cos(a) * rr).rounded()), Int((Double(y) + 4 + sin(a) * rr).rounded()), C(0xF4F0FF))
             }
-            if let best = seen.max(by: { $0.2 < $1.2 }) { out.px(x, y, best.0) }
         }
+        return
     }
-    return out
+    // Hunched: the folded wings stand up over his back higher than his head, which hangs forward and low.
+    c.pattern(x, y - 3, [
+        "..........LLLL....",
+        ".........LGGGGLL..",
+        "........LGGgGGGGL.",
+        "........gGGgGGgGGL",
+        "...DPPD.rGGgGGgGGG",
+        "..DDpPPPrRGgGGgGGG",
+        ".BBkWPPPrRGgGgGgGG",
+        "BBbDPPP.rRRgGgGgGg",
+        "B..bPP..rRRgGgGgGG",
+        "b....PP.rRRRgGgGgG",
+        "......PPrRRRgGgGgG",
+        ".......rRRRRgGgGgG",
+    ] + body + legs, pal)
 }
 
 /// The 3×5 letters of his "HA HA".
@@ -597,7 +697,7 @@ private let cackleGlyphs: [Character: [String]] = [
     "A": [".X.", "X.X", "XXX", "X.X", "X.X"],
 ]
 
-/// Skeleclawd practising his cackle on Screeech, perched in front of him at half his size: he shakes his fist and
+/// Skeleclawd practising his cackle on Screeech, perched small in front of him: he shakes his fist and
 /// cackles, HAs floating up off him; the bird sits through it unimpressed, then flings up his wings and screeches
 /// right back at him, and Skeleclawd shuts up and flinches.
 private func drawCacklePractice(_ c: PixelCanvas, _ who: Cast, _ d: DrillPlay, _ t: Double) {
@@ -612,12 +712,8 @@ private func drawCacklePractice(_ c: PixelCanvas, _ who: Cast, _ d: DrillPlay, _
     c.paste(body, x: reply ? -1 : 0)
     guard r > 0.15 else { return }
 
-    // Screeech: his own art, drawn full size on a canvas of its own, halved and turned to face his master.
-    let bird = PixelCanvas(c.w, c.h)
-    standing(bird, Cast.villain(EterniaVillain.screeech), t: t) { p in if reply { p.signature = 0.5 } }
-    let small = halfSize(bird)
-    small.flipHorizontally()
-    c.paste(small, x: 0, y: 22)
+    // Screeech, perched on the ground in front of him, facing his master.
+    perchedScreeech(c, x: 51, y: 27, cry: reply, t: t)
 
     // The HAs, rising off him while he cackles.
     guard cackling else { return }
