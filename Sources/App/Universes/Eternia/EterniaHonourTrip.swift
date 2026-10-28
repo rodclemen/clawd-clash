@@ -12,7 +12,8 @@ extension EterniaTrip {
     /// in its guard flashes (0.22–0.3); a ribbon of rainbow bands edged in gold spirals up the blade from the guard to
     /// the tip, passing behind it and in front, sparkling at its head (0.28–0.56); out of the tip a whirl of gold,
     /// red, orange, yellow, green, blue and violet arms grows, turning, until it floods the screen (0.55–0.8); then
-    /// the colours settle, the sword first and then the bands one by one, a dither at a time, into the new place
+    /// the colours settle, the sword sinking back out of the bottom first and then the bands one by one, each a flat
+    /// stripe thinning to nothing with a dark line along its edge, into the new place
     /// (0.8–1).
     func drawHonour(_ ctx: CGContext, old: CGImage, new: CGImage, k: Double, in r: CGRect) {
         let art = EterniaArt(r)
@@ -75,13 +76,22 @@ extension EterniaTrip {
         }
 
         // The whirl: arms of gold and the rainbow, turning round the sword's tip, growing out of it to the edges with a
-        // gold rim; settling, each band drops out in turn, a dither at a time.
+        // gold rim; settling, each band thins in turn, gold first and violet last, a quarter at a time, a flat stripe
+        // with a dark line along its edge, until only the new place is left.
         let far = eterniaHonourFar(tip, w, h)
         let reach = pow(flood, 1.4) * (far + 4 * Double(u))
         let pitch = 8.0 * Double(u)
+        let keep: [Double] = (0..<7).map { j in
+            let a: Double = Double(j) / 7 * 0.55
+            // In quarters, so a band thins two cells at a time, and gone once it's down to a quarter: it never frays
+            // to a thread.
+            let q: Double = ((1 - Self.ease(Self.span(settle, a, a + 0.45))) * 4).rounded(.up) / 4
+            return q < 0.5 ? 0 : q
+        }
+        let line = Double(u) / pitch                        // one cell of the grid, as a share of a band
+        let sink = Int(Self.ease(Self.span(settle, 0, 0.45)) * Double(h))   // the sword going back down
         for y in 0..<h {
             for x in 0..<w {
-                let b = eterniaHonourBayer[(y % 4) * 4 + x % 4]
                 if reach > 0 {
                     // The whirl on a grid of `u`, so it's as chunky as the sword.
                     let gx = Double(x / u * u) + Double(u) / 2, gy = Double(y / u * u) + Double(u) / 2
@@ -91,16 +101,20 @@ extension EterniaTrip {
                         let turn = atan2(dy, dx) / (2 * .pi)
                         let v = turn * 14 + d / pitch - spin * 7
                         let band = ((Int(floor(v)) % 7) + 7) % 7
-                        if Double(band) / 7 * 0.65 + b * 0.35 >= settle {
-                            c.px(x, y, reach - d < 2 * Double(u) ? eterniaHonourBands[0] : eterniaHonourBands[band])
+                        let left = keep[band], part = v - floor(v)
+                        if part < left {
+                            let edge = left < 1 && left - part < line
+                            let rim: Bool = reach - d < 2 * Double(u)
+                            let face: Px = rim ? eterniaHonourBands[0] : eterniaHonourBands[band]
+                            c.px(x, y, edge ? C(0x2A1438) : face)
                         }
                     }
                 }
-                // The sword and ribbon on top, until they settle away first.
-                let i = (y * w + x) * 4
-                if sw.buf[i + 3] > 0 && b >= Self.span(settle, 0, 0.5) * 1.01 {
-                    c.px(x, y, unpremultiplied(sw, i))
-                }
+                // The sword and ribbon on top, sinking back out of the bottom first.
+                let sy = y - sink
+                guard sy >= 0 else { continue }
+                let i = (sy * w + x) * 4
+                if sw.buf[i + 3] > 0 { c.px(x, y, unpremultiplied(sw, i)) }
             }
         }
         art.show(ctx)
@@ -109,9 +123,6 @@ extension EterniaTrip {
 
 /// The whirl's colours: gold, then the rainbow, flat Filmation cel colours.
 private let eterniaHonourBands = [C(0xF4C838), C(0xE8323A), C(0xF08A2A), C(0xF8E048), C(0x4CB848), C(0x3A7AD8), C(0x8A4AC8)]
-
-/// A 4×4 ordered dither, thresholds in 0…1.
-private let eterniaHonourBayer: [Double] = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5].map { ($0 + 0.5) / 16 }
 
 /// How far it is from `p` to the frame's farthest corner.
 private func eterniaHonourFar(_ p: (x: Double, y: Double), _ w: Int, _ h: Int) -> Double {
