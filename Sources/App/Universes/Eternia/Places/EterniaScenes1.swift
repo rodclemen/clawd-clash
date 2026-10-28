@@ -75,7 +75,7 @@ extension Scenes {
         }
         c.rect(0, f.cliff + face - max(1, s / 2), c.w, max(1, s / 2), rockD)
         // The chasm under it, black-green, down to the near ledge.
-        c.gradient(f.cliff + face, g - s, C(0x1A2620), C(0x080C0A), bands: 4)
+        c.gradient(f.cliff + face, g, C(0x1A2620), C(0x080C0A), bands: 4)
 
         // The castle, blown up to size.
         let castle = PixelCanvas(120, 56)
