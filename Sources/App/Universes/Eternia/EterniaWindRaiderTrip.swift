@@ -10,8 +10,9 @@ extension EterniaTrip {
     /// out on the right, a trail of little puffs out of its tail (0–0.44); the puffs swell up and down behind it until
     /// the cloud covers the whole picture (to 0.5); then a wind from the left blows it away to the right, the billows
     /// shrinking off its ragged edge as it drifts, streaks of wind in the clear behind them, onto the new place
-    /// (0.52–0.98). The cloud is Filmation's: round billows piled up in flat cel tones, lavender lit white on the
-    /// upper left and shaded blue-grey on the lower right, a dark outline round each.
+    /// (0.52–0.98). The cloud is Filmation's: cel puffs piled up, each with a scalloped top and a flat underside, lavender
+    /// lit white on the upper left, a flat blue-grey shadow side and a curl, a dark outline round each; where it's thin
+    /// (the trail, the torn edge) it's wisps curling away.
     func drawWindRaider(_ ctx: CGContext, old: CGImage, new: CGImage, k: Double, in r: CGRect) {
         let art = EterniaArt(r)
         let c = art.c, w = art.w, h = art.h
@@ -86,50 +87,131 @@ extension EterniaTrip {
     }
 }
 
-/// Cloud billows on a jittered grid `size` apart, shifted right by `drift`: each a round cel puff whose radius is
-/// `cover(x, y, wobble)` (0…1, at its centre; `wobble` a steady 0…1 of its own) of its full size, so where every cover
-/// is 1 they hide everything. They pile up over one another in a fixed order, each with a dark outline, lavender with
-/// a white crescent on its upper left and a blue-grey one on its lower right.
+/// Cloud billows on a jittered grid `size` apart, shifted right by `drift`: each a cel cloud puff whose size is
+/// `cover(x, y, wobble)` (0…1, at its centre; `wobble` a steady 0…1 of its own), so where every cover is 1 they hide
+/// everything, and where it's small they've thinned to curling wisps. Lavender, lit white on the upper left, a flat
+/// blue-grey underside, a dark outline round each scalloped puff (`eterniaCelPuffs`).
 private func eterniaRaiderBillows(_ c: PixelCanvas, size S: Double, drift: Double, seed: Int,
                                   cover: (Double, Double, Double) -> Double) {
-    let w = c.w, h = c.h
-    let cols = Int(Double(w) / S) + 4, rows = Int(Double(h) / S) + 3
+    let cols = Int(Double(c.w) / S) + 4, rows = Int(Double(c.h) / S) + 3
     let first = Int(floor(-drift / S)) - 1
-    var cx = [Double](repeating: 0, count: cols * rows), cy = cx, rad = cx, over = cx
+    var puffs: [EterniaPuff] = []
+    puffs.reserveCapacity(cols * rows)
     for j in 0..<rows {
         for i in 0..<cols {
-            let n = j * cols + i, g = (first + i) & 0xFFF
+            let g = (first + i) & 0xFFF
             let id = seed + g * 131 + j * 7
             let x: Double = (Double(first + i) + 0.5 + (noise(id) - 0.5) * 0.5) * S + drift
-            let y: Double = (Double(j) - 1 + 0.5 + (noise(id + 1) - 0.5) * 0.5) * S
-            cx[n] = x; cy[n] = y
-            rad[n] = S * (0.95 + 0.3 * noise(id + 2)) * max(0, min(1, cover(x, y, noise(id + 3))))
-            over[n] = noise(id + 4)
+            let y: Double = (Double(j) - 1 + 0.5 + (noise(id + 1) - 0.5) * 0.3) * S
+            let full: Double = S * (1.2 + 0.3 * noise(id + 2))
+            let size: Double = max(0, min(1, cover(x, y, noise(id + 3))))
+            puffs.append(EterniaPuff(x: x, y: y, full: full, size: size, over: noise(id + 4), tone: 0, seed: noise(id + 5)))
         }
     }
-    let ink = C(0x5A4A88)
-    for y in 0..<h {
-        let gy = Int(Double(y) / S) + 1
-        for x in 0..<w {
-            let gx = Int(floor((Double(x) - drift) / S)) - first
-            var top = -1.0, bi = -1, bd = 0.0
-            for j in max(0, gy - 2)...min(rows - 1, gy + 2) {
-                for i in max(0, gx - 2)...min(cols - 1, gx + 2) {
-                    let n = j * cols + i
-                    guard rad[n] > 0.5, over[n] > top else { continue }
-                    let dx = Double(x) + 0.5 - cx[n], dy = Double(y) + 0.5 - cy[n]
-                    let d: Double = (dx * dx + dy * dy).squareRoot()
-                    if d < rad[n] + 1.3 { top = over[n]; bi = n; bd = d }
+    eterniaCelPuffs(c, puffs, cols: cols, rows: rows, cell: S, origin: (Double(first) * S + drift, -S),
+                    tones: [[C(0xA89CC8), C(0xD8D0EC), C(0xFAF6FF)]], ink: C(0x5A4A88), flat: true)
+}
+
+// MARK: Cel smoke and cloud
+
+/// One puff of a cel cloud (or of Orkko's smoke): its centre, its full radius, how much of it is there (`size` 0…1;
+/// a puff under 0.4 of its size has thinned to a curl of smoke, under 0.08 it's gone), where it lies in the pile
+/// (`over`, higher on top), which of the palettes it's in, and a steady 0…1 of its own for its scallops and curl.
+struct EterniaPuff {
+    var x: Double, y: Double, full: Double, size: Double, over: Double, tone: Int, seed: Double
+}
+
+/// Puffs on a grid of `cols` by `rows` cells `cell` apart from `origin` (the puff of cell i, j at `puffs[j * cols + i]`,
+/// its centre in or near its cell), piled up in their `over` order, drawn as pixel-art smoke. A whole puff is a cel
+/// billow: a scalloped edge of round bumps with a dark `ink` outline, a crescent lit on its upper left, a flat shadow
+/// side across its lower right, and a curl drawn into it in the shadow tone; with `flat`, its underside is cut off
+/// straight, as a cartoon cloud's is. A thinning puff is a wisp: a curling line of smoke with its own outline, rising a
+/// little as it goes. `tones` are each a palette of shadow, middle and lit.
+func eterniaCelPuffs(_ c: PixelCanvas, _ puffs: [EterniaPuff], cols: Int, rows: Int, cell S: Double,
+                     origin: (Double, Double), tones: [[Px]], ink: Px, flat: Bool) {
+    for y in 0..<c.h {
+        let gy = Int(floor((Double(y) + 0.5 - origin.1) / S))
+        guard gy >= -2 && gy <= rows + 1 else { continue }
+        for x in 0..<c.w {
+            let gx = Int(floor((Double(x) + 0.5 - origin.0) / S))
+            guard gx >= -2 && gx <= cols + 1 else { continue }
+            var top = -1.0, hit = -1, tone = 0
+            for j in max(0, gy - 2)...max(0, min(rows - 1, gy + 2)) where j < rows {
+                for i in max(0, gx - 2)...max(0, min(cols - 1, gx + 2)) where i < cols {
+                    let p = puffs[j * cols + i]
+                    guard p.size >= 0.08, p.over > top else { continue }
+                    let dx: Double = Double(x) + 0.5 - p.x, dy: Double = Double(y) + 0.5 - p.y
+                    let found = eterniaPuffAt(p, dx, dy, flat: flat)
+                    if found >= 0 { top = p.over; hit = found; tone = p.tone }
                 }
             }
-            guard bi >= 0 else { continue }
-            if bd > rad[bi] { c.px(x, y, ink); continue }
-            let r0 = rad[bi], off = 0.24 * r0
-            let lx = Double(x) + 0.5 - (cx[bi] + off), ly = Double(y) + 0.5 - (cy[bi] + off)
-            let sx = Double(x) + 0.5 - (cx[bi] - off), sy = Double(y) + 0.5 - (cy[bi] - off)
-            let lit: Bool = (lx * lx + ly * ly).squareRoot() > 0.98 * r0
-            let shaded: Bool = (sx * sx + sy * sy).squareRoot() > 0.98 * r0
-            c.px(x, y, lit ? C(0xFAF6FF) : shaded ? C(0xA89CC8) : C(0xD8D0EC))
+            guard hit >= 0 else { continue }
+            c.px(x, y, hit == 3 ? ink : tones[tone][hit])
         }
     }
+}
+
+/// What puff `p` shows at (`dx`, `dy`) from its centre: -1 nothing, 0 its shadow tone, 1 its middle, 2 lit, 3 outline.
+private func eterniaPuffAt(_ p: EterniaPuff, _ dx: Double, _ dy: Double, flat: Bool) -> Int {
+    if p.size < 0.4 { return eterniaWispAt(p, dx, dy) }
+    let r: Double = p.full * p.size
+    let d2: Double = dx * dx + dy * dy
+    guard d2 < (r + 1.5) * (r + 1.5) else { return -1 }
+    let cut: Double = flat ? r * 0.5 : r * 2
+    guard dy < cut + 1.3 else { return -1 }
+    // The scalloped edge: round bumps, sharp where two meet.
+    let bumps: Double = 5 + (p.seed * 3).rounded(.down)
+    let theta: Double = atan2(dy, dx)
+    let bump: Double = abs(sin(theta * bumps / 2 + p.seed * 6)).squareRoot()
+    let R: Double = r * (0.8 + 0.2 * bump)
+    let d: Double = d2.squareRoot()
+    guard d < R + 1.3 else { return -1 }
+    if d >= R || dy >= cut { return 3 }
+    // Lit on the upper left, a crescent; the flat shadow side across the lower right.
+    let off: Double = 0.24 * r
+    let lx: Double = dx + off, ly: Double = dy + off
+    if (lx * lx + ly * ly).squareRoot() > 0.98 * R { return 2 }
+    let slope: Double = dy + 0.35 * dx
+    if slope > (flat ? 0.12 : 0.2) * r { return 0 }
+    // The curl, in the shadow tone, a turn and a half winding in towards the middle.
+    if r > 7 {
+        let ux: Double = dx - 0.08 * r, uy: Double = dy + 0.12 * r
+        let rho: Double = (ux * ux + uy * uy).squareRoot()
+        let spin: Double = p.seed > 0.5 ? 1 : -1
+        var phi: Double = atan2(uy, ux * spin)
+        if phi < 0 { phi += 2 * .pi }
+        let b: Double = 0.4 * r / (3 * .pi)
+        let th: Double = 0.5 + r / 36
+        for turn in 0..<2 {
+            let a: Double = phi + Double(turn) * 2 * .pi
+            guard a > 1.2 * .pi && a < 3 * .pi else { continue }
+            if abs(rho - b * a) < th { return 0 }
+        }
+    }
+    return 1
+}
+
+/// A wisp of a thinning puff at (`dx`, `dy`): a curl of smoke, a line winding out from the middle a turn and more,
+/// thinner and smaller the less of the puff is left, rising as it thins. Same answers as `eterniaPuffAt`.
+private func eterniaWispAt(_ p: EterniaPuff, _ dx: Double, _ dy: Double) -> Int {
+    let left: Double = p.size / 0.4                                 // 1 just thinned, 0 gone
+    let outer: Double = p.full * (0.3 + 0.3 * left)
+    let rise: Double = (1 - left) * p.full * 0.35
+    let uy: Double = dy + rise
+    let rho: Double = (dx * dx + uy * uy).squareRoot()
+    guard rho < outer + 3 else { return -1 }
+    let spin: Double = p.seed > 0.5 ? 1 : -1
+    var phi: Double = atan2(uy, dx * spin)
+    if phi < 0 { phi += 2 * .pi }
+    let b: Double = outer / (3 * .pi)
+    let th: Double = max(0.8, p.full * 0.1 * left + 0.5)
+    var best: Double = 99
+    for turn in 0..<2 {
+        let a: Double = phi + Double(turn) * 2 * .pi
+        guard a > 0.6 * .pi && a < 3 * .pi else { continue }
+        best = min(best, abs(rho - b * a))
+    }
+    if best < th { return uy > 0 ? 0 : 1 }
+    if best < th + 1 { return 3 }
+    return -1
 }

@@ -5,12 +5,13 @@ import Foundation
 // above, wings spread from the top of the picture to the bottom, and the new place is behind its wings as it goes.
 
 extension EterniaTrip {
-    /// A frame `k` (0…1) of Zoar's Flight, over the whole of `r`. Zoar comes in from the left, so big its wings run off
+    /// A frame `k` (0…1) of Zoar's Flight, over the whole of `r`. Zoar comes in from the left, so big its wing tips reach
     /// the top and the bottom of the picture, its shadow ahead of it on the old place; it crosses in one long swoop,
     /// beating its wings twice, and the new place is everywhere behind their trailing edge (0.04–0.88); a few feathers
     /// shaken loose drift down in its wake and are gone (0.3–0.97). Zoar is the Sorceress's own falcon in her art's
-    /// colours: white flight feathers tipped in deep blue, sky-blue coverts and back, a gold hooked beak, and the
-    /// show's orange and red along the leading edge of the wings.
+    /// colours, with a falcon's shape: broad wings swept back to sharp points, a long fanned tail barred in sky blue,
+    /// a small sky-blue head with a dark cheek stripe and a gold hooked beak; white flight feathers tipped in blue,
+    /// sky-blue coverts and back, a dark outline round it all.
     func drawZoar(_ ctx: CGContext, old: CGImage, new: CGImage, k: Double, in r: CGRect) {
         let art = EterniaArt(r)
         let c = art.c, w = art.w, h = art.h
@@ -21,7 +22,7 @@ extension EterniaTrip {
         let X = x0 + (x1 - x0) * move
         let Y = Double(h) / 2 - sin(fly * .pi) * 3 * s
         let beat = sin(fly * .pi * 4)
-        let bird = EterniaFalcon(s: s, half: Double(h) / 2 + 20 * s, beat: beat)
+        let bird = EterniaFalcon(s: s, half: Double(h) / 2 - 7 * s, beat: beat)
 
         // The new place behind the wings' trailing edge, the old one ahead of it.
         ctx.drawShot(old, in: r)
@@ -78,87 +79,105 @@ extension EterniaTrip {
 }
 
 /// Zoar from above, facing right, centred on its body: `paint(u, v)` is the colour at `u` along its flight (forward
-/// is +u) and `v` across it (down the picture is +v), nil off the bird. `half` is how far the wings reach either side,
-/// past the edges of the picture; `beat` (-1…1) sweeps the wing tips back and forward.
+/// is +u) and `v` across it (down the picture is +v), nil off the bird. A falcon's shape: broad wings out from the
+/// shoulders, tapering to sharp swept-back points (`half` out either side, at the picture's edges), a long tail fanned
+/// out behind, a small round head and a hooked beak. Past its wing tips (the picture's top and bottom rows) the new
+/// place trails away behind them. `beat` (-1…1) sweeps the wings back and forward.
 private struct EterniaFalcon {
     let s: Double, half: Double, beat: Double
 
     static let white = C(0xF6F6FA), whiteD = C(0xC8D2E4), sky = C(0x6AB8F0), skyL = C(0x9AD8FF)
-    static let skyD = C(0x3A7AC0), deep = C(0x24508A), orange = C(0xF08A30), red = C(0xC83A2A)
-    static let gold = C(0xE8B040), goldD = C(0xA87A20), ink = C(0x1A1638)
+    static let skyD = C(0x3A7AC0), deep = C(0x24508A), gold = C(0xE8B040), goldD = C(0xA87A20), ink = C(0x1A1638)
 
     /// How far out along a wing `v` is: 0 at the shoulder, 1 at the tip.
-    private func out(_ v: Double) -> Double { (abs(v) - 6 * s) / (half - 6 * s) }
+    private func out(_ v: Double) -> Double { (abs(v) - 5 * s) / (half - 5 * s) }
 
-    /// The wing's leading edge at `f` out along it: out and forward to the wrist, then raked back to the tip.
+    /// How far the wing sweeps forward (+) or back (-) at `f` out along it with the beat.
+    private func sweep(_ f: Double) -> Double { beat * f * f * 5 * s }
+
+    /// The wing's leading edge at `f`: out and a little forward to the wrist, then raked hard back to the point.
     private func lead(_ f: Double) -> Double {
-        let sweep: Double = beat * f * f * 9 * s
-        if f < 0.42 { return s * (12 + 8 * f / 0.42) + sweep }
-        let g: Double = (f - 0.42) / 0.58
-        return s * (20 - 38 * pow(g, 1.3)) + sweep
+        if f < 0.35 { return s * (10 + 6 * f / 0.35) + sweep(f) }
+        let g: Double = (f - 0.35) / 0.65
+        return s * (16 - 38 * pow(g, 1.35)) + sweep(f)
     }
 
-    /// The wing's trailing edge at `f`, without the gaps between the primaries.
-    private func back(_ f: Double) -> Double {
-        let sweep: Double = beat * f * f * 9 * s
-        let bow: Double = sin(min(f, 1) * .pi * 0.82)
-        return s * (-14 - 14 * bow) + sweep
-    }
+    /// The wing's trailing edge at `f`: near straight from the body back to the point, a scallop at each feather.
+    private func back(_ f: Double) -> Double { s * (-15 - 7 * f + 3 * sin(f * .pi)) + sweep(f) }
 
     /// Where the new place starts on the row `v` across the bird: behind the wing's trailing edge, or the body's.
     func trail(_ v: Double) -> Double {
         let f = out(v)
         if f <= 0 { return -16 * s }
-        let rear = back(min(f, 1))
-        return gap(f, v) ? rear + 3.5 * s : rear
+        if f >= 1 { return back(1) - (abs(v) - half) * 1.5 }
+        return back(f)
     }
-
-    /// Whether row `v` is one of the gaps between the long primaries at the wing tip.
-    private func gap(_ f: Double, _ v: Double) -> Bool { f > 0.6 && Int(abs(v) / (3 * s)) % 2 == 0 }
 
     func paint(_ u: Double, _ v: Double) -> Px? {
         let av = abs(v)
-        // The head: a round sky-blue crown, white cheeks with a dark falcon's stripe, the eyes either side.
-        let hu = u - 24 * s
-        if hu * hu + v * v < 64 * s * s {
-            if av > 4.6 * s && hu > -2 * s && hu < 3 * s { return Self.ink }
-            if av > 5.4 * s && hu < -2 * s { return Self.ink }
-            if av > 3.6 * s { return Self.white }
-            return hu > 4 * s ? Self.skyL : Self.sky
+        // The beak: gold, hooked, a short point out from the front of the face, its hooked tip darker.
+        let bu: Double = u - 24 * s
+        if bu > 0 && bu < 5.5 * s && av < 2.6 * s * (1 - bu / (6 * s)) + 0.5 {
+            return bu > 3.5 * s ? Self.goldD : Self.gold
         }
-        // The beak: gold, hooked, out from the front of the face.
-        let bu = u - 31 * s
-        if bu > 0 && bu < 8 * s && av < 3.4 * s * (1 - bu / (8.5 * s)) + 0.5 {
-            return bu > 5.5 * s ? Self.goldD : Self.gold
+        // The head: small and round, a sky-blue crown, a dark stripe down each cheek, white either side of it.
+        let hu: Double = u - 18.5 * s
+        if hu * hu + v * v < 36 * s * s {
+            if av > 3.4 * s && av < 5 * s && hu > -0.5 * s && hu < 2.5 * s { return Self.ink }
+            if av > 3.4 * s && hu < -1 * s && hu > -4 * s { return Self.skyD }
+            if av > 4 * s { return Self.white }
+            return hu > 2.5 * s ? Self.skyL : Self.sky
         }
-        // The body: a long oval, the sky-blue back with darker chevrons, white along its sides.
-        let bx: Double = u / (22 * s), by: Double = v / (9.5 * s)
+        // The body: a long tapering oval, the sky-blue back barred with darker chevrons, white along its flanks.
+        let bx: Double = (u + 2 * s) / (17 * s), by: Double = v / (7.5 * s)
         if bx * bx + by * by < 1 {
-            if av > 7 * s { return Self.white }
-            let row = Int((u / (4 * s) + av / (3 * s)).rounded(.down))
-            return row % 3 == 0 ? Self.skyD : Self.sky
+            if av > 5.5 * s { return Self.white }
+            let bar = Int(((u + av * 0.8) / (3.5 * s)).rounded(.down))
+            return bar % 3 == 0 ? Self.skyD : Self.sky
         }
-        // The tail: fanned out behind, white, a sky-blue band across it, its tip deep blue.
-        let tu = -u - 17 * s
-        if tu > 0 && tu < 22 * s && av < (4 + 7 * tu / (22 * s)) * s {
-            if tu > 19 * s { return Self.deep }
-            if tu > 13 * s && tu < 16 * s { return Self.sky }
-            return Int(av / (2 * s)) % 2 == 0 ? Self.white : Self.whiteD
+        // The tail: a long fan out of the body's rear, its end rounded; white feathers barred in sky blue, a deep-blue
+        // band at the tip, and a line between each feather.
+        let tu: Double = -u - 12 * s
+        let fan: Double = (tu * tu + v * v).squareRoot()
+        if tu > 0 && fan < 24 * s && av < 3 * s + tu * 0.36 {
+            if fan > 21 * s { return Self.skyD }
+            let feather: Double = atan2(v, tu) / 0.16
+            if abs(feather - feather.rounded()) * 0.16 * fan < 0.5 && fan > 6 * s { return Self.whiteD }
+            if (fan > 11 * s && fan < 13 * s) || (fan > 16 * s && fan < 18 * s) { return Self.sky }
+            return Self.white
         }
         // The wings.
         let f = out(v)
         guard f > -0.05 && f < 1 else { return nil }
         let fc = max(0, f)
         let front = lead(fc), rear = back(fc)
-        guard u < front && u > rear else { return nil }
-        // The gaps between the long primaries at the tip.
-        let d = front - u
-        if gap(fc, v) && u < rear + 3.5 * s { return nil }
-        if d < 1.5 * s { return Self.red }
-        if d < 3.5 * s { return Self.orange }
-        if d < 10 * s { return Int(av / (2.5 * s)) % 2 == 0 && Int(d / (2 * s)) % 2 == 0 ? Self.skyD : Self.sky }
-        if u < rear + 3.5 * s { return Self.deep }
-        return Int(av / (3 * s)) % 3 == 0 ? Self.whiteD : Self.white
+        // A rounded tip at the end of each flight feather along the trailing edge.
+        let fw: Double = 3.4 * s
+        let along: Double = (av / fw).truncatingRemainder(dividingBy: 1) * 2 - 1    // -1…1 across one feather
+        let notch: Double = (1 - (1 - along * along).squareRoot()) * 1.6 * s
+        guard u < front && u > rear + notch else { return nil }
+        let chord: Double = max(0.01, front - rear)
+        let dep: Double = front - u                              // how far back from the leading edge
+        let q: Double = dep / chord                              // 0 at the leading edge, 1 at the trailing edge
+        // The hand: long primaries running out to the point, their outer half dark blue as a falcon's wing tips are,
+        // a line between each.
+        if fc > 0.55 {
+            let lines = [0.34, 0.62]
+            let tip = fc > 0.78
+            if lines.contains(where: { abs(q - $0) * chord < 0.6 }) { return tip ? Self.deep : Self.skyD }
+            if tip { return Self.skyD }
+            if dep < 1.2 { return Self.skyL }
+            return dep < 0.3 * chord ? Self.sky : Self.white
+        }
+        // The arm: sky-blue coverts along the front, lit along the edge, a row of darker scallops where they end;
+        // white flight feathers behind, a line between each near their ends, their tips banded sky blue.
+        let edge: Double = 0.36 * chord + (1 - along * along) * 1.2 * s
+        if dep < 1.2 { return Self.skyL }
+        if dep < edge - 1.2 * s { return Self.sky }
+        if dep < edge { return Self.skyD }
+        if u < rear + notch + 2.2 * s { return Self.skyD }
+        if q > 0.62 && abs(along) > 0.82 { return Self.whiteD }
+        return Self.white
     }
 }
 

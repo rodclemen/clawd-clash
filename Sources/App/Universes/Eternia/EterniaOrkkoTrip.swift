@@ -83,19 +83,17 @@ extension EterniaTrip {
 
 // MARK: The puff
 
-/// A puff of pink and yellow smoke: round billows on a jittered grid, each swelling out from `from` as `grow` goes
-/// 0…1 (by 1 they cover everything) and shrinking away in its own time as `clear` goes 0…1. The billows pile up over
-/// one another, each a flat cel ball with a dark outline, a crescent lit on its upper left and one shaded on its lower
-/// right.
+/// A puff of pink and yellow smoke: cel puffs on a jittered grid, each swelling out from `from` as `grow` goes 0…1
+/// (by 1 they cover everything) and thinning away in its own time as `clear` goes 0…1. Each whole puff is a scalloped
+/// billow with a dark outline, lit on its upper left, a flat shadow side and a curl; the thin ones at the front of the
+/// puff and as it clears are curling wisps (`eterniaCelPuffs`).
 private func eterniaOrkkoPuff(_ c: PixelCanvas, from: (Double, Double), grow: Double, clear: Double, seed: Int) {
-    let w = c.w, h = c.h
-    let S = max(8.0, Double(h) / 4.5)
-    let cols = Int(Double(w) / S) + 3, rows = Int(Double(h) / S) + 3
-    let far: Double = Double(w + h)
+    let S = max(8.0, Double(c.h) / 4.5)
+    let cols = Int(Double(c.w) / S) + 3, rows = Int(Double(c.h) / S) + 3
+    let far: Double = Double(c.w + c.h)
     let reach: Double = grow * (far + S)
-    // Each billow: its centre, its radius, its colour and which billows it lies over.
-    var cx = [Double](repeating: 0, count: cols * rows), cy = cx, rad = cx, over = cx
-    var pink = [Bool](repeating: false, count: cols * rows)
+    var puffs: [EterniaPuff] = []
+    puffs.reserveCapacity(cols * rows)
     for j in 0..<rows {
         for i in 0..<cols {
             let n = j * cols + i
@@ -105,41 +103,15 @@ private func eterniaOrkkoPuff(_ c: PixelCanvas, from: (Double, Double), grow: Do
             let dist: Double = (dx * dx + dy * dy).squareRoot()
             let swell: Double = EterniaTrip.clamp((reach - dist) / (S * 1.5))
             let fade: Double = EterniaTrip.clamp((1 - clear) * 1.7 - noise(seed + n * 3 + 2) * 0.7)
-            cx[n] = x; cy[n] = y
-            rad[n] = S * (0.95 + 0.3 * noise(seed + n * 5 + 4)) * min(swell, fade)
-            over[n] = noise(seed + n * 5 + 9)
-            pink[n] = noise(seed + n * 7 + 11) < 0.55
+            let full: Double = S * (1.1 + 0.3 * noise(seed + n * 5 + 4))
+            let tone = noise(seed + n * 7 + 11) < 0.55 ? 0 : 1
+            puffs.append(EterniaPuff(x: x, y: y, full: full, size: min(swell, fade), over: noise(seed + n * 5 + 9),
+                                     tone: tone, seed: noise(seed + n * 5 + 13)))
         }
     }
-    let pinkC = [C(0xC8508E), C(0xF27AB8), C(0xFFC4E2)], yellowC = [C(0xE0A030), C(0xFFD84A), C(0xFFF6B8)]
-    let ink = C(0x3A1A48)
-    for y in 0..<h {
-        let gy = Int(Double(y) / S) + 1
-        for x in 0..<w {
-            let gx = Int(Double(x) / S) + 1
-            // The top billow at this pixel, its outline included.
-            var top = -1.0, bi = -1, bd = 0.0
-            for j in max(0, gy - 2)...min(rows - 1, gy + 2) {
-                for i in max(0, gx - 2)...min(cols - 1, gx + 2) {
-                    let n = j * cols + i
-                    guard rad[n] > 0.5, over[n] > top else { continue }
-                    let dx = Double(x) + 0.5 - cx[n], dy = Double(y) + 0.5 - cy[n]
-                    let d: Double = (dx * dx + dy * dy).squareRoot()
-                    if d < rad[n] + 1.3 { top = over[n]; bi = n; bd = d }
-                }
-            }
-            guard bi >= 0 else { continue }
-            if bd > rad[bi] { c.px(x, y, ink); continue }
-            // Flat cel light: a crescent lit on the upper left, one in shade on the lower right.
-            let r0 = rad[bi], off = 0.24 * r0
-            let lx = Double(x) + 0.5 - (cx[bi] + off), ly = Double(y) + 0.5 - (cy[bi] + off)
-            let sx = Double(x) + 0.5 - (cx[bi] - off), sy = Double(y) + 0.5 - (cy[bi] - off)
-            let lit: Bool = (lx * lx + ly * ly).squareRoot() > 0.98 * r0
-            let shaded: Bool = (sx * sx + sy * sy).squareRoot() > 0.98 * r0
-            let tone = lit ? 2 : shaded ? 0 : 1
-            c.px(x, y, (pink[bi] ? pinkC : yellowC)[tone])
-        }
-    }
+    eterniaCelPuffs(c, puffs, cols: cols, rows: rows, cell: S, origin: (-S, -S),
+                    tones: [[C(0xC8508E), C(0xF27AB8), C(0xFFC4E2)], [C(0xE0A030), C(0xFFD84A), C(0xFFF6B8)]],
+                    ink: C(0x3A1A48), flat: false)
 }
 
 /// A ring of `n` little four-pointed sparks, lemon and magenta in turn, `radius` out from (`x`, `y`).
