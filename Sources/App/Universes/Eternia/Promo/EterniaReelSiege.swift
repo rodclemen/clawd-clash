@@ -60,14 +60,26 @@ private func heLifting(_ ctx: CGContext, x: Double, crouch: Int, hull: Double?, 
         let shoulder = pad + b.maxY - 12 + crouch
         if reach < shoulder - 3 {
             let skin = clawdOrange, lit = C(0xF09A78), shade = C(0xB05A40), ink = C(0x1E1828)
-            for ax in [12, 42] {
-                c.rect(ax - 1, reach + 2, 4, shoulder - reach - 2, ink)
-                c.rect(ax, reach + 3, 2, shoulder - reach - 3, skin)
-                c.rect(ax + 1, reach + 3, 1, shoulder - reach - 3, shade)
-                c.rect(ax, reach + 5, 2, 2, C(0x8A5E38))         // his bracer
-                c.rect(ax - 2, reach - 1, 6, 5, ink)              // the fist, flat under the hull
-                c.rect(ax - 1, reach, 4, 3, skin)
-                c.rect(ax - 1, reach, 4, 1, lit)
+            let leather = C(0x8A5E38), leatherL = C(0xB07C4C)
+            let len = shoulder - reach
+            // Each arm: a forearm three wide, a bicep bulging to five over the top third, lit on the side towards the
+            // middle and shaded on the outside; a bracer at the wrist; the fist wide and flat under the hull, knuckles
+            // up. `out` is the side the arm's shadow falls on.
+            for (ax, out) in [(12, -1), (42, 1)] {
+                let bicep = shoulder - len / 3
+                c.rect(ax - 2, reach + 2, 5, len - 2, ink)
+                c.rect(ax - 3 + (out > 0 ? 1 : 0), bicep - 1, 6, len / 3 + 1, ink)
+                c.rect(ax - 1, reach + 3, 3, len - 3, skin)
+                c.rect(ax - 2 + (out > 0 ? 1 : 0), bicep, 4, len / 3, skin)
+                c.rect(out > 0 ? ax + 1 : ax - 1, reach + 3, 1, len - 3, shade)
+                c.rect(out > 0 ? ax + 2 : ax - 2, bicep, 1, len / 3, shade)
+                c.rect(out > 0 ? ax - 1 : ax + 1, bicep + 1, 1, len / 3 - 2, lit)
+                c.rect(ax - 1, reach + 4, 3, 3, leather)          // his bracer
+                c.rect(ax - 1, reach + 4, 3, 1, leatherL)
+                c.rect(ax - 3, reach - 1, 7, 5, ink)              // the fist, flat under the hull
+                c.rect(ax - 2, reach, 5, 3, skin)
+                c.rect(ax - 2, reach, 5, 1, lit)
+                c.px(ax - 1, reach + 1, shade); c.px(ax + 1, reach + 1, shade)   // the knuckles
             }
         }
     }
