@@ -24,7 +24,10 @@ extension EterniaTrip {
         let castleX = Int(Double(w) * (art.wide ? 0.63 : 0.64)) - 60, castleY = foot - 55
         let hx = Int(Double(w) * (art.wide ? 0.34 : 0.27))  // the sword's middle
         let tipY = art.wide ? 10 : 18                       // where its tip comes to rest
-        let heart = (x: Double(hx), y: Double(tipY + 20 * u))   // the blade's middle, where the white-out starts
+        // The sword is drawn `su` to a pixel: twice on the window's short strip, so it stays bold there, with a
+        // shorter blade so the fist still shows; `edge` rows from its tip to the crossguard.
+        let su = art.wide ? 2 : u, blade = art.wide ? 28 : 37, edge = 3 + blade
+        let heart = (x: Double(hx), y: Double(tipY + edge / 2 * su))   // the blade's middle, where the white-out starts
 
         // The end: the new place, the white breaking up over it.
         if k >= 0.86 {
@@ -109,25 +112,25 @@ extension EterniaTrip {
         // every other flicker.
         if blazing {
             let grow = tick % 2
-            for j in -2..<41 {
-                let half = j < 1 ? 1 : j < 3 ? 2 : 3
-                let y = top + j * u
-                c.rect(hx - (half + 2 + grow) * u, y, (2 * half + 4 + 2 * grow) * u, u, C(0xFFC830))
-                c.rect(hx - (half + 1) * u, y, (2 * half + 2) * u, u, C(0xFFF0B0))
+            for j in -2..<(edge + 1) {
+                let half = max(1, min(4, j + 1))
+                let y = top + j * su
+                c.rect(hx - (half + 2 + grow) * su, y, (2 * half + 4 + 2 * grow) * su, su, C(0xFFC830))
+                c.rect(hx - (half + 1) * su, y, (2 * half + 2) * su, su, C(0xFFF0B0))
             }
         }
-        eterniaPowerSword(c, hx, top, u: u, blazing: blazing)
+        eterniaPowerSword(c, hx, top, u: su, blade: blade, blazing: blazing)
         // The glint: a little four-pointed star running up the blade from the guard to the tip.
         if glint > 0 && glint < 1 {
-            let gy = top + Int((1 - glint) * Double(38 * u))
-            eterniaTwinkle(c, hx, gy, u: u, size: glint > 0.85 ? 3 : 2)
+            let gy = top + Int((1 - glint) * Double((edge - 2) * su))
+            eterniaTwinkle(c, hx, gy, u: su, size: glint > 0.85 ? 3 : 2)
         }
         // Blazing: sparks of white and gold flickering off the blade.
         if blazing {
             for i in 0..<6 {
                 let side = i % 2 == 0 ? -1 : 1
-                let sx = hx + side * Int((6 + 6 * noise(tick * 13 + i)) * Double(u))
-                let sy = top + Int((4 + 34 * noise(tick * 7 + i * 3)) * Double(u))
+                let sx = hx + side * Int((8 + 6 * noise(tick * 13 + i)) * Double(su))
+                let sy = top + Int((4 + Double(edge - 6) * noise(tick * 7 + i * 3)) * Double(su))
                 eterniaTwinkle(c, sx, sy, u: u, size: 1 + (tick + i) % 2)
             }
         }
@@ -140,7 +143,7 @@ extension EterniaTrip {
             for (i, e) in ends.enumerated() {
                 let grow = Self.span(crackle, e.at, e.at + 0.4)
                 guard grow > 0 else { continue }
-                let from = (heart.x, Double(top) + Double((6 + (i * 7) % 28) * u))
+                let from = (heart.x, Double(top) + Double((6 + (i * 7) % (edge - 12)) * su))
                 let ex = e.x < 0 ? -8 : e.x * Double(w), ey = e.y * Double(h)
                 let steps = max(4, Int(abs(ex - from.0) + abs(ey - from.1)) / (14 * u))
                 let path = eterniaJag(from: from, to: (ex, ey), steps: steps, amp: 4 * Double(u), seed: tick * 11 + i * 101)
@@ -197,42 +200,47 @@ private func eterniaGreyskullSilhouette(_ c: PixelCanvas, _ x: Int, _ y: Int, ri
 }
 
 /// The Power Sword straight up in He-Clawd's fist, blown up `u` times with its tip's top at (`x`, `top`) and `x` its
-/// middle: a silver blade with a dark outline, a silver crossguard, his bronze fist round the grip, a brown bracer, and
-/// his forearm down off the bottom. Blazing, the blade goes white with a gold edge.
-private func eterniaPowerSword(_ c: PixelCanvas, _ x: Int, _ top: Int, u: Int, blazing: Bool) {
+/// middle: a broad silver blade `blade` rows long, bevelled bright down its left edge and dark down its right, a dark
+/// outline round it all; a wide two-tone silver crossguard; a short ridged grip; his bronze fist round the grip, a brown
+/// bracer, and his forearm down off the bottom. Blazing, the blade goes white with a gold edge.
+private func eterniaPowerSword(_ c: PixelCanvas, _ x: Int, _ top: Int, u: Int, blade: Int, blazing: Bool) {
     let rows = [
-        ".......kk.......",   // the tip
-        "......kLsk......",
-        "......kLsk......",
-    ] + Array(repeating: ".....kLLsdk.....", count: 37) + [   // the blade
-        "kkkkkkkkkkkkkkkk",   // the crossguard
-        "kGGGGGGgggggggHk",
-        "kkkkkkkkkkkkkkkk",
-        "..kkkkkkkkkkk...",   // the fist, fingers across
-        ".kOOOOOOOOOOdk..",
-        ".klOOOOOOOOOdk..",
-        ".kddddddddOOdk..",
-        ".klOOOOOOOOOdk..",
-        ".kddddddddOOdk..",
-        ".klOOOOOOOOOdk..",
-        ".kddddddddOOdk..",
-        "..kOOOOOOOOOk...",
-        "..kkkkkkkkkkk...",   // the bracer
-        "..kBBBBBBbbnk...",
-        "..kbbbbbbbbnk...",
-        "..kBBBBBBbbnk...",
-        "..kkkkkkkkkkk...",
+        "........kk........",   // the tip
+        ".......kWdk.......",
+        "......kWLsdk......",
+    ] + Array(repeating: ".....kWLLssdk.....", count: blade) + [   // the blade
+        "kkkkkkkkkkkkkkkkkk",   // the crossguard
+        "kGGGGGGGGgggggggHk",
+        "kgggggggHHHHHHHHHk",
+        "kkkkkkkkkkkkkkkkkk",
+        ".......kgHk.......",   // the grip
+        ".......kHgk.......",
+        "...kkkkkkkkkkk....",   // the fist, fingers across
+        "..kOOOOOOOOOOdk...",
+        "..klOOOOOOOOOdk...",
+        "..kddddddddOOdk...",
+        "..klOOOOOOOOOdk...",
+        "..kddddddddOOdk...",
+        "..klOOOOOOOOOdk...",
+        "..kddddddddOOdk...",
+        "...kOOOOOOOOOk....",
+        "...kkkkkkkkkkk....",   // the bracer
+        "...kBBBBBBbbnk....",
+        "...kbbbbbbbbnk....",
+        "...kBBBBBBbbnk....",
+        "...kkkkkkkkkkk....",
     ]
-    let arm = "...kOOOOOOdk...."   // the forearm, down off the bottom
+    let arm = "....kOOOOOOdk....."   // the forearm, down off the bottom
     let pal: [Character: Px] = [
         "k": blazing ? C(0x8A5A10) : C(0x1E1828),
-        "L": blazing ? C(0xFFFFFF) : C(0xE2E4EC), "s": blazing ? C(0xFFF6C8) : C(0xB4B8C4),
+        "W": blazing ? C(0xFFFFFF) : C(0xF8FAFF),
+        "L": blazing ? C(0xFFFFFF) : C(0xD4D8E2), "s": blazing ? C(0xFFF6C8) : C(0xA4A8B6),
         "d": C(0xA8553C), "G": C(0xE2E4EC), "g": C(0xB4B8C4), "H": C(0x7E8290),
         "O": clawdOrange, "l": C(0xF09A78), "B": C(0x8A5E38), "b": C(0x6A4428), "n": C(0x4A2E18),
     ]
     // The blade's dark edge is the hand's dark on the fist rows; on the blade it's steel in shade, or gold ablaze.
-    let bladeD = blazing ? C(0xFFD860) : C(0x7E8290)
-    let x0 = x - 8 * u
+    let bladeD = blazing ? C(0xFFD860) : C(0x6A6E7C)
+    let x0 = x - 9 * u, guardRow = 3 + blade
     func put(_ row: String, _ y: Int, blade: Bool) {
         for (i, ch) in row.enumerated() {
             guard var col = pal[ch] else { continue }
@@ -241,7 +249,7 @@ private func eterniaPowerSword(_ c: PixelCanvas, _ x: Int, _ top: Int, u: Int, b
             c.rect(x0 + i * u, y, u, u, col)
         }
     }
-    for (j, row) in rows.enumerated() { put(row, top + j * u, blade: j < 40) }
+    for (j, row) in rows.enumerated() { put(row, top + j * u, blade: j < guardRow) }
     var y = top + rows.count * u
     while y < c.h { put(arm, y, blade: false); y += u }
 }

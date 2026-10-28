@@ -10,9 +10,9 @@ extension EterniaTrip {
     /// The Jawbridge, `k` (0…1) through its own part, over the whole of `r`. The old place turns to stone a dither at
     /// a time from the middle out, and is the skull face, close up, its jaw shut (0–0.22); the castle rumbles, shaking
     /// (0.2–0.3); the jaw falls open, its stone face folding down and its plank deck coming down across the chasm on
-    /// its chains, the doorway a dark mouth with the new place in it (0.28–0.5); the doorway rushes up, faster and
-    /// faster, the teeth sweeping past, the dark inside lifting, until the new place fills the screen (0.5–1). Every
-    /// picture of the castle is pixel art blown up whole pixels at a time, never smoothed.
+    /// its chains, the doorway a dark mouth with the new place in it (0.28–0.5); the doorway rushes up, the teeth and the
+    /// deck sweeping off the edges, until the new place fills the screen (0.5–0.75) and the dark inside lifts off it
+    /// (to 0.8). Every picture of the castle is pixel art blown up whole pixels at a time, never smoothed.
     func drawJawbridge(_ ctx: CGContext, old: CGImage, new: CGImage, k: Double, in r: CGRect) {
         guard k < 0.985 else { ctx.drawShot(new, in: r); return }
         let art = EterniaArt(r)
@@ -23,11 +23,12 @@ extension EterniaTrip {
         let rush = Self.span(k, 0.5, 1)
 
         let world = eterniaJawWorld(drop: drop)
-        // The camera: on the face at first, whole pixels three or four to one; then in to the doorway, faster and
-        // faster, until it's all doorway.
-        let z0 = Double(art.wide ? 3 : 4), zf = 60.0
-        let zoom = z0 * pow(zf / z0, pow(rush, 1.5))
-        let move = Self.ease(Self.span(rush, 0, 0.55))
+        // The camera: on the face at first, whole pixels three or four to one; then in to the doorway, until it's all
+        // doorway by the rush's middle (the mouth is only five rows tall under its teeth, so it takes a close look),
+        // the teeth above and the deck below sweeping off the frame's edges; the new place has the rest to itself.
+        let z0 = Double(art.wide ? 3 : 4), zf = 48.0
+        let zoom = z0 * pow(zf / z0, Self.ease(Self.span(rush, 0, 0.6)))
+        let move = Self.ease(Self.span(rush, 0, 0.45))
         let cx = eterniaJawFace.x + shake / zoom, cy = eterniaJawFace.y + (eterniaJawDoor.y - eterniaJawFace.y) * move
         let halfW = Double(w) / 2, halfH = Double(h) / 2
         let far = (halfW * halfW + halfH * halfH).squareRoot()
@@ -66,8 +67,9 @@ extension EterniaTrip {
     }
 }
 
-/// Where the camera looks at first (the skull's face) and where it ends (the open doorway), in the world's pixels.
-private let eterniaJawFace = (x: 150.0, y: 44.0), eterniaJawDoor = (x: 150.0, y: 55.0)
+/// Where the camera looks at first (the skull's face) and where it ends (the open doorway, the middle of the dark
+/// between the teeth on row 52 and the deck on row 58), in the world's pixels.
+private let eterniaJawFace = (x: 150.0, y: 44.0), eterniaJawDoor = (x: 150.0, y: 55.5)
 
 /// A 4×4 ordered dither, thresholds in 0…1.
 private let eterniaJawBayer: [Double] = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5].map { ($0 + 0.5) / 16 }

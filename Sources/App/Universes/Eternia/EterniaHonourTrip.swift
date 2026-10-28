@@ -23,8 +23,11 @@ extension EterniaTrip {
         let jewel = Self.span(k, 0.22, 0.3), climb = Self.ease(Self.span(k, 0.28, 0.56))
         let flood = Self.span(k, 0.55, 0.8), settle = Self.span(k, 0.8, 1)
         let spin = k * 2.4 * 1.6 * (1 - 0.5 * settle)       // turns of the whirl
+        // The sword is drawn `su` to a pixel: twice on the window's short strip, so it stays bold there, with a
+        // shorter blade so the fist still shows.
+        let su = art.wide ? 2 : u, blade = art.wide ? 28 : 35
         let top = rest + Int((1 - raise) * Double(h - rest + 4))
-        let tip = (x: Double(hx), y: Double(top + u))
+        let tip = (x: Double(hx), y: Double(top + su))
 
         // Underneath: the old place dimming to plum until the whirl has covered it, then the new one.
         if settle > 0 {
@@ -37,7 +40,7 @@ extension EterniaTrip {
         // The sword, the ribbon round it and the sparkles, on a canvas of their own so the settling can take it away.
         let sw = PixelCanvas(w, h)
         if raise > 0 {
-            let guardY = Double(top + 38 * u), length = guardY - Double(top + 2 * u)
+            let guardY = Double(top + (3 + blade) * su), length = guardY - Double(top + 2 * su)
             let head = climb
             // The ribbon: points along a helix up the blade, the half going behind it drawn first.
             var back: [(Int, Int, Px)] = [], front: [(Int, Int, Px)] = []
@@ -48,26 +51,26 @@ extension EterniaTrip {
                     guard s <= head else { break }
                     let phase = s * 4.5 * 2 * .pi - spin * 2 * .pi
                     let widen = 1 + 0.6 * s
-                    let x = Double(hx) + sin(phase) * 7 * Double(u) * widen, y = guardY - s * length
+                    let x = Double(hx) + sin(phase) * 8 * Double(su) * widen, y = guardY - s * length
                     let band = Int(s * 28) % 7
                     let p = (Int(x.rounded()), Int(y.rounded()), eterniaHonourBands[band])
                     if cos(phase) < 0 { back.append(p) } else { front.append(p) }
                 }
             }
-            eterniaRibbon(sw, back, u: u)
-            eterniaProtectionSword(sw, hx, top, u: u, jewel: jewel > 0 && jewel < 1 ? jewel : 0)
-            eterniaRibbon(sw, front, u: u)
+            eterniaRibbon(sw, back, u: su)
+            eterniaProtectionSword(sw, hx, top, u: su, blade: blade, jewel: jewel > 0 && jewel < 1 ? jewel : 0)
+            eterniaRibbon(sw, front, u: su)
             // Sparkles round the ribbon's head while it climbs, and the jewel's twinkle.
             if head > 0 && head < 1 {
                 let y = Int(guardY - head * length)
                 for i in 0..<5 {
-                    let sx = hx + Int((noise(Int(k * 60) * 7 + i) - 0.5) * 30 * Double(u))
-                    let sy = y + Int((noise(Int(k * 60) * 11 + i) - 0.5) * 16 * Double(u))
-                    eterniaHonourTwinkle(sw, sx, sy, u: u, size: 1 + i % 2)
+                    let sx = hx + Int((noise(Int(k * 60) * 7 + i) - 0.5) * 34 * Double(su))
+                    let sy = y + Int((noise(Int(k * 60) * 11 + i) - 0.5) * 16 * Double(su))
+                    eterniaHonourTwinkle(sw, sx, sy, u: su, size: 1 + i % 2)
                 }
             }
             if jewel > 0 && jewel < 1 {
-                eterniaHonourTwinkle(sw, hx, Int(guardY) + 2 * u, u: u, size: 2 + Int(sin(jewel * .pi) * 3))
+                eterniaHonourTwinkle(sw, hx, Int(guardY) + 2 * su, u: su, size: 2 + Int(sin(jewel * .pi) * 3))
             }
         }
 
@@ -124,43 +127,46 @@ private func eterniaRibbon(_ c: PixelCanvas, _ pts: [(Int, Int, Px)], u: Int) {
 }
 
 /// The Sword of Protection straight up in She-Clawd's fist, blown up `u` times with its tip's top at (`x`, `top`)
-/// and `x` its middle: a silver blade, a gold crossguard with its ends curled up and the red jewel in the middle, her
-/// bronze fist round the gold grip, a gold bracer, and her forearm down off the bottom. `jewel` (0…1) flashes the
-/// jewel pink and white.
-private func eterniaProtectionSword(_ c: PixelCanvas, _ x: Int, _ top: Int, u: Int, jewel: Double) {
+/// and `x` its middle: a broad silver blade `blade` rows long, bevelled bright down its left edge and dark down its
+/// right, a dark outline round it all; a wide gold crossguard with its ends curled up and the red jewel in the middle;
+/// a short gold grip; her bronze fist round it, a gold bracer, and her forearm down off the bottom. `jewel` (0…1)
+/// flashes the jewel pink and white.
+private func eterniaProtectionSword(_ c: PixelCanvas, _ x: Int, _ top: Int, u: Int, blade: Int, jewel: Double) {
     let rows = [
-        ".......kk.......",   // the tip
-        "......kLsk......",
-        "......kLsk......",
-    ] + Array(repeating: ".....kLLsSk.....", count: 35) + [   // the blade
-        "kk............kk",   // the crossguard, its ends curled up
-        "kMkkkkkkkkkkkkMk",
-        "kGMMMMkRRkMMMMgk",
-        ".kkkkkkrrkkkkkk.",
-        "..kkkkkkkkkkk...",   // the fist, fingers across
-        ".kOOOOOOOOOOdk..",
-        ".klOOOOOOOOOdk..",
-        ".kddddddddOOdk..",
-        ".klOOOOOOOOOdk..",
-        ".kddddddddOOdk..",
-        ".klOOOOOOOOOdk..",
-        ".kddddddddOOdk..",
-        "..kOOOOOOOOOk...",
-        "..kkkkkkkkkkk...",   // the gold bracer
-        "..kGGGGGGMMgk...",
-        "..kMMMMMMMMgk...",
-        "..kGGGGGGMMgk...",
-        "..kkkkkkkkkkk...",
+        "........kk........",   // the tip
+        ".......kWSk.......",
+        "......kWLsSk......",
+    ] + Array(repeating: ".....kWLLssSk.....", count: blade) + [   // the blade
+        "kk..............kk",   // the crossguard, its ends curled up
+        "kMkkkkkkkkkkkkkkMk",
+        "kGMMMMMkRRkMMMMMgk",
+        ".kkkkkkkrrkkkkkkk.",
+        ".......kGgk.......",   // the grip
+        ".......kMgk.......",
+        "...kkkkkkkkkkk....",   // the fist, fingers across
+        "..kOOOOOOOOOOdk...",
+        "..klOOOOOOOOOdk...",
+        "..kddddddddOOdk...",
+        "..klOOOOOOOOOdk...",
+        "..kddddddddOOdk...",
+        "..klOOOOOOOOOdk...",
+        "..kddddddddOOdk...",
+        "...kOOOOOOOOOk....",
+        "...kkkkkkkkkkk....",   // the gold bracer
+        "...kGGGGGGMMgk....",
+        "...kMMMMMMMMgk....",
+        "...kGGGGGGMMgk....",
+        "...kkkkkkkkkkk....",
     ]
-    let arm = "...kOOOOOOdk...."
+    let arm = "....kOOOOOOdk....."
     let lit = jewel > 0 && Int(jewel * 8) % 2 == 0
     let pal: [Character: Px] = [
-        "k": C(0x1E1828), "L": C(0xE8EAF2), "s": C(0xB8BCC8), "S": C(0x7E8290),
+        "k": C(0x1E1828), "W": C(0xF8FAFF), "L": C(0xD8DCE6), "s": C(0xA8ACBA), "S": C(0x6A6E7C),
         "G": C(0xFFE07A), "M": C(0xE8B838), "g": C(0xA87C1C),
         "R": lit ? C(0xFFF0F0) : C(0xE8323A), "r": lit ? C(0xFF8A8A) : C(0x9A1A20),
         "O": clawdOrange, "l": C(0xF09A78), "d": C(0xA8553C),
     ]
-    let x0 = x - 8 * u
+    let x0 = x - 9 * u
     func put(_ row: String, _ y: Int) {
         for (i, ch) in row.enumerated() {
             guard let col = pal[ch] else { continue }
