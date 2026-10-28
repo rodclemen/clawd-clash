@@ -47,6 +47,10 @@ extension EterniaTrip {
             let seam = close > 0, mx = Int(cxEnd.rounded())
             // The outline two art pixels thick once the bat is big, so it holds against the wall of red.
             let o: Double = bat.s >= 10 ? 2 : 1
+            // Closing, the wings harden into the Fright Zone's riveted plate from their tips in, the front inked; by
+            // the time they meet the whole wall is plate round the red bat, the Horde's emblem on the fortress.
+            let front = 4.6 * bat.s * (1 - close)
+            let plate = HordePlate(h: h)
             for y in 0..<h {
                 for x in 0..<w {
                     // Opening, each half slides out to its own side and the gap between shows the new place.
@@ -64,8 +68,14 @@ extension EterniaTrip {
                     let rim = nb.contains(.none)
                         || (onBody && nb.contains { $0 != .body && $0 != .bodyS && $0 != .eye })
                         || (seam && open <= 0 && !onBody && part != .eye && (x == mx || (o > 1 && x == mx - 1)))
+                    let past = close > 0 && !onBody && part != .eye ? bat.past(sx, sy, front) : -1
+                    let metal = past > 0
                     let col: Px
-                    if rim { col = ink } else {
+                    if rim || (metal && past < o) { col = ink } else if metal {
+                        let strut = part == .rib && (bat.part(sx - 1, sy) != .rib || bat.part(sx + 1, sy) != .rib
+                            || bat.part(sx, sy - 1) != .rib || bat.part(sx, sy + 1) != .rib)
+                        col = plate.colour(Int(sx.rounded(.down)), y, part: part, edge: strut)
+                    } else {
                         switch part {
                         case .rib: col = redD
                         case .shade: col = redS
@@ -144,6 +154,17 @@ private struct HordeBat {
         return .none
     }
 
+    /// How far the point (`x`, `y`) on a wing lies past the scalloped edge that wing would have, reaching `reach`
+    /// from its shoulder: negative inside it. The closed wall's plate starts there.
+    func past(_ x: Double, _ y: Double, _ reach: Double) -> Double {
+        let side: Double = x < cx ? -1 : 1
+        let dx = (x - (cx + side * 0.9 * s)) * side, dy = y - (cy - 0.2 * s)
+        let u = (atan2(dy, dx) - upper) / ((lower - upper) / 3)
+        let between = u - u.rounded(.down)
+        let edge: Double = reach * (1 - 0.2 * sin(between * .pi))
+        return (dx * dx + dy * dy).squareRoot() - edge
+    }
+
     /// The head, ears, body and feet, shaded down the right; the two slit eyes in the head.
     private func bodyPart(_ x: Double, _ y: Double) -> Part? {
         guard onBody(x, y) else { return nil }
@@ -169,5 +190,46 @@ private struct HordeBat {
         let foot = 0.18 * s
         if y > cy + 2.2 * s && y < cy + 3.2 * s && (abs(x - (cx - 0.45 * s)) < foot || abs(x - (cx + 0.45 * s)) < foot) { return true }
         return false
+    }
+}
+
+/// The Fright Zone's plate, for the Horde Bat's closed wall: soot-grey plates laid like brick, each lit along its top
+/// and left and seamed dark along its bottom and right, a row of rivets under its top edge and a bolt in some, the
+/// lower rows of each plate a flat shadow band; the wing's darker panels a tone down, a flat cel shadow side; its bony
+/// fingers red girders, like the bands on the smokestacks. `h` is the art's height, which sizes the plates.
+private struct HordePlate {
+    let ph: Int, pw: Int
+    let tone: [Px] = [C(0x1C1C22), C(0x2A2A32), C(0x3A3A44), C(0x4C4C56), C(0x62626C), C(0x7E7E88)]
+
+    init(h: Int) {
+        ph = max(10, h / 9)
+        pw = ph * 2
+    }
+
+    /// The colour at art pixel (`x`, `y`) of a wing `part`; `edge` marks a girder's rim.
+    func colour(_ x: Int, _ y: Int, part: HordeBat.Part, edge: Bool) -> Px {
+        if part == .rib { return edge ? C(0x7A1410) : C(0xC42418) }
+        let base = part == .shade ? 2 : 3
+        let row = y / ph, ly = y % ph
+        let shifted = x + (row % 2 == 0 ? 0 : pw / 2) + pw * 64
+        let col = shifted / pw, lx = shifted % pw
+        // Seams dark along the bottom and right, lit along the top and left.
+        if ly == ph - 1 || lx == pw - 1 { return tone[base - 2] }
+        if ly == 0 || lx == 0 { return tone[base + 1] }
+        // A row of rivets just under the top edge: a lit head, its shadow under it.
+        let rivet = lx >= 3 && lx <= pw - 4 && (lx - 3) % 5 == 0
+        if rivet && ly == 2 { return tone[base + 2] }
+        if rivet && ly == 3 { return tone[base - 2] }
+        // A bolt in some plates, low and off centre: a lit head and its dark side.
+        if (col * 5 + row * 3) % 7 < 2 {
+            let bx = lx - pw * 2 / 3, by = ly - ph / 2
+            if bx >= 0 && bx < 3 && by >= 0 && by < 3 {
+                if bx == 2 || by == 2 { return tone[base - 2] }
+                return bx == 0 && by == 0 ? tone[base + 2] : tone[base + 1]
+            }
+        }
+        // The lower rows of each plate in a flat shadow band, so the courses step like the fortress's.
+        if ly >= ph - 3 { return tone[base - 1] }
+        return tone[base]
     }
 }
