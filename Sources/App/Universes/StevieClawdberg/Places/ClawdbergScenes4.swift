@@ -134,7 +134,8 @@ extension Scenes {
     private static func kfHill(_ c: PixelCanvas, _ g: Int) {
         let s = unit(g), f = kfFrame(c, g)
         c.circle(c.w * 16 / 100, g / 7, 10 * s, C(0xF2F2E4))
-        c.dunes(base: f.hill, amp: Double(18 * s), freq: 0.012, phase: 1.2, bottom: g, C(0xB8C4DC), shade: C(0xEEF2FA))
+        let amp = Double(18 * s), freq = 0.012, phase = 1.2
+        c.dunes(base: f.hill, amp: amp, freq: freq, phase: phase, bottom: g, C(0xB8C4DC), shade: C(0xEEF2FA))
         for i in 0..<14 {   // pines on the hill
             let px = Int(noise(i + 960) * Double(c.w)), py = f.hill + 14 * s + Int(noise(i + 970) * 40) * s
             for k in 0..<(10 * s) { c.rect(px - k / 3, py + k, k * 2 / 3 + s, 1, C(0x1A3A2E)) }
@@ -145,7 +146,15 @@ extension Scenes {
         for k in 0..<10 { c.rect(sx + 11 * s - k / 2 * s / 2 - s, sy - 28 * s + k * s, (k / 2 + 1) * s, s, C(0x5A5650)) }
         c.rect(sx + 9 * s, sy - 12 * s, 4 * s, 5 * s, C(0xF2C870, 0.8))
         // The Peltclawd house.
-        let hx = f.house, hy = f.hill - 6 * s, hw = 44 * s
+        // It stands on the hill: its floor at the lowest point of the snow under it, a little sunk in, so no sky
+        // shows beneath it wherever the hill dips.
+        let hx = f.house, hw = 44 * s
+        let ground = (hx - hw / 2 - 3 * s...hx + hw / 2 + 3 * s).map { x -> Int in
+            let a: Double = sin(Double(x) * freq + phase) * 0.6
+            let b: Double = sin(Double(x) * freq * 2.3 + phase * 1.7) * 0.4
+            return f.hill - Int((a + b) * amp)
+        }
+        let hy = (ground.max() ?? f.hill) + 2 * s
         c.rect(hx - hw / 2, hy - 26 * s, hw, 26 * s, C(0x6A7A8A))
         for k in 0..<12 { c.rect(hx - hw / 2 - 2 * s + k * 2 * s, hy - 26 * s - k * s, hw + 4 * s - k * 4 * s, s, C(0xEEF2FA)) }
         c.rect(hx + 10 * s, hy - 44 * s, 5 * s, 10 * s, C(0x6A3A2A)); c.rect(hx + 10 * s, hy - 45 * s, 5 * s, 2 * s, C(0xEEF2FA))
