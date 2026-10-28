@@ -3,13 +3,13 @@ import Foundation
 // Clawds of the Universe's rides (`Ride`), drawn nose to the right on the ships' `Ride.width`×`Ride.height` canvas
 // with the ride kit (Rides.swift). Eternia's heroes get the green-and-orange Wind Raider, swooping in on its swept
 // wings with the tail fin up; She-Clawd and the Great Rebellion get Swift Wind, the white winged unicorn with the
-// rainbow mane, his wings beating as he comes in; Skeleclawd's Evil Warriors (Jitsu and the film's mercenaries too)
+// pink mane, his wings beating as he comes in; Skeleclawd's Evil Warriors (Jitsu and the film's mercenaries too)
 // get the Roton, rolling in along the ground with its ring of blades spinning; the Horde gets a bat-winged skiff, and
 // Hordakk his own grey rocket with the red bat on its side. Who rides what is `eterniaRide(_:)` below.
 
 extension Ride {
     /// The Wind Raider: lands on its skids, `ramp` lets a little ladder down from the open cockpit.
-    static let eterniaWindRaider = Ride(key: "eterniaWindRaider", boardingOffset: 8) { c, ramp, engines, gear, t in
+    static let eterniaWindRaider = Ride(key: "eterniaWindRaider", boardingOffset: 6) { c, ramp, engines, gear, t in
         eterniaDrawWindRaider(c, ramp: ramp, engines: engines, gear: gear, t: t)
     }
 
@@ -30,12 +30,12 @@ extension Ride {
     }
 
     /// The Horde skiff: a grey hull under a raised bat wing, the Horde's bat on its side, a ramp and landing legs.
-    static let eterniaHordeSkiff = Ride(key: "eterniaHordeSkiff", boardingOffset: 12) { c, ramp, engines, gear, t in
+    static let eterniaHordeSkiff = Ride(key: "eterniaHordeSkiff", boardingOffset: 11) { c, ramp, engines, gear, t in
         eterniaDrawHordeSkiff(c, ramp: ramp, engines: engines, gear: gear, t: t)
     }
 
     /// Hordakk's rocket: grey, a red nose and red bat-wing fins, the bat on its side; a ramp and three landing legs.
-    static let eterniaHordeRocket = Ride(key: "eterniaHordeRocket", boardingOffset: 12) { c, ramp, engines, gear, t in
+    static let eterniaHordeRocket = Ride(key: "eterniaHordeRocket", boardingOffset: 10) { c, ramp, engines, gear, t in
         eterniaDrawHordeRocket(c, ramp: ramp, engines: engines, gear: gear, t: t)
     }
 }
@@ -137,13 +137,28 @@ private func eterniaHordeBat(_ c: PixelCanvas, _ x: Int, _ y: Int) {
     ], ["R": C(0xE0282A), "d": C(0x7A1012)])
 }
 
-/// A jet's flame out of the back of a nozzle whose left edge is at (`x`, `y`): `len` px back to the left (one more
-/// on every other flicker of `t`) and `r` rows either side, a hot core inside a coloured flame and a soft glow.
-private func eterniaFlame(_ c: PixelCanvas, x: Int, y: Int, len: Double, r: Double, t: Double, core: Px, glow: Px) {
-    let l: Double = len + (sin(t * 37) > 0 ? 1 : 0)
-    let x0 = Double(x), y0 = Double(y) + 0.5
-    c.glowLine(x0, y0, x0 - l, y0, core: glow, glow: glow.alpha(0.6), coreR: r, glowR: r + 0.8)
-    c.glowLine(x0, y0, x0 - l * 0.5, y0, core: core, glow: C(0, 0), coreR: max(0.5, r - 0.6), glowR: r)
+/// A jet's flame out of the back of a nozzle whose left edge is at (`x`, `y`), `y` its middle row: solid pixels in three
+/// flat colours, a pale `core` at the nozzle, then `mid`, then the `outer` tongue, `len` px back to the left along the
+/// middle row and `half` rows either side, each row a little shorter. The rows' lengths flicker on the clock `t`, and
+/// now and then a loose lick flies off the tip.
+private func eterniaFlame(_ c: PixelCanvas, x: Int, y: Int, len: Int, half: Int, t: Double, core: Px, mid: Px,
+                          outer: Px) {
+    let f = Int(t * 14)
+    let jitter = [0, 2, 1, 3, 0, 1, 2, 1]
+    for dy in -half...half {
+        let edge = abs(dy)
+        let j = jitter[(f + edge * 3 + (dy < 0 ? 5 : 0)) % jitter.count]
+        let l = max(2, len - edge * 2 - j)
+        let coreEnd: Int = edge == half ? 0 : l * 2 / 5
+        let midEnd: Int = edge == half ? l / 3 : l * 3 / 4
+        for i in 0..<l {
+            c.px(x - 1 - i, y + dy, i < coreEnd ? core : i < midEnd ? mid : outer)
+        }
+    }
+    let j0 = jitter[f % jitter.count]
+    if j0 >= 2 {   // a lick torn off the middle row's tip while it's drawn in short
+        c.px(x - (len - j0) - 2, y, outer)
+    }
 }
 
 // MARK: - The Wind Raider
@@ -156,29 +171,29 @@ private func eterniaDrawWindRaider(_ c: PixelCanvas, ramp: Double, engines: Bool
     let green = C(0x3E9A3A), greenL = C(0x7CD060), greenD = C(0x245E22)
     let orange = C(0xF08A28), orangeL = C(0xFFC060), orangeD = C(0xA85A18)
     let steel = C(0x9AA0AA), steelD = C(0x5A606A), glass = C(0xBFE8F0, 0.75)
-    // Drawn two columns right, so the jet's flame stays clear of the canvas's left edge.
-    c.ox += 2
-    defer { c.ox -= 2 }
+    // Drawn four columns right, so the jet's flame has room before the canvas's left edge.
+    c.ox += 4
+    defer { c.ox -= 4 }
     if engines {
-        eterniaFlame(c, x: 3, y: 16, len: 1.5, r: 1, t: t, core: C(0xFFF4C0), glow: C(0xFF9030))
+        eterniaFlame(c, x: 6, y: 16, len: 10, half: 1, t: t, core: C(0xFFF4B0), mid: C(0xFFB830), outer: C(0xE8501C))
     }
     // The skids: two struts down to a long runner, curled up at the front.
     if gear {
         for x in [20, 44] { c.rect(x, 20, 2, 7, steelD); c.px(x, 20, steel) }
-        c.rect(14, 27, 37, 1, steel); c.rect(14, 28, 37, 1, steelD)
-        c.px(51, 26, steel); c.px(51, 27, steel); c.px(52, 25, steel)
+        c.rect(14, 27, 34, 1, steel); c.rect(14, 28, 34, 1, steelD)
+        c.px(48, 26, steel); c.px(48, 27, steel); c.px(49, 25, steel)
     }
     // The tail fin, tall and swept back, lit along its leading edge.
-    eterniaFill(c, [(5, 15), (5, 4), (8, 3), (17, 14)], orange)
-    for y in 4...13 { c.px(8 + (y - 3) * 9 / 11, y, orangeL) }
-    c.rect(5, 4, 1, 11, orangeD)
+    eterniaFill(c, [(8, 15), (8, 4), (11, 3), (20, 14)], orange)
+    for y in 4...13 { c.px(11 + (y - 3) * 9 / 11, y, orangeL) }
+    c.rect(8, 4, 1, 11, orangeD)
     // The nozzle at the back.
-    c.rect(3, 15, 3, 3, steelD); c.px(4, 15, steel)
+    c.rect(6, 15, 3, 3, steelD); c.px(7, 15, steel)
     // The hull.
-    rideHull(c, x0: 5, x1: 60, top: [(5, 14), (18, 13), (34, 13), (48, 14), (56, 16), (60, 17)],
-             bottom: [(5, 19), (16, 20), (46, 20), (54, 19), (60, 17)], body: green, light: greenL, dark: greenD)
+    rideHull(c, x0: 8, x1: 60, top: [(8, 14), (18, 13), (34, 13), (48, 14), (56, 16), (60, 17)],
+             bottom: [(8, 19), (16, 20), (46, 20), (54, 19), (60, 17)], body: green, light: greenL, dark: greenD)
     // The orange stripe down its length, and the orange nose.
-    c.rect(6, 17, 50, 1, orange)
+    c.rect(9, 17, 47, 1, orange)
     eterniaFill(c, [(53, 15.4), (61, 17), (53, 19.6)], orange)
     c.px(54, 15, orangeL); c.px(56, 16, orangeL); c.px(58, 16, orangeL)
     // The open cockpit: a dark well, the seat back, a little dash and the windscreen raked back.
@@ -192,8 +207,20 @@ private func eterniaDrawWindRaider(_ c: PixelCanvas, ramp: Double, engines: Bool
     for x in 19...43 { let y = 23 - (x - 19) * 4 / 25; if x > 31 || y >= 22 { c.px(x, y + 0, orangeL) } }
     c.rect(18, 23, 14, 1, orangeD)
     c.rect(24, 21, 10, 1, orangeD.alpha(0.6))
-    // The anchor on its line under the nose.
-    c.pattern(53, 19, ["..S..", ".S.S.", "..S..", "SSSSS", "..S..", "..S..", "S.S.S", ".DSD."], ["S": steel, "D": steelD])
+    // The anchor on its line under the nose: the ring, the shank, and the arms curving wide and up either side to their
+    // pointed flukes, open between them so the app's outline doesn't fill it in.
+    c.pattern(51, 19, [
+        ".....r.....",
+        ".....r.....",
+        "....SSS....",
+        "....S.S....",
+        "....SSS....",
+        "L....S....L",
+        "SS...S...SS",
+        ".SD..S..DS.",
+        "..SD.S.DS..",
+        "...SSSSS...",
+    ], ["S": steel, "D": steelD, "L": C(0xD8DCE4), "r": C(0x4A2E14)])
     // The ladder, let down from the cockpit's side.
     if ramp > 0 {
         let len = Int((6 * ramp).rounded())
@@ -229,11 +256,14 @@ private func eterniaHorseWing(_ c: PixelCanvas, hx: Double, hy: Double, angle: D
     } }
 }
 
-/// The rainbow, for the mane and tail: pink first, as in his own art, through to violet.
-private let eterniaRainbow: [Px] = [C(0xF070B8), C(0xFF8A3A), C(0xFFE040), C(0x6CD860), C(0x50A8F0), C(0xA070E0)]
+/// His pink mane and tail, the same three pinks as his own art: the mane, its shade and its light.
+private let eterniaManePink = C(0xF070B8), eterniaManePinkD = C(0xC04890), eterniaManePinkL = C(0xFFA8D8)
+/// The tail's strands, top to bottom.
+private let eterniaTailStrands: [Px] = [eterniaManePinkL, eterniaManePink, eterniaManePinkD, eterniaManePink,
+                                        eterniaManePink, eterniaManePinkD]
 
-/// Swift Wind, side on and facing right: a white horse with a spiralled gold horn, a rainbow mane flowing back down his
-/// neck and a long rainbow tail. Flying (`flying`), his legs tuck up and his great white wings beat on the clock `t`,
+/// Swift Wind, side on and facing right: a white horse with a spiralled gold horn, a pink mane flowing back down his
+/// neck and a long pink tail. Flying (`flying`), his legs tuck up and his great white wings beat on the clock `t`,
 /// up over his back and down below his belly, his body bobbing against each beat. Landed he stands on four hooves with
 /// his wings folded along his back, and `ramp` swings the near wing down to the ground to climb on; `gear` puts his
 /// hooves down as he settles.
@@ -249,8 +279,8 @@ private func eterniaDrawSwiftWind(_ c: PixelCanvas, ramp: Double, flying: Bool, 
     if flying {
         eterniaHorseWing(c, hx: 34, hy: 11, angle: up ? -1.95 : 2.2, len: 16, width: 5.5, side: up ? -1 : 1, far: true)
     }
-    // The tail: rainbow strands flowing back and down, waving.
-    for (i, col) in eterniaRainbow.enumerated() {
+    // The tail: pink strands flowing back and down, waving.
+    for (i, col) in eterniaTailStrands.enumerated() {
         let row: Double = 13 + Double(i) * 0.8
         let sway: Double = sin(t * 4 + Double(i) * 0.7) * (flying ? 1.2 : 0.6)
         let endY: Double = flying ? row + 3 + sway : row + 8 + sway
@@ -294,15 +324,17 @@ private func eterniaDrawSwiftWind(_ c: PixelCanvas, ramp: Double, flying: Bool, 
     // The horn, spiralled gold, up and forward from his brow.
     c.pattern(47, -4, ["......L", ".....GL", "....gG.", "...Gg..", "..gG...", ".Gg....", "gG....."],
               ["G": horn, "g": hornD, "L": hornL])
-    // The mane: rainbow strands down the top of his neck, flowing back.
+    // The mane: pink strands down the top of his neck, flowing back, each tip in the shade.
     for k in 0..<9 {
         let y = 4 + k
         let x0 = 43 - k * 5 / 8
         let len = 3 + (k % 2) + (flying ? 2 : 0)
         let wave = Int((sin(t * 3 + Double(k) * 0.8) * 0.8).rounded())
-        c.rect(x0 - len, y + wave, len + 1, 1, eterniaRainbow[k % eterniaRainbow.count])
+        c.rect(x0 - len, y + wave, len + 1, 1, k % 2 == 0 ? eterniaManePink : eterniaManePinkD)
+        c.px(x0 - len, y + wave, eterniaManePinkD)
     }
-    c.rect(43, 2, 2, 2, eterniaRainbow[0])   // the forelock
+    c.rect(43, 2, 2, 2, eterniaManePink); c.px(43, 2, eterniaManePinkL)   // the forelock
+    c.px(41, 5, eterniaManePinkL); c.px(40, 7, eterniaManePinkL)
     if flying {
         eterniaHorseWing(c, hx: 32, hy: 11, angle: up ? -2.2 : 2.5, len: up ? 19 : 20, width: 7, side: up ? -1 : 1,
                          far: false)
@@ -368,19 +400,31 @@ private func eterniaDrawRoton(_ c: PixelCanvas, ramp: Double, moving: Bool, t: D
     if moving {   // the blur of the blades going round
         c.rect(4, 13, 58, 2, C(0xD8DCE6, 0.25)); c.rect(4, 17, 58, 2, C(0x7A7E8C, 0.3))
     }
-    // The ram skull on its nose: horns curled back round the ears, black sockets with red eyes, the snout and teeth.
+    // The ram skull on its nose: black sockets with red eyes, the snout and teeth.
     c.pattern(47, 4, [
-        ".hhhh.......",
-        "h....hBBBB..",
-        "h.hh.BBBBBBB",
-        "h..hBBBBBBBB",
-        ".hhBKKBBBKKB",
+        "............",
+        "......BBBB..",
+        ".....BBBBBBB",
+        "....BBBBBBBB",
+        "...BKKBBBKKB",
         "...BKEBBBEKB",
         "...BBBBBBBBB",
         "....BBbBbBB.",
         "....TbTTbT..",
-    ], ["h": boneD, "B": bone, "b": boneD, "K": C(0x2A1020), "E": red, "T": C(0xF4EED0)])
+    ], ["B": bone, "b": boneD, "K": C(0x2A1020), "E": red, "T": C(0xF4EED0)])
     c.rect(53, 5, 4, 1, C(0xFFF6D8))
+    // The ram's horns: a thick ridged curl from the top of the skull, back, round and down, its tip curling in.
+    c.pattern(43, 1, [
+        "...OOOO...",
+        "..OHHHHO..",
+        ".OHrHHrHO.",
+        "OHrOOOOHHO",
+        "OHO....OHH",
+        "OrO.OO..OH",
+        "OHHOHO....",
+        ".OHrHO....",
+        "..OOO.....",
+    ], ["O": C(0x4A3818), "H": C(0xE0C27A), "r": C(0xA8884A)])
     // The hatch at the boarding point: closed, a riveted panel; open, it drops down to a step, showing the violet hold.
     if ramp > 0 {
         c.rect(15, 18, 7, 4, C(0x1A0C2A))
@@ -401,12 +445,12 @@ private func eterniaDrawRoton(_ c: PixelCanvas, ramp: Double, moving: Bool, t: D
 /// `ramp` and `gear` are the kit's ramp and landing legs.
 private func eterniaDrawHordeSkiff(_ c: PixelCanvas, ramp: Double, engines: Bool, gear: Bool, t: Double) {
     let grey = C(0x6A6A78), greyL = C(0x9A9AAA), greyD = C(0x3A3A46), black = C(0x1E1A24)
-    // Drawn two columns right, so the thrusters' glow stays clear of the canvas's left edge.
-    c.ox += 2
-    defer { c.ox -= 2 }
+    // Drawn three columns right, so the thrusters' flame has room before the canvas's left edge.
+    c.ox += 3
+    defer { c.ox -= 3 }
     let membrane = C(0x521C2C), membraneL = C(0x8A3044), bone = C(0xB0A8BC), red = C(0xD02828)
     if engines {
-        eterniaFlame(c, x: 3, y: 16, len: 1.5, r: 1, t: t, core: C(0xFFD0A0), glow: C(0xE02A20))
+        eterniaFlame(c, x: 6, y: 16, len: 9, half: 1, t: t, core: C(0xFFE08A), mid: C(0xFF7A28), outer: C(0xD02020))
     }
     if gear { rideGear(c, xs: [14, 48], from: 20, strut: greyD, foot: grey) }
     // The bat wing, raised over the deck: the arm up from the root to the wrist, the top edge sweeping back to the
@@ -433,11 +477,11 @@ private func eterniaDrawHordeSkiff(_ c: PixelCanvas, ramp: Double, engines: Bool
     c.glowLine(root.0, root.1, wrist.0, wrist.1, core: bone, glow: C(0, 0), coreR: 0.8, glowR: 0.9)
     c.pattern(Int(wrist.0), Int(wrist.1) - 1, ["k.", ".k"], ["k": C(0xE0D8EC)])   // the claw on the wrist
     // The nozzle at the stern.
-    c.rect(3, 15, 3, 3, greyD); c.px(4, 15, greyL)
+    c.rect(6, 15, 3, 3, greyD); c.px(7, 15, greyL)
     // The hull.
-    rideHull(c, x0: 5, x1: 59, top: [(5, 13), (48, 13), (54, 14), (59, 16)],
-             bottom: [(5, 18), (12, 20), (48, 20), (59, 16)], body: grey, light: greyL, dark: greyD)
-    c.rect(6, 18, 44, 1, black.alpha(0.6))
+    rideHull(c, x0: 8, x1: 59, top: [(8, 13), (48, 13), (54, 14), (59, 16)],
+             bottom: [(8, 18), (14, 20), (48, 20), (59, 16)], body: grey, light: greyL, dark: greyD)
+    c.rect(9, 18, 41, 1, black.alpha(0.6))
     for x in stride(from: 9, through: 49, by: 8) { c.px(x, 15, greyD); c.px(x, 18, greyL) }   // the rivets
     // The red spur at the prow.
     eterniaFill(c, [(54, 14.5), (62, 16), (54, 18)], red); c.px(55, 15, C(0xFF5A4A))
@@ -458,11 +502,11 @@ private func eterniaDrawHordeSkiff(_ c: PixelCanvas, ramp: Double, engines: Bool
 private func eterniaDrawHordeRocket(_ c: PixelCanvas, ramp: Double, engines: Bool, gear: Bool, t: Double) {
     let grey = C(0x8A8A96), greyL = C(0xC0C0CC), greyD = C(0x50505C), red = C(0xC82828), redL = C(0xF05A48)
     let redD = C(0x7A1414)
-    // Drawn two columns right, so the flame stays clear of the canvas's left edge.
-    c.ox += 2
-    defer { c.ox -= 2 }
+    // Drawn four columns right, so the flame has room before the canvas's left edge.
+    c.ox += 4
+    defer { c.ox -= 4 }
     if engines {
-        eterniaFlame(c, x: 6, y: 15, len: 3, r: 2, t: t, core: C(0xFFF0C0), glow: C(0xFF5A28))
+        eterniaFlame(c, x: 6, y: 15, len: 10, half: 2, t: t, core: C(0xFFF4B0), mid: C(0xFFA028), outer: C(0xE0381E))
     }
     if gear { rideGear(c, xs: [16, 32, 48], from: 21, strut: greyD, foot: grey) }
     // The fins: swept back and red, scalloped like a bat's wing along their trailing edge.
