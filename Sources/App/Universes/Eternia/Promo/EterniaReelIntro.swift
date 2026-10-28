@@ -1,7 +1,7 @@
 import AppKit
 
 // The trailer's title sequence, By the Power of Greyskull, and the carved-stone title it ends on. Dusk at Castle
-// Greyskull, mist drifting in the chasm; Prince Addam rides in on a trembling Cringer and stops at the edge, draws the
+// Greyskull, mist drifting in the chasm; Prince Addam walks up to the edge with Cringer trembling at his heels, draws the
 // sword and raises it: "By the power of Greyskull!" Then the app's own Greyskull trip, in close-up: the fist and the
 // sword against the sunset, lightning down into the tip, bolts crackling to every edge and the white-out. Out of it
 // He-Clawd stands where Addam was, sword high, Battle Kat roaring beside him: "I HAVE THE POWER!" CLAWDS OF THE
@@ -141,7 +141,7 @@ func eterniaReelBolt(_ c: PixelCanvas, _ pts: [(Double, Double)], core: Int) {
 
 // MARK: The title sequence
 
-/// Its beats (shot-local seconds): Addam rides in to `addamStops`, raises the sword at `swordUp`; the cut to the
+/// Its beats (shot-local seconds): Addam walks up to `addamStops`, raises the sword at `swordUp`; the cut to the
 /// close-up at `closeUp`, the Greyskull trip played from `tripFrom` to its end at `heStands`; the title rises at
 /// `titleRise` and the camera plunges from `plunge`.
 private let addamStops = 2.4, swordUp = 2.8, closeUp = 4.2, heStands = 6.7, titleRise = 7.7, plunge = 8.8
@@ -152,7 +152,7 @@ private let heroX = 104.0, katX = 66.0
 private let introFloor = 30
 
 /// The time into the intro at which the thunder lands (the trip's strike), for the sound.
-let eterniaThunderAt = closeUp + (0.46 - tripFrom) / (1 - tripFrom) * (heStands - closeUp)
+let eterniaThunderAt = closeUp + (0.49 - tripFrom) / (1 - tripFrom) * (heStands - closeUp)
 /// When the sword goes up, He-Clawd stands, the title rises (its glint) and the plunge starts: for the sound.
 let eterniaSwordUpAt = swordUp, eterniaHeStandsAt = heStands, eterniaTitleShingAt = titleRise + 0.7, eterniaPlungeAt = plunge
 
@@ -184,59 +184,97 @@ private func mouth() -> (x: Double, y: Double) {
     return (Double(f.mouth.x) + Double(f.mouth.w) / 2, Double(f.mouth.y) + 6)
 }
 
-/// The Power Sword held straight up, its fist at (`x`, `hand`) on the fx canvas: a dark outline, a silver blade
-/// `blade` rows long lit down its left, a two-tone crossguard, the grip in a bronze fist; `glint` 0…1 runs a twinkle
-/// up the blade.
-private func raisedSword(_ c: PixelCanvas, x: Int, hand: Int, arm: Int, blade: Int, glint: Double) {
-    let ink = C(0x1E1828), steel = C(0xD4D8E2), lit = C(0xF8FAFF), shade = C(0x7E8290), guardL = C(0xE2E4EC)
-    let tip = hand - 4 - blade
-    c.rect(x - 2, tip - 1, 4, blade + 2, ink)
-    c.rect(x - 1, tip, 2, blade, steel); c.rect(x - 1, tip, 1, blade, lit); c.rect(x, tip + 1, 1, blade - 1, shade)
-    c.rect(x - 1, tip - 1, 2, 1, ink); c.px(x - 1, tip, lit)
-    c.rect(x - 4, hand - 4, 8, 3, ink); c.rect(x - 3, hand - 3, 6, 1, guardL)
-    c.rect(x - 2, hand - 1, 4, arm + 2, ink); c.rect(x - 1, hand, 2, arm, C(0xF0B48C))   // the fist and the arm up to it
-    c.rect(x - 1, hand + arm - 3, 2, 3, C(0xB8A8E0))
-    if glint > 0 && glint < 1 {
-        let gy = hand - 5 - Int(glint * Double(blade - 2))
-        for i in -2...2 { c.px(x + i, gy, C(0xFFFFFF)); c.px(x, gy + i, C(0xFFFFFF)) }
-        c.px(x - 3, gy, C(0xFFE07A)); c.px(x + 3, gy, C(0xFFE07A)); c.px(x, gy - 3, C(0xFFE07A)); c.px(x, gy + 3, C(0xFFE07A))
-    }
+/// The intro's wide shots are framed tight on the near ledge, the pixel art blown up `frameZ` more (9 screen pixels
+/// a pixel), from fx column `frameX0` and row `frameY0`: the heroes big in the foreground, the skull's eyes, mouth and
+/// jawbridge still behind them.
+private let frameZ = 1.5, frameX0 = 40.0, frameY0 = 46.0
+
+/// Moves `ctx` onto the tight framing: what's drawn at frame size after this lands blown up on the ledge.
+private func framing(_ ctx: CGContext) {
+    let rows = Double(H) / 6 / frameZ
+    ctx.scaleBy(x: frameZ, y: frameZ)
+    ctx.translateBy(x: -frameX0 * 6, y: -(Double(H) - (frameY0 + rows) * 6))
 }
 
-/// The first part, wide: Addam rides in on Cringer, stops at the edge and raises the sword, the camera easing in.
-private func ridesIn(_ ctx: CGContext, l: Double, t: Double) {
-    let push = 1 + 0.07 * easeOut(l / closeUp)
-    let focus = CGPoint(x: heroX * 6, y: Double(H) - 120 * 6)
-    ctx.saveGState()
-    ctx.translateBy(x: focus.x, y: focus.y); ctx.scaleBy(x: push, y: push); ctx.translateBy(x: -focus.x, y: -focus.y)
-    dusk(ctx, t: t)
-    let ride = easeOut(l / addamStops)
-    let stopped = l > addamStops - 0.1
-    // Cringer, trembling once he's stopped and the sword is out.
-    let shiver: Double = stopped && Int(t * 24) % 2 == 0 ? 0.5 : 0
-    var cringer = Actor(cast: .hero(EterniaHero.cringer), x: lerp(-50, heroX, ride) + shiver, facing: 1, mode: .idle)
-    cringer.walking = !stopped
-    // Addam riding on his back, then up with the sword.
-    var addam = Actor(cast: .hero(EterniaHero.princeAddam), x: lerp(-50, heroX, ride) + 1 + shiver, facing: 1, mode: .idle)
-    addam.sitting = false
-    addam.lift = 15 + (cringer.walking ? abs(sin(t * 9)) * 1.5 : 0)
-    if l > swordUp { addam.role = .ready(urgent: false) }
-    draw(cringer, ctx, t: t)
-    draw(addam, ctx, t: t)
-    // The sword: drawn from behind him and raised in his fist, the blade catching the light at the top.
-    if l > swordUp {
-        let up = easeOut((l - swordUp) / 0.3)
-        let c = PixelCanvas(fxW, fxH)
-        let hx = Int(addam.x.rounded()) + 11, hy = Int((groundY - addam.lift - 13 - 6 * up).rounded())
-        raisedSword(c, x: hx, hand: hy, arm: Int((6 * up).rounded()) + 4, blade: 16, glint: (l - swordUp - 0.3) / 0.4)
-        blit(c, ctx)
+/// Where a frame-size point (screen pixels, y up) lands in the tight framing: for balloon tails.
+private func framed(_ p: CGPoint) -> CGPoint {
+    let rows = Double(H) / 6 / frameZ
+    return CGPoint(x: frameZ * (p.x - frameX0 * 6), y: frameZ * (p.y - (Double(H) - (frameY0 + rows) * 6)))
+}
+
+/// Prince Addam with the Power Sword raised, `raise` rows short of the top of the move: his own sprite, with the
+/// sword and the fist round it borrowed from He-Clawd's sprite holding it up (the same sword, the same hold), the
+/// fist in Addam's lighter skin. Drawn like the kit's `draw`, outlined in Claude's colour.
+private func addamWithSword(_ ctx: CGContext, _ a: Actor, raise: Int, t: Double) {
+    let c = PixelCanvas(Sprite.width, Sprite.height)
+    a.cast.draw(c, t: t, mode: .idle, walking: a.walking, role: .none, asSession: true, habits: false)
+    let he = PixelCanvas(Sprite.width, Sprite.height)
+    Cast.hero(EterniaHero.heClawd).draw(he, t: t, mode: .idle, walking: false, role: .ready(urgent: false), asSession: true, habits: false)
+    let skin = C(0xEAA286), skinD = C(0xC8806A)
+    // Lifted higher than He-Clawd holds it, the arm stretched up under the fist to reach.
+    let dy = raise - 6
+    var wrist: [Int: (Int, Px)] = [:]
+    for y in 0..<he.h {
+        for x in 40..<he.w where he.isDrawn(x, y) {
+            let p = unpremultiplied(he, (y * he.w + x) * 4)
+            let orange = p.r > 170 && p.g > 80 && p.g < 150 && p.b < 120
+            let dark = p.r > 120 && p.r <= 170 && p.g < 100 && p.b < 90
+            let col = orange ? skin : dark ? skinD : p
+            c.px(x, y + dy, col)
+            if orange || dark { wrist[x] = (y + dy, col) }
+        }
     }
-    let head = headPoint(addam)
+    let cols = wrist.keys.sorted()
+    let mid = cols.count / 2
+    for x in cols where cols.count < 3 || (x >= cols[mid - 1] && x <= cols[mid]) {
+        if let w = wrist[x] { c.rect(x, w.0 + 1, 1, -dy, w.1) }
+    }
+    c.addOutline(C(a.ai.hex, 0.92))
+    guard let img = c.makeImage() else { return }
+    let x0 = (a.x - Sprite.bodyCenterX) * S
+    ctx.saveGState(); ctx.interpolationQuality = .none
+    ctx.draw(img, in: CGRect(x: x0, y: stageH - a.top * S - Double(Sprite.height) * S,
+                             width: Double(Sprite.width) * S, height: Double(Sprite.height) * S))
+    ctx.restoreGState()
+}
+
+/// The first part, framed tight on the ledge: Addam walks up with Cringer trembling at his heels, they stop at the
+/// chasm's edge, Cringer cowers behind him, and Addam raises the sword.
+private func ridesIn(_ ctx: CGContext, l: Double, t: Double) {
+    ctx.saveGState()
+    framing(ctx)
+    dusk(ctx, t: t)
+    let walk = easeOut(l / addamStops)
+    let stopped = l > addamStops - 0.15
+    var addam = Actor(cast: .hero(EterniaHero.princeAddam), x: lerp(10, heroX, walk), facing: 1, mode: .idle)
+    addam.walking = !stopped
+    // Cringer a step behind, shaking all the way, and cowering low once they stop.
+    let shake: Double = Int(t * 20) % 2 == 0 ? 0.5 : -0.5
+    var cringer = Actor(cast: .hero(EterniaHero.cringer), x: lerp(-20, katX, easeOut((l - 0.15) / addamStops)) + shake, facing: 1, mode: .idle)
+    cringer.walking = !stopped
+    cringer.sitting = l > addamStops + 0.1
+    draw(cringer, ctx, t: t)
+    if l > swordUp {
+        let raise = Int((4 * (1 - easeOut((l - swordUp) / 0.25))).rounded())
+        addamWithSword(ctx, addam, raise: raise, t: t)
+        // The glint running up the blade.
+        let g = (l - swordUp - 0.3) / 0.4
+        if g > 0 && g < 1 {
+            let fx = PixelCanvas(fxW, fxH)
+            let gx = Int(addam.x.rounded()) + 14, gy = Int(addam.top.rounded()) + 20 - Int(g * 14)
+            for i in -2...2 { fx.px(gx + i, gy, C(0xFFFFFF)); fx.px(gx, gy + i, C(0xFFFFFF)) }
+            for (dx, dy) in [(-3, 0), (3, 0), (0, -3), (0, 3)] { fx.px(gx + dx, gy + dy, C(0xFFE07A)) }
+            blit(fx, ctx)
+        }
+    } else {
+        draw(addam, ctx, t: t)
+    }
+    let head = framed(headPoint(addam))
     ctx.restoreGState()
     // "By the power of Greyskull!"
     if l > swordUp + 0.15 {
         let a = clamp((l - swordUp - 0.15) / 0.15)
-        balloon("By the power of Greyskull!", ctx, center: CGPoint(x: 1000, y: 900), tail: head, size: 54, width: 900, alpha: a)
+        balloon("By the power of Greyskull!", ctx, center: CGPoint(x: 1180, y: 930), tail: head, size: 58, width: 1000, alpha: a)
     }
 }
 
@@ -248,6 +286,7 @@ private func heStandsShot(_ ctx: CGContext, l: Double, t: Double, plain: Bool = 
     let zoom = 1 + 9 * dive
     let target = CGPoint(x: m.x * 6, y: Double(H) - m.y * 6)
     ctx.saveGState()
+    framing(ctx)
     ctx.translateBy(x: target.x, y: target.y); ctx.scaleBy(x: zoom, y: zoom); ctx.translateBy(x: -target.x, y: -target.y)
     dusk(ctx, t: t)
     let since = l - heStands
@@ -271,7 +310,12 @@ private func heStandsShot(_ ctx: CGContext, l: Double, t: Double, plain: Bool = 
         }
         blit(c, ctx)
     }
-    // The title, rising over the castle out of the dusk, the scene dimming under it in steps.
+    let heHead = framed(headPoint(he))
+    ctx.restoreGState()
+    // The title, rising over the castle out of the dusk, the scene dimming under it in steps; it dives with the camera.
+    let onScreen = framed(target)
+    ctx.saveGState()
+    ctx.translateBy(x: onScreen.x, y: onScreen.y); ctx.scaleBy(x: zoom, y: zoom); ctx.translateBy(x: -onScreen.x, y: -onScreen.y)
     let dim = (clamp((l - titleRise) / 0.4) * 4).rounded() / 4 * 0.4
     if dim > 0 && !plain { ctx.setFillColor(hexColor(0x140A24, dim)); ctx.fill(fullRect) }
     if l > titleRise && !plain {
@@ -284,7 +328,7 @@ private func heStandsShot(_ ctx: CGContext, l: Double, t: Double, plain: Bool = 
     // "I HAVE THE POWER!"
     if since > 0.15 && since < 1.1 && !plain {
         let a = clamp((since - 0.15) / 0.12) * (1 - clamp((since - 0.9) / 0.2))
-        balloon("I HAVE THE POWER!", ctx, center: CGPoint(x: 1000, y: 880), tail: headPoint(he), size: 64, width: 1000, alpha: a)
+        balloon("I HAVE THE POWER!", ctx, center: CGPoint(x: 1180, y: 900), tail: heHead, size: 64, width: 1000, alpha: a)
     }
     // And through the jawbridge into white.
     let white = clamp((l - plunge - 0.4) / 0.25)

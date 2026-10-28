@@ -104,9 +104,9 @@ private func raid(_ m: Mix, at t0: Double, bars: Int) {
         let s = t0 + Double(b) * bar, r = roots[b % roots.count]
         for k in 0..<8 {
             let n = k % 4 == 3 ? r + 6 : r
-            m.tone(s + Double(k) * beat / 2, beat * 0.4, midi(n), wave: .saw, vol: 0.1, release: 0.04, decay: 0.12)
+            m.tone(s + Double(k) * beat / 2, beat * 0.4, midi(n), wave: .saw, vol: 0.14, release: 0.04, decay: 0.12)
         }
-        m.eterniaChord(s, bar * 0.9, [r + 12, r + 15, r + 19], vol: 0.026, attack: 0.3, release: 0.4)
+        m.eterniaChord(s, bar * 0.9, [r + 12, r + 15, r + 19], vol: 0.036, attack: 0.3, release: 0.4)
     }
 }
 
@@ -116,8 +116,12 @@ private func raid(_ m: Mix, at t0: Double, bars: Int) {
 func eterniaSound(_ m: Mix) {
     // The title sequence: wind in the chasm, Cringer's paws, the sword drawn, a swell into the lightning.
     let i0 = start("intro")
-    m.noise(i0, eterniaThunderAt + 0.2, vol: 0.05, cutoff: 0.02, cutoffTo: 0.05, attack: 1.2, release: 0.5, seed: 3)
-    m.eterniaChord(i0 + 0.3, eterniaSwordUpAt, [48, 55], vol: 0.03, attack: 1.8, release: 0.6)
+    m.noise(i0, eterniaThunderAt + 0.2, vol: 0.09, cutoff: 0.02, cutoffTo: 0.05, attack: 1.2, release: 0.5, seed: 3)
+    m.eterniaChord(i0 + 0.3, eterniaSwordUpAt, [48, 55], vol: 0.05, attack: 1.8, release: 0.6)
+    for k in 0..<6 {                                                // the march's drum, creeping in
+        let at = i0 + 0.3 + Double(k) * 0.45
+        m.kick(at, vol: 0.08 + 0.02 * Double(k)); m.snare(at + 0.225, vol: 0.02 + 0.006 * Double(k))
+    }
     for k in 0..<12 { m.step(i0 + 0.15 + Double(k) * 0.2, vol: 0.06) }
     m.tone(i0 + 2.45, 0.25, 900, to: 700, wave: .triangle, vol: 0.04, attack: 0.02, release: 0.1, vibrato: 0.08)   // Cringer's whimper
     m.tone(i0 + 2.75, 0.3, 820, to: 600, wave: .triangle, vol: 0.035, attack: 0.02, release: 0.1, vibrato: 0.08)
@@ -143,14 +147,14 @@ func eterniaSound(_ m: Mix) {
     marchDrums(m, from: he, bars: 1, vol: 0.8)
     m.eterniaShing(i0 + eterniaTitleShingAt, vol: 0.1)
     m.whoosh(i0 + eterniaPlungeAt + 0.4, 1.0, vol: 0.16)
-    m.tone(i0 + eterniaPlungeAt, 0.8, 200, to: 2400, wave: .saw, vol: 0.04, attack: 0.3, release: 0.1)
+    m.tone(i0 + eterniaPlungeAt, 0.8, 200, to: 2400, wave: .saw, vol: 0.07, attack: 0.3, release: 0.1)
 
     // The set piece: the raid in C minor, the Roton's rumble and Skeleclawd's cackle.
     let s0 = start("siege")
     raid(m, at: s0, bars: 3)
     m.noise(s0, eterniaSiegePullUp, vol: 0.06, cutoff: 0.02, attack: 0.2, release: 0.2, seed: 21)
     m.tone(s0, eterniaSiegePullUp, 48, to: 52, wave: .saw, vol: 0.05, attack: 0.2, release: 0.2, vibrato: 0.04)
-    m.eterniaCackle(s0 + 0.6, vol: 0.08)
+    m.eterniaCackle(s0 + 0.6, vol: 0.1)
     m.whoosh(s0 + eterniaSiegeCut, 0.4, vol: 0.06)
     m.noise(s0 + eterniaSiegePullUp - 0.3, 0.4, vol: 0.06, cutoff: 0.6, cutoffTo: 0.1, release: 0.1, highpass: true, seed: 31)
     m.clunk(s0 + eterniaSiegePullUp, vol: 0.12)
@@ -161,13 +165,17 @@ func eterniaSound(_ m: Mix) {
     m.rain(s0 + eterniaSiegeRain.0, eterniaSiegeRain.1 - eterniaSiegeRain.0, vol: 0.06)
     // The rescue: the march comes back in, a whoosh for the leap, a heave and the big hit as the Roton goes up.
     m.whoosh(s0 + eterniaSiegeLeap + 0.3, 0.7, vol: 0.14)
-    march(m, at: s0 + eterniaSiegeLeap, bars: 2..<5, vol: 0.9)
+    march(m, at: s0 + eterniaSiegeLeap, bars: 2..<5, vol: 0.75)
     marchDrums(m, from: s0 + eterniaSiegeLeap, bars: 3)
-    m.tone(s0 + eterniaSiegeLift, 0.45, 70, to: 140, wave: .saw, vol: 0.06, attack: 0.05, release: 0.1)
-    m.boom(s0 + eterniaSiegeLift + 0.45, vol: 0.35)
+    m.boom(s0 + eterniaSiegeLanded, vol: 0.2)                      // He-Clawd landing
+    let heave = eterniaSiegeHeld - eterniaSiegeLift
+    m.tone(s0 + eterniaSiegeLift, heave, 70, to: 150, wave: .saw, vol: 0.06, attack: 0.05, release: 0.1, vibrato: 0.03)
+    m.noise(s0 + eterniaSiegeLift, 0.5, vol: 0.05, cutoff: 0.08, release: 0.3, seed: 41)   // the dust
+    m.boom(s0 + eterniaSiegeHeld, vol: 0.35)
+    m.whoosh(s0 + eterniaSiegeToss + 0.25, 0.7, vol: 0.12)
     for k in 0..<10 { m.step(s0 + eterniaSiegeScatter + Double(k) * 0.1, vol: 0.06) }
     m.eterniaPoof(s0 + eterniaSiegePuff)
-    m.eterniaCackle(s0 + eterniaSiegePuff + 0.1, vol: 0.04)
+    m.eterniaCackle(s0 + eterniaSiegePuff + 0.1, vol: 0.07)
     for (i, n) in [84, 88, 91].enumerated() {                   // a little chime for the moral
         m.tone(s0 + eterniaSiegeMoral + 0.2 + Double(i) * 0.12, 0.6, midi(n), wave: .sine, vol: 0.05, release: 0.4)
     }

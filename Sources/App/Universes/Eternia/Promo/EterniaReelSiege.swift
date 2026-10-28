@@ -12,7 +12,9 @@ import AppKit
 /// crew hopping off, the staff raised, Orkko's spell and the rain, the leap, the lift, the scatter, the puff, the moral.
 private let toJawbridge = 2.0
 private let pullUp = 1.0, hopOff = 1.1, staffUp = 1.5, orkkoPops = 2.4, oops = 2.8, rainFrom = 2.95, rainTo = 5.6
-private let leapFrom = 3.5, leapTo = 4.15, liftFrom = 4.3, liftTo = 4.75, scatter = 4.5, puffAt = 5.0, moralAt = 6.0
+private let leapFrom = 3.5, leapTo = 4.15, liftFrom = 4.45, liftTo = 4.85, scatter = 4.6, puffAt = 5.0, tossAt = 5.6, moralAt = 6.0
+/// How high He-Clawd holds the Roton: its tracks this many rows off the floor, well clear of his head.
+private let heldRows = 33.0
 /// Where everyone stops at the jawbridge (fx units).
 private let rotonX = 268.0, skeleX = 200.0, beastX = 246.0, trapX = 292.0, orkkoX = 150.0, katLands = 112.0
 
@@ -21,21 +23,73 @@ let eterniaSiegeCut = toJawbridge, eterniaSiegePullUp = toJawbridge + pullUp, et
 let eterniaSiegeOrkko = toJawbridge + orkkoPops, eterniaSiegeOops = toJawbridge + oops
 let eterniaSiegeRain = (toJawbridge + rainFrom, toJawbridge + rainTo)
 let eterniaSiegeLeap = toJawbridge + leapFrom, eterniaSiegeLift = toJawbridge + liftFrom, eterniaSiegeScatter = toJawbridge + scatter
-let eterniaSiegePuff = toJawbridge + puffAt, eterniaSiegeMoral = toJawbridge + moralAt
+let eterniaSiegePuff = toJawbridge + puffAt, eterniaSiegeMoral = toJawbridge + moralAt, eterniaSiegeToss = toJawbridge + tossAt
+let eterniaSiegeLanded = toJawbridge + leapTo, eterniaSiegeHeld = toJawbridge + liftTo
 
 // MARK: Drawing
 
 /// The Roton side on at fx `x` (its middle), `lift` rows off the floor, nose to the right or (`facing` -1) the left.
-private func roton(_ ctx: CGContext, x: Double, lift: Double, facing: Double, moving: Bool, t: Double) {
+private func roton(_ ctx: CGContext, x: Double, lift: Double, facing: Double, moving: Bool, t: Double, turn: Double = 0) {
     let ride = Ride.eterniaRoton
     let c = PixelCanvas(Ride.width, ride.canvasHeight)
     drawRide(c, ride, ramp: 0, engines: moving, gear: true, t: t)
     if facing < 0 { c.flipHorizontally() }
     guard let img = c.makeImage() else { return }
     let w = Double(Ride.width) * 6, h = Double(ride.canvasHeight) * 6
+    let r = CGRect(x: (x - Double(Ride.width) / 2) * 6, y: Double(H) - groundY * 6 - 6 + lift * 6, width: w, height: h)
     ctx.saveGState(); ctx.interpolationQuality = .none
-    ctx.draw(img, in: CGRect(x: (x - Double(Ride.width) / 2) * 6, y: Double(H) - groundY * 6 - 6 + lift * 6, width: w, height: h))
+    ctx.translateBy(x: r.midX, y: r.midY); ctx.rotate(by: CGFloat(turn)); ctx.translateBy(x: -r.midX, y: -r.midY)
+    ctx.draw(img, in: r)
     ctx.restoreGState()
+}
+
+/// He-Clawd lifting, at fx `x` (his middle): his own sprite, sunk `crouch` rows into a squat over his four legs, and
+/// (with `hull`, the fx row of the Roton's underside) both arms straight up beside his head, fists pressed under it.
+/// Drawn like the kit's `draw`, outlined in Claude's colour.
+private func heLifting(_ ctx: CGContext, x: Double, crouch: Int, hull: Double?, t: Double) {
+    let s = PixelCanvas(Sprite.width, Sprite.height)
+    Cast.hero(EterniaHero.heClawd).draw(s, t: t, mode: .idle, walking: false, role: .rest, asSession: true, habits: false)
+    guard let b = s.solidBounds() else { return }
+    if crouch > 0 { s.move(columns: 0..<s.w, rows: 0..<(b.maxY - 2), dy: crouch) }
+    let pad = 40
+    let c = PixelCanvas(Sprite.width, Sprite.height + pad)
+    c.paste(s, x: 0, y: pad)
+    let top = groundY - 44                                     // the fx row of the sprite's top
+    if let hull = hull {
+        let reach = Int((hull - (top - Double(pad))).rounded())   // the hull's underside, in canvas rows
+        let shoulder = pad + b.maxY - 12 + crouch
+        if reach < shoulder - 3 {
+            let skin = clawdOrange, lit = C(0xF09A78), shade = C(0xB05A40), ink = C(0x1E1828)
+            for ax in [12, 42] {
+                c.rect(ax - 1, reach + 2, 4, shoulder - reach - 2, ink)
+                c.rect(ax, reach + 3, 2, shoulder - reach - 3, skin)
+                c.rect(ax + 1, reach + 3, 1, shoulder - reach - 3, shade)
+                c.rect(ax, reach + 5, 2, 2, C(0x8A5E38))         // his bracer
+                c.rect(ax - 2, reach - 1, 6, 5, ink)              // the fist, flat under the hull
+                c.rect(ax - 1, reach, 4, 3, skin)
+                c.rect(ax - 1, reach, 4, 1, lit)
+            }
+        }
+    }
+    c.addOutline(C(AI.claude.hex, 0.92))
+    guard let img = c.makeImage() else { return }
+    ctx.saveGState(); ctx.interpolationQuality = .none
+    ctx.draw(img, in: CGRect(x: (x - Sprite.bodyCenterX) * 6, y: Double(H) - (top - Double(pad) + Double(c.h)) * 6,
+                             width: Double(c.w) * 6, height: Double(c.h) * 6))
+    ctx.restoreGState()
+}
+
+/// Dust kicked up off the floor at fx `x`, `k` 0…1 through it: tan puffs rolling out to either side and shrinking.
+private func dust(_ c: PixelCanvas, x: Double, k: Double) {
+    guard k > 0 && k < 1 else { return }
+    for i in 0..<4 {
+        let side = i % 2 == 0 ? -1.0 : 1.0
+        let far = 4 + Double(i / 2) * 6 + k * 12
+        let r = max(1, Int(((1 - k) * 4).rounded()))
+        let px = Int((x + side * far).rounded()), py = Int(groundY) - 1 - Int(k * 4) - i / 2 * 2
+        c.circle(px, py, r, C(0xC8B48C))
+        c.circle(px - 1, py - 1, max(1, r / 2), C(0xE8D8B0))
+    }
 }
 
 /// The three riders, stood in the Roton behind its hull, only their tops showing over it.
@@ -113,13 +167,18 @@ private func snakeMountain(_ ctx: CGContext, l: Double, t: Double) {
 /// At the jawbridge, `j` seconds after the cut.
 private func jawbridge(_ ctx: CGContext, j: Double, t: Double) {
     blit(place(.eterniaGreyskull, floorRows: 30, t: t), ctx)
-    // The Roton: rolling in nose first, then still; and from the lift, up over He-Clawd's head.
-    let lifted = easeOut((j - liftFrom) / (liftTo - liftFrom))
+    // The Roton: rolling in nose first, then still; He-Clawd pushes it up overhead (shaking with the strain), holds
+    // it high, and tosses it away over the castle's ledge.
     let heX = rotonX
-    let rx = j < liftFrom ? lerp(420, rotonX, easeOut(j / pullUp)) : lerp(rotonX, heX, lifted)
-    let rLift = lifted * 22 + (lifted >= 1 ? sin(t * 5) * 0.6 : 0)
+    let push = easeOut((j - liftFrom) / (liftTo - liftFrom))
+    let straining = j > liftFrom && j < liftTo + 0.45
+    let shake: Double = straining ? (Int(t * 20) % 2 == 0 ? 0.5 : -0.5) : 0
+    let toss = clamp((j - tossAt) / 0.6)
+    var rx = j < liftFrom ? lerp(420, rotonX, easeOut(j / pullUp)) : rotonX + shake
+    var rLift = push * heldRows + (straining && push > 0.9 ? abs(shake) : 0)
+    if toss > 0 { rx += toss * 210; rLift += sin(toss * .pi) * 40 + toss * 20 }
     if j < hopOff { riders(ctx, x: rx, facing: -1, t: t) }
-    if j < liftFrom { roton(ctx, x: rx, lift: 0, facing: -1, moving: j < pullUp, t: t) }
+    roton(ctx, x: rx, lift: rLift, facing: -1, moving: j < pullUp, t: t, turn: -toss * 2.6)
     // The crew hopping off, then (Beast and Trap) running for it.
     let hop = clamp((j - hopOff) / 0.35)
     let run = max(0, j - scatter)
@@ -150,7 +209,7 @@ private func jawbridge(_ ctx: CGContext, j: Double, t: Double) {
     var he = Actor(cast: .hero(EterniaHero.heClawd), x: lerp(-30, heX, easeOut(leap)), facing: 1, mode: .idle)
     he.lift = sin(leap * .pi) * 46
     he.alpha = j > leapFrom ? 1 : 0
-    if lifted > 0 { he.role = .ready(urgent: false) }
+    if toss > 0.2 { he.role = .ready(urgent: false) }
     let kLeap = clamp((j - leapFrom - 0.1) / (leapTo - leapFrom))
     var kat = Actor(cast: .hero(EterniaHero.battleKat), x: lerp(-40, katLands, easeOut(kLeap)), facing: 1, mode: .idle)
     kat.lift = sin(kLeap * .pi) * 30
@@ -161,13 +220,21 @@ private func jawbridge(_ ctx: CGContext, j: Double, t: Double) {
     draw(beast, ctx, t: t)
     draw(trap, ctx, t: t)
     draw(kat, ctx, t: t)
-    draw(he, ctx, t: t)
-    if j >= liftFrom { roton(ctx, x: rx, lift: rLift, facing: -1, moving: false, t: t) }
+    if j >= leapTo && toss <= 0.2 {
+        // Landed: down into a squat under it, then up with both arms, the fists under the hull.
+        let squat = j < liftFrom ? 2 : Int((2 * (1 - push)).rounded())
+        heLifting(ctx, x: heX + shake, crouch: squat, hull: j < liftFrom ? nil : groundY - rLift, t: t)
+    } else {
+        draw(he, ctx, t: t)
+    }
     draw(orkko, ctx, t: t)
 
     // The pixel effects over them: Orkko's sparkles, the rain cloud, the purple puff.
     let fx = PixelCanvas(fxW, fxH)
     sparkles(fx, x: orkkoX, y: groundY - 30, k: (j - orkkoPops) / 0.4)
+    dust(fx, x: rotonX - 24, k: (j - liftFrom) / 0.55)
+    dust(fx, x: rotonX + 24, k: (j - liftFrom - 0.05) / 0.55)
+    dust(fx, x: heX, k: (j - leapTo) / 0.4)
     sparkles(fx, x: orkkoX + 10, y: groundY - 40, k: (j - oops + 0.1) / 0.4)
     let cloud = easeOut((j - rainFrom + 0.15) / 0.3) * (1 - clamp((j - rainTo) / 0.3))
     rainCloud(fx, x: skeleX + 2, y: 92, size: cloud, rain: j > rainFrom && j < rainTo, t: t)

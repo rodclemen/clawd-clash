@@ -6,7 +6,7 @@ import AppKit
 // Promo/ out of it.
 //
 // It opens on By the Power of Greyskull, the title sequence (EterniaReelIntro.swift): dusk at Castle Greyskull, Prince
-// Addam rides in on a trembling Cringer, raises the sword, the lightning comes down (the app's own Greyskull trip, in
+// Addam walks up with Cringer trembling behind him, raises the sword, the lightning comes down (the app's own Greyskull trip, in
 // close-up), and He-Clawd stands there with Battle Kat; CLAWDS OF THE UNIVERSE rises in carved stone and the camera
 // plunges through the jawbridge. Then the set piece (EterniaReelSiege.swift): Skeleclawd's crew roll out of Snake
 // Mountain on the Roton to the jawbridge, Orkko's spell rains on Skeleclawd, He-Clawd lifts the Roton over his head,
@@ -83,6 +83,14 @@ let eterniaShots: [Shot] = [
         let cast: [Cast] = [.hero(EterniaHero.heClawd), .hero(EterniaHero.teelah), .hero(EterniaHero.orkko), .hero(EterniaHero.cringer)]
         statusOf(ctx, local: local, t: t, cast: cast, badgeText: Universe.eternia.title.uppercased(),
                  aside: "(\(cast[2].name) needs you: “Oops!” \(cast[3].name) is hiding under the throne.)")
+        // Teelah, thinking, asks the question she always asks.
+        let ask = clamp((local - 1.4) / 0.15)
+        if ask > 0 {
+            let her = Actor(cast: cast[1], x: 48 + 75, mode: .thinking)
+            let head = headPoint(her)
+            balloon("Where's Adam?", ctx, center: CGPoint(x: head.x - 40, y: head.y + 250), tail: CGPoint(x: head.x - 20, y: head.y + 30),
+                    size: 38, width: 500, alpha: ask)
+        }
     },
     Shot(name: "agents", start: app + 12.8, end: app + 16.8) { ctx, local, t in
         agentsOf(ctx, local: local, t: t, guardCast: .hero(EterniaHero.manAtClawds),
@@ -147,7 +155,7 @@ func eterniaEndcard(_ ctx: CGContext, local: Double, t: Double) {
 
 /// The storyboard's beats: a time in the reel, and its title, what happens, what's on screen and what's heard.
 let eterniaBeats: [(key: Double, beat: Beat)] = [
-    (1.4, ("DUSK AT GREYSKULL", "Castle Greyskull at dusk across the chasm, mist drifting in it. \(eterniaName(EterniaHero.princeAddam)) rides in on a trembling \(eterniaName(EterniaHero.cringer)) and stops at the edge.",
+    (1.4, ("DUSK AT GREYSKULL", "Tight on the near ledge, Castle Greyskull at dusk across the chasm behind, mist drifting in it. \(eterniaName(EterniaHero.princeAddam)) walks up to the edge, a trembling \(eterniaName(EterniaHero.cringer)) at his heels, cowering behind him.",
            "no text", "wind in the chasm, a low brass swell; the march's drum creeping in, our own notes")),
     (3.4, ("THE SWORD", "He draws the sword and raises it to the sky.", "“By the power of Greyskull!”", "a rising brass chord")),
     (5.2, ("THE LIGHTNING", "Close up: the fist and the Power Sword against the sunset, the castle black behind; lightning forks down into the tip, the blade blazes, bolts crackle out to every edge, and white swallows the screen.",
@@ -162,15 +170,15 @@ let eterniaBeats: [(key: Double, beat: Beat)] = [
             "“Greyskull is mine!”", "brakes, a menacing brass stab")),
     (14.5, ("ORKKO HELPS", "\(eterniaName(EterniaHero.orkko)) pops up to help; his spell misfires and a rain cloud opens over \(eterniaName(EterniaVillain.skeleclawd)).",
             "“Oops!”", "a sparkle, a sad slide down, rain")),
-    (16.3, ("THE RESCUE", "\(eterniaName(EterniaHero.heClawd)) and \(eterniaName(EterniaHero.battleKat)) leap in; \(eterniaName(EterniaHero.heClawd)) lifts the Roton over his head and the crew scatters.",
-            "no text", "a whoosh, a heave, the march's big hit")),
+    (16.3, ("THE RESCUE", "\(eterniaName(EterniaHero.heClawd)) and \(eterniaName(EterniaHero.battleKat)) leap in; \(eterniaName(EterniaHero.heClawd)) squats under the Roton, pushes it up overhead with both arms, shaking with the strain, dust flying, holds it high while the crew scatters, then tosses it away.",
+            "no text", "a whoosh, a straining heave, the march's big hit, a whoosh as it flies")),
     (16.8, ("THE RETREAT", "\(eterniaName(EterniaVillain.skeleclawd)) vanishes in a purple puff.", "“I'll get you for this, He-Clawd!”", "a poof, the cackle fading")),
     (18.2, ("THE MORAL", "\(eterniaName(EterniaHero.orkko)) floats to the front and turns to us.", "“Remember, kids: always write your tests!”", "a little chime, the march's last bar")),
     (app + 1.5, ("THE HOOK", "Three busy terminals, slow push-in.", "“Three AIs. Nine agents. One very confused prince.”  →  “Sound familiar?”",
             "keyboard clicks, the groove fading in")),
     (app + 6.3, ("DESKTOP MODE", "\(eterniaName(EterniaHero.heClawd)) against \(eterniaName(EterniaVillain.skeleclawd)); \(eterniaName(EterniaHero.teelah)) against \(eterniaName(EterniaVillain.beastClawd)).",
             "DESKTOP MODE  ·  “The battle for Greyskull, right on your desktop.”", "footsteps, sword clashes, a crackle of magic")),
-    (app + 10.9, ("AT A GLANCE", "\(eterniaName(EterniaHero.heClawd)) working, \(eterniaName(EterniaHero.teelah)) thinking, \(eterniaName(EterniaHero.orkko)) jumping NEEDS YOU, \(eterniaName(EterniaHero.cringer)) sat down, hiding.",
+    (app + 10.9, ("AT A GLANCE", "\(eterniaName(EterniaHero.heClawd)) working, \(eterniaName(EterniaHero.teelah)) thinking (“Where's Adam?”), \(eterniaName(EterniaHero.orkko)) jumping NEEDS YOU, \(eterniaName(EterniaHero.cringer)) sat down, hiding.",
             "“(Orkko needs you: “Oops!” Cringer is hiding under the throne.)”", "pops, alert beeps")),
     (app + 15.0, ("SUBAGENTS", "\(eterniaName(EterniaHero.manAtClawds)) keeps watch; \(eterniaName(EterniaHero.teelah)), \(eterniaName(EterniaHero.stratos)), \(eterniaName(EterniaHero.ramClawd)) and \(eterniaName(EterniaHero.mekaneck)) arrive with their jobs on their labels.",
             "“Every subagent gets to be a Master of the Universe.”", "running feet")),
