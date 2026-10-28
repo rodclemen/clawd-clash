@@ -60,7 +60,7 @@ extension Scenes {
         }
         let trunk = 15 * s
         let decks = [(tree - trunk - 26 * s, 17 * s, 30 * s), (tree + trunk - 4 * s, 12 * s, 32 * s)]
-        let zip = ((tree - trunk - 24 * s, 16 * s), (c.w * 18 / 100, 7 * s))
+        let zip = ((tree - trunk - 24 * s, 16 * s), (c.w * 9 / 100 + 18 * s, 8 * s))
         let lights = [((tree - trunk - 26 * s, 18 * s), (c.w * 44 / 100, 14 * s), 6 * s),
                       ((tree + trunk + 28 * s, 13 * s), (c.w - 2 * s, 9 * s), 5 * s)]
         return (tree, trunk, 4 * s, (c.w * 9 / 100, 10 * s), decks, zip, lights)
