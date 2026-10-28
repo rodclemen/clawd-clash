@@ -38,7 +38,9 @@ extension EterniaTrip {
         // everywhere. After: the whole of it drifting right, the billows shrinking away off its torn left edge.
         let drift = blow * blow * fw * 0.4
         if k < 0.5 || blow < 1 {
-            eterniaRaiderBillows(c, size: max(7, fh / 6), drift: drift, seed: 31) { x, y, wobble in
+            // Bigger and fewer on the window's short strip, so the cloud reads there as a few calm billows.
+            let size: Double = art.wide ? max(7, fh / 2.6) : max(7, fh / 6)
+            eterniaRaiderBillows(c, size: size, drift: drift, seed: 31) { x, y, wobble in
                 if k < 0.5 {
                     guard x < tail else { return 0 }
                     let ago: Double = (tail - x) / fw
@@ -125,8 +127,8 @@ struct EterniaPuff {
 /// its centre in or near its cell), piled up in their `over` order, drawn as pixel-art smoke. A whole puff is a cel
 /// billow: a scalloped edge of round bumps with a dark `ink` outline, a crescent lit on its upper left, a flat shadow
 /// side across its lower right, and a curl drawn into it in the shadow tone; with `flat`, its underside is cut off
-/// straight, as a cartoon cloud's is. A thinning puff is a wisp: a curling line of smoke with its own outline, rising a
-/// little as it goes. `tones` are each a palette of shadow, middle and lit.
+/// straight, as a cartoon cloud's is. A thinning puff is a wisp: a little cel cloud of four lobes on a flat underside,
+/// outlined and shaded the same way, rising a little as it goes. `tones` are each a palette of shadow, middle and lit.
 func eterniaCelPuffs(_ c: PixelCanvas, _ puffs: [EterniaPuff], cols: Int, rows: Int, cell S: Double,
                      origin: (Double, Double), tones: [[Px]], ink: Px, flat: Bool) {
     for y in 0..<c.h {
@@ -191,27 +193,50 @@ private func eterniaPuffAt(_ p: EterniaPuff, _ dx: Double, _ dy: Double, flat: B
     return 1
 }
 
-/// A wisp of a thinning puff at (`dx`, `dy`): a curl of smoke, a line winding out from the middle a turn and more,
-/// thinner and smaller the less of the puff is left, rising as it thins. Same answers as `eterniaPuffAt`.
+/// The lobes of a wisp, front to back, in its main lobe's radii from its middle: (across, down, radius).
+private let eterniaWispLobes: [(Double, Double, Double)] = [(0, 0, 1), (0.35, -0.8, 0.62), (0.95, 0.12, 0.72), (-0.9, 0.18, 0.68)]
+
+/// A wisp of a thinning puff at (`dx`, `dy`): stage-magic smoke, a little cel cloud of four round lobes bunched on a
+/// flat underside, its front lobe's outline drawn in over the ones behind, lit along the top of each lobe and a flat
+/// shadow side across the lower right of the lot; smaller the less of the puff is left, and rising as it thins.
+/// Same answers as `eterniaPuffAt`.
 private func eterniaWispAt(_ p: EterniaPuff, _ dx: Double, _ dy: Double) -> Int {
     let left: Double = p.size / 0.4                                 // 1 just thinned, 0 gone
-    let outer: Double = p.full * (0.3 + 0.3 * left)
+    let m: Double = p.full * (0.2 + 0.22 * left)
     let rise: Double = (1 - left) * p.full * 0.35
-    let uy: Double = dy + rise
-    let rho: Double = (dx * dx + uy * uy).squareRoot()
-    guard rho < outer + 3 else { return -1 }
-    let spin: Double = p.seed > 0.5 ? 1 : -1
-    var phi: Double = atan2(uy, dx * spin)
-    if phi < 0 { phi += 2 * .pi }
-    let b: Double = outer / (3 * .pi)
-    let th: Double = max(0.8, p.full * 0.1 * left + 0.5)
-    var best: Double = 99
-    for turn in 0..<2 {
-        let a: Double = phi + Double(turn) * 2 * .pi
-        guard a > 0.6 * .pi && a < 3 * .pi else { continue }
-        best = min(best, abs(rho - b * a))
+    let flip: Double = p.seed > 0.5 ? 1 : -1
+    let ux: Double = dx * flip, uy: Double = dy + rise
+    let reach: Double = m * 1.8 + 2
+    guard abs(ux) < reach && abs(uy) < reach else { return -1 }
+    let bottom: Double = m * 0.5                                    // the flat underside
+    guard uy < bottom + 1.2 else { return -1 }
+    // The first lobe it's inside, and whether it's on the outline of any.
+    var lobe = -1, near = false, lx = 0.0, ly = 0.0, lr = 0.0
+    for (i, l) in eterniaWispLobes.enumerated() {
+        let r: Double = l.2 * m
+        let ex: Double = ux - l.0 * m, ey: Double = uy - l.1 * m
+        let d: Double = (ex * ex + ey * ey).squareRoot()
+        if d < r && lobe < 0 { lobe = i; lx = ex; ly = ey; lr = r }
+        if d < r + 1.2 { near = true }
     }
-    if best < th { return uy > 0 ? 0 : 1 }
-    if best < th + 1 { return 3 }
-    return -1
+    guard lobe >= 0 else { return near ? 3 : -1 }
+    if uy >= bottom { return 3 }
+    // The front lobe's rim, drawn in over the lobes behind it.
+    if lobe == 0 {
+        let d0: Double = (lx * lx + ly * ly).squareRoot()
+        if d0 > lr - 1.1 && ly < 0.2 * lr {
+            for l in eterniaWispLobes.dropFirst() {
+                let ex: Double = ux - l.0 * m, ey: Double = uy - l.1 * m
+                if ex * ex + ey * ey < l.2 * m * l.2 * m { return 3 }
+            }
+        }
+    }
+    // Lit along the top left of each lobe, the flat shadow across the lower right of the whole wisp.
+    let side: Double = uy + 0.35 * ux * flip
+    if side > 0.1 * m { return 0 }
+    if lr > 2.5 {
+        let ox: Double = lx + 0.3 * lr * flip, oy: Double = ly + 0.3 * lr
+        if (ox * ox + oy * oy).squareRoot() > 0.98 * lr { return 2 }
+    }
+    return 1
 }
