@@ -119,12 +119,21 @@ struct EterniaUniverse: UniverseModule {
     /// Places where, now and then, the whole scene turns over in the window and the screen saver (`SceneFlip`); nil:
     /// never.
     var sceneFlip: SceneFlip? { nil }
-    /// The README's pictures besides the roster and places (Tools/RenderDocs): the desktop line-up, left to right,
-    /// pairs fighting each other and the odd one cheering, and the social preview's title, line and cast.
+    /// The README's desktop line-up (Skeleclawd against He-Clawd, Man-At-Clawds against Trap Clawd, Battle Kat
+    /// against Beast Clawd, She-Clawd against Hordakk, Orkko cheering) and social preview.
     var docs: DocsInfo {
         DocsInfo(lineup: [
-            LineupSlot.pair(.villain(EterniaVillain.skeleclawd), true, "", 60, .hero(EterniaHero.heClawd), true, "", 150),
+            LineupSlot.pair(.villain(EterniaVillain.skeleclawd), true, "", 30, .hero(EterniaHero.heClawd), true, "", 98),
+            LineupSlot.pair(.hero(EterniaHero.manAtClawds), false, "Check git history", 132,
+                            .villain(EterniaVillain.trapClawd), false, "Write changelog", 182),
+            LineupSlot.pair(.hero(EterniaHero.battleKat), false, "Plan the refactor", 206,
+                            .villain(EterniaVillain.beastClawd), false, "Review Overlay.swift", 238),
+            LineupSlot.pair(.hero(EterniaHero.sheClawd), true, "", 296, .villain(EterniaVillain.hordakk), true, "", 362),
+            [LineupSlot(who: .hero(EterniaHero.orkko), leader: false, label: "Run the test suite", x: 396, facing: 1,
+                        role: .cheer)],
         ], social: (title: Universe.eternia.title.uppercased(), subtitle: "Your AI sessions as a pixel-art battle for Castle Greyskull on your desktop",
-                    cast: [.hero(EterniaHero.heClawd), .villain(EterniaVillain.skeleclawd)]))
+                    cast: [.hero(EterniaHero.heClawd), .hero(EterniaHero.sheClawd), .hero(EterniaHero.battleKat),
+                           .hero(EterniaHero.orkko), .villain(EterniaVillain.skeleclawd), .villain(EterniaVillain.hordakk),
+                           .villain(EterniaVillain.evilLynn), .villain(EterniaVillain.beastClawd)]))
     }
 }

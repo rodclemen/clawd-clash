@@ -23,7 +23,7 @@ https://github.com/user-attachments/assets/a932957d-41c4-4854-9424-f6ab161fe7df
 
 <p align="center"><sub>Full 1080p version: <a href="promo/clawd-clash-promo.mp4">promo/clawd-clash-promo.mp4</a></sub></p>
 
-Clawd Clash is one app with many universes: **[Star Clawds](https://github.com/rodclemen/star-clawds)** (formerly Clawd Wars), **[Marvelous Clawds](https://github.com/rodclemen/marvelous-clawds)** (formerly Clawdvengers: Clawd Wars), **[Detective Clawds](https://github.com/rodclemen/detective-clawds)** (formerly Justice Clawds: Clawd Wars), **[Doctor Clawd](https://github.com/rodclemen/doctor-clawd)**, **[The Clawd Files](https://github.com/rodclemen/the-clawd-files)**, **[Stevie Clawdberg](https://github.com/rodclemen/stevie-clawdberg)**, **[Clawd of the Rings](https://github.com/rodclemen/clawd-of-the-rings)**, **[Clawd Slayer](https://github.com/rodclemen/clawd-slayer)**, **[Stranger Clawds](https://github.com/rodclemen/stranger-clawds)** and **[Superclawdtural](https://github.com/rodclemen/superclawdtural)**. Pick one in Settings, or Clawd Royale for all of them at once. The universes' own pages show each one on its own; this one is the app.
+Clawd Clash is one app with many universes: **[Star Clawds](https://github.com/rodclemen/star-clawds)** (formerly Clawd Wars), **[Marvelous Clawds](https://github.com/rodclemen/marvelous-clawds)** (formerly Clawdvengers: Clawd Wars), **[Detective Clawds](https://github.com/rodclemen/detective-clawds)** (formerly Justice Clawds: Clawd Wars), **[Doctor Clawd](https://github.com/rodclemen/doctor-clawd)**, **[The Clawd Files](https://github.com/rodclemen/the-clawd-files)**, **[Stevie Clawdberg](https://github.com/rodclemen/stevie-clawdberg)**, **[Clawd of the Rings](https://github.com/rodclemen/clawd-of-the-rings)**, **[Clawd Slayer](https://github.com/rodclemen/clawd-slayer)**, **[Stranger Clawds](https://github.com/rodclemen/stranger-clawds)**, **[Superclawdtural](https://github.com/rodclemen/superclawdtural)** and **Clawds of the Universe**. Pick one in Settings, or Clawd Royale for all of them at once. The universes' own pages show each one on its own; this one is the app.
 
 | Star Clawds | Marvelous Clawds |
 |---|---|
@@ -85,14 +85,15 @@ You run Claude Code in three terminals. One is thinking, one is waiting for your
   <img src="docs/desktop-clawd-of-the-rings.png" alt="Clawd of the Rings sessions and agents fighting along the bottom of the screen"><br>
   <img src="docs/desktop-clawd-slayer.png" alt="Clawd Slayer sessions and agents fighting along the bottom of the screen"><br>
   <img src="docs/desktop-stranger-clawds.png" alt="Stranger Clawds sessions and agents fighting along the bottom of the screen"><br>
-  <img src="docs/desktop-superclawdtural.png" alt="Superclawdtural sessions and agents fighting along the bottom of the screen">
+  <img src="docs/desktop-superclawdtural.png" alt="Superclawdtural sessions and agents fighting along the bottom of the screen"><br>
+  <img src="docs/desktop-clawds-of-the-universe.png" alt="Clawds of the Universe sessions and agents fighting along the bottom of the screen">
 </p>
 
 ## The universes
 
 Pick one in **Settings… → Universe**:
 
-- **One universe:** Star Clawds, Marvelous Clawds, Detective Clawds, Doctor Clawd, The Clawd Files, Stevie Clawdberg, Clawd of the Rings, Clawd Slayer, Stranger Clawds or Superclawdtural.
+- **One universe:** Star Clawds, Marvelous Clawds, Detective Clawds, Doctor Clawd, The Clawd Files, Stevie Clawdberg, Clawd of the Rings, Clawd Slayer, Stranger Clawds, Superclawdtural or Clawds of the Universe.
 - **Random:** a different universe on its own every 1, 5, 10, 15, 30 or 60 minutes.
 - **Clawd Royale:** every cast in one scene, heroes against villains, each character as itself. The place is a random one from any universe and changes every ten minutes (the Location menu is greyed out meanwhile).
 
@@ -287,6 +288,27 @@ The screen saver follows your pick with "The same as Clawd Clash", or has a univ
 <summary><b>The Superclawdtural cast and places</b></summary>
 <p align="center"><img src="docs/roster-superclawdtural.png" alt="All Superclawdtural characters" width="760"></p>
 <p align="center"><img src="docs/locations-superclawdtural.png" alt="All Superclawdtural places" width="760"></p>
+</details>
+
+### Clawds of the Universe
+
+- **Cast:** 41 villains, 44 heroes, from the 1983 cartoon, She-Clawd and the 1987 film
+- **Places:** 21, from Castle Greyskull and Snake Mountain to Bright Moon, the Fright Zone and a small town on Earth
+- **Weapons:** He-Clawd's Power Sword, She-Clawd's Sword of Protection, Skeleclawd's Havoc Staff, Hordakk's arm cannon, Man-At-Clawds' mace, Bow's arrows, Glimmer's light, Evil-Lynn's and Shadow Weaver's magic, Beast Clawd's whip, Trap Clawd's laser arm, and Orkko's spells, which go wrong
+- **Set pieces:**
+  - Arch-enemies face off first
+  - The Masters fly in on the Wind Raider, the rebels ride Swift Wind, Skeleclawd's side rolls up on the Roton, and the Horde comes by skiff or in Hordakk's rocket
+  - When the session of Prince Addam, Adorra, Cringer or Spirit compacts its context, lightning strikes and they change: "By the power of Greyskull!", "I have the power!" He-Clawd, She-Clawd, Battle Kat and Swift Wind change back at the next one, and nobody ever meets their other self on stage
+  - Now and then a hero who finishes their work steps forward with the moral of the story, as every episode ended
+  - After a fight Skeleclawd vanishes in a purple puff ("I'll get you for this, He-Clawd!"); Orkko's spells misfire, Cringer hides behind the nearest hero, Two Bad argues with himself and Stinkor clears the room
+  - Every change of place ends with its name carved in stone, and By the Power of Greyskull is the rarest of the twelve
+  - Loo-Kee, Imp, Screeech, the Horde Troopers and the Dark Troopers only turn up as agents
+- **Sides:** Claude Code plays the heroes when another AI runs
+
+<details>
+<summary><b>The Clawds of the Universe cast and places</b></summary>
+<p align="center"><img src="docs/roster-clawds-of-the-universe.png" alt="All Clawds of the Universe characters" width="760"></p>
+<p align="center"><img src="docs/locations-clawds-of-the-universe.png" alt="All Clawds of the Universe places" width="760"></p>
 </details>
 
 ## Window mode and the screen saver
