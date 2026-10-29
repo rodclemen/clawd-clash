@@ -9,7 +9,7 @@ Its first three universes started as separate apps. Their changelogs from before
 
 Doctor Clawd, the fourth, was made for Clawd Clash ([doctor-clawd](https://github.com/rodclemen/doctor-clawd)), so its whole history is below, from 3.1.0.
 
-## Unreleased
+## 4.2.0 (2026-10-29)
 
 ### Added
 - **A new universe, Clawds of the Universe** (He-Man and the Masters of the Universe, She-Ra and the 1987 film), number 11, in `Sources/App/Universes/Eternia/` (prefix `Eternia`, key `eternia`). 85 characters, 44 heroes and 41 villains, and HEM as a Master: He-Clawd and Prince Addam, She-Clawd and Princess Adorra, Battle Kat and Cringer, Swift Wind and Spirit, Orkko, Teelah, Man-At-Clawds, the Sorceress of Greyskull, Ram Clawd, Man-E-Clawds, Bow, Glimmer, Madame Razz, Granamyr, Light Hope and Gwildor against Skeleclawd, Evil-Lynn, Beast Clawd, Trap Clawd, Hordakk, Shadow Weaver, Katra, Scorpia, King Hiss, Shokoti, Horde Prime, Blade and Karg, down to Imp, Screeech and the Dark Troopers. 21 places, from Castle Greyskull and Snake Mountain to the Royal Palace of Eternos, Man-At-Clawds's workshop, Avion, Darksmoke, the House of Shokoti, Bright Moon, the Whispering Woods, the Fright Zone, the Crystal Castle and a small town on Earth. Twenty-eight arch-enemy pairs face off first.
@@ -18,11 +18,14 @@ Doctor Clawd, the fourth, was made for Clawd Clash ([doctor-clawd](https://githu
   - **The moral of the story:** now and then a hero who finishes their work steps forward with a lesson, "Remember, kids: always write your tests!"
   - **Habits:** Skeleclawd vanishes in a purple puff after a fight ("I'll get you for this, He-Clawd!"), Orkko's spells misfire, Cringer and Gwildor hide behind the nearest hero, Loo-Kee peeks out, Imp turns into a stool, Two Bad argues with himself, Stinkor clears the room and the Dark Troopers march. Ten drills of its own.
   - **Twelve transitions**, each ending with the new place's name carved in stone: By the Power of Greyskull (the rarest), the Jawbridge, Zoar's Flight, Orkko's Trick, the Havoc Staff, the Crystal Orb, the Wind Raider, For the Honour of Greyskull, the Horde Bat, Shadow Weave, the Portal and Light Hope's Rainbow.
+  - **Its own page and cask:** [clawds-of-the-universe](https://github.com/rodclemen/clawds-of-the-universe) shows it off, and `brew install --cask clawds-of-the-universe` installs Clawd Clash starting there.
 - **A third kind of compaction, the transformation** (`compaction: .transform`), the engine request for Clawds of the Universe: when a session's leader is one of a pair of guises, compacting its context turns it into the other, and the next compaction turns it back, in a flash the universe draws (`transformation`, with a line over its head). Nobody meets their own secret identity: if the other guise already leads a session or works as an agent, only the flash plays and the leader stays as it is. `--transform` shows it in the Playground.
 - **The moral of the story** (`morals` in a universe's facts, the lessons in its module), also for Clawds of the Universe: now and then, when a session finishes its work, its leader steps forward with a short lesson in its speech line, as every Filmation episode ended. Each leader has its own chance on each finish, and never twice within half an hour for the same session. `--moral` shows it in the Playground.
 
 ### Fixed
 - **Stevie Clawdberg's places hold together.** In Neverland, the left string of fairy lights on the screen saver ended in mid-air: it now ends on a peg in the cliff, and in the window the zip line ends on the cliff top instead of at a cloud. In Kingston Falls, the Peltclawd house floated over a dip in the hill: it now stands on the hill.
+
+_Gave He-Clawd new arms twice before he could lift the Roton without looking like he was holding up two fence posts. Then the transformation worked beautifully the first time and not at all the second, because the way back was drawn in a glow too faint to see on a dark desktop._
 
 ## 4.1.1 (2026-10-25)
 
