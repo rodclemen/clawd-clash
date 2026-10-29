@@ -449,14 +449,6 @@ func clashIntro(_ ctx: CGContext, local l: Double, t: Double) {
     if since > 0 && since < 0.3 { ctx.setFillColor(CGColor(gray: 1, alpha: 0.85 * (1 - since / 0.3))); ctx.fill(fullRect) }   // the flash
 }
 
-/// How many universes, in words: "SEVEN", or "Seven" with `capital`.
-func universeCount(capital: Bool = false) -> String {
-    let n = Universe.offered.count
-    let w = ["ZERO", "ONE", "TWO", "THREE", "FOUR", "FIVE", "SIX", "SEVEN", "EIGHT", "NINE", "TEN", "ELEVEN", "TWELVE"]
-    let s = n < w.count ? w[n] : "\(n)"
-    return capital ? s.prefix(1) + s.dropFirst().lowercased() : s
-}
-
 /// Choose your universe, read as a comic: characters from every universe run along the desktop under the title, a
 /// page with a panel per universe slams down over them, and the camera reads it panel by panel, each its universe's big
 /// moment, then pulls back to the whole page. The layout and the reading grow with the universe list.
@@ -717,7 +709,7 @@ func chooseUniverse(_ ctx: CGContext, local l: Double, t: Double) {
     let f = backOut((l - pageBack - 0.2) / 0.35)
     if f > 0 {
         ctx.saveGState(); ctx.translateBy(x: 960, y: 60); ctx.scaleBy(x: CGFloat(f), y: CGFloat(f)); ctx.translateBy(x: -960, y: -60)
-        captionBox("ONE APP. \(universeCount()) UNIVERSES. PICK YOURS.", ctx, center: CGPoint(x: 960, y: 60), size: 46)
+        captionBox("ONE APP. MULTIPLE UNIVERSES. PICK YOURS.", ctx, center: CGPoint(x: 960, y: 60), size: 46)
         ctx.restoreGState()
     }
 }
@@ -1382,7 +1374,7 @@ var promoBeats: [(key: Double, beat: Beat)] { [
     (18.2, ("CHOOSE YOUR UNIVERSE", "Two heroes from every universe run along the bottom of the desktop, and CHOOSE YOUR UNIVERSE pops up over them.", "CHOOSE YOUR UNIVERSE", "running feet, a hit")),
     (16.5 + pageArrive(0) + 0.5, ("READING THE PAGE", "A comic page slams down over them, its panels split by slanted gutters that never line up. The camera swoops into the first panel and reads them one by one, straightening each up as it fills the screen with that universe's big moment.", "the universe's name on each panel  ·  \(Universe.offered.map { setPiece($0).word }.joined(separator: "  "))", "a whoosh and a hit per panel, a taste of each set piece")),
     (16.5 + (pageTurns.first ?? pageArrive(3)) + pageTurn * 0.3, ("PANEL BY PANEL", "On through the page in reading order, each with its sound word popping as the camera arrives. Back on the whole page, it curls over like a comic book's onto the next: \(listed(comicPages.map { listed($0.map(\.u.title)) }.map { "(\($0))" })).", "the panel's name and sound word", "each universe's own sound")),
-    (16.5 + pageBack + 1.0, ("PICK YOURS", "The camera pulls back to the whole page, every universe's moment still playing in its panel.", "“ONE APP. \(universeCount()) UNIVERSES. PICK YOURS.”", "a ping")),
+    (16.5 + pageBack + 1.0, ("PICK YOURS", "The camera pulls back to the whole page, every universe's moment still playing in its panel.", "“ONE APP. MULTIPLE UNIVERSES. PICK YOURS.”", "a ping")),
     (afterChoose + 2.5, ("AT A GLANCE (THE CLAWD FILES)", "A case file opens on the status line-up: \(Cast.hero(FilesHero.foxClawder).name) working, a Grey thinking, the Flukeman's jumping NEEDS YOU, \(Cast.hero(FilesHero.skinnard).name) sat down napping.", "“All fun and games, and you still see everything.”", "blips, alert beeps")),
     (afterChoose + 7.0, ("SUBAGENTS (STEVIE CLAWDBERG)", "The treasure map routes us in: \(Cast.hero(ClawdbergHero.mikeyWaltz).name) stands guard, the Goonies walk in with their jobs on their labels.", "“Every subagent gets to be a Goonie.”", "footsteps")),
     (afterChoose + 12.3, ("WINDOW (CLAWD OF THE RINGS)", "The map of Middle-earth walks us to the window in \(Location.prancingPony.name): live cards tick, then a Codex card flips to NEEDS YOU.", "“Prefer a window? Step into \(Location.prancingPony.name).”", "a ping")),
