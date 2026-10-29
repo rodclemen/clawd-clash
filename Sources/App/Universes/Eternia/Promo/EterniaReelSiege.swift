@@ -13,8 +13,8 @@ import AppKit
 private let toJawbridge = 2.0
 private let pullUp = 1.0, hopOff = 1.1, staffUp = 1.5, orkkoPops = 2.4, oops = 2.8, rainFrom = 2.95, rainTo = 5.6
 private let leapFrom = 3.5, leapTo = 4.15, liftFrom = 4.45, liftTo = 4.85, scatter = 4.6, puffAt = 5.0, tossAt = 5.6, moralAt = 6.0
-/// How high He-Clawd holds the Roton: its tracks this many rows off the floor, well clear of his head.
-private let heldRows = 33.0
+/// How high He-Clawd holds the Roton: its tracks this many rows off the floor, just over his hair, his hands under it.
+private let heldRows = 27.0
 /// Where everyone stops at the jawbridge (fx units).
 private let rotonX = 268.0, skeleX = 200.0, beastX = 246.0, trapX = 292.0, orkkoX = 150.0, katLands = 112.0
 
@@ -44,42 +44,56 @@ private func roton(_ ctx: CGContext, x: Double, lift: Double, facing: Double, mo
 }
 
 /// He-Clawd lifting, at fx `x` (his middle): his own sprite, sunk `crouch` rows into a squat over his four legs, and
-/// (with `hull`, the fx row of the Roton's underside) both arms straight up beside his head, fists pressed under it.
-/// Drawn like the kit's `draw`, outlined in Claude's colour.
+/// (with `hull`, the fx row of the Roton's underside) his own short arms bent straight up from the shoulders, close
+/// beside his head, the hands flat under the hull. The arms are his sprite's: the stubs at his sides are lifted off
+/// and drawn upright in their own colours, so he never has four. Drawn like the kit's `draw`, outlined in Claude's colour.
 private func heLifting(_ ctx: CGContext, x: Double, crouch: Int, hull: Double?, t: Double) {
     let s = PixelCanvas(Sprite.width, Sprite.height)
     Cast.hero(EterniaHero.heClawd).draw(s, t: t, mode: .idle, walking: false, role: .rest, asSession: true, habits: false)
     guard let b = s.solidBounds() else { return }
     if crouch > 0 { s.move(columns: 0..<s.w, rows: 0..<(b.maxY - 2), dy: crouch) }
     let pad = 40
-    let c = PixelCanvas(Sprite.width, Sprite.height + pad)
-    c.paste(s, x: 0, y: pad)
     let top = groundY - 44                                     // the fx row of the sprite's top
-    if let hull = hull {
-        let reach = Int((hull - (top - Double(pad))).rounded())   // the hull's underside, in canvas rows
-        let shoulder = pad + b.maxY - 12 + crouch
-        if reach < shoulder - 3 {
-            let skin = clawdOrange, lit = C(0xF09A78), shade = C(0xB05A40), ink = C(0x1E1828)
-            let leather = C(0x8A5E38), leatherL = C(0xB07C4C)
-            let len = shoulder - reach
-            // Each arm: a forearm three wide, a bicep bulging to five over the top third, lit on the side towards the
-            // middle and shaded on the outside; a bracer at the wrist; the fist wide and flat under the hull, knuckles
-            // up. `out` is the side the arm's shadow falls on.
-            for (ax, out) in [(12, -1), (42, 1)] {
-                let bicep = shoulder - len / 3
-                c.rect(ax - 2, reach + 2, 5, len - 2, ink)
-                c.rect(ax - 3 + (out > 0 ? 1 : 0), bicep - 1, 6, len / 3 + 1, ink)
-                c.rect(ax - 1, reach + 3, 3, len - 3, skin)
-                c.rect(ax - 2 + (out > 0 ? 1 : 0), bicep, 4, len / 3, skin)
-                c.rect(out > 0 ? ax + 1 : ax - 1, reach + 3, 1, len - 3, shade)
-                c.rect(out > 0 ? ax + 2 : ax - 2, bicep, 1, len / 3, shade)
-                c.rect(out > 0 ? ax - 1 : ax + 1, bicep + 1, 1, len / 3 - 2, lit)
-                c.rect(ax - 1, reach + 4, 3, 3, leather)          // his bracer
-                c.rect(ax - 1, reach + 4, 3, 1, leatherL)
-                c.rect(ax - 3, reach - 1, 7, 5, ink)              // the fist, flat under the hull
-                c.rect(ax - 2, reach, 5, 3, skin)
-                c.rect(ax - 2, reach, 5, 1, lit)
-                c.px(ax - 1, reach + 1, shade); c.px(ax + 1, reach + 1, shade)   // the knuckles
+    // His arm stubs are the rows in his lower half reaching out past his face on both sides (higher up, his hair
+    // widens like that too); the face's last row gives its edges.
+    func span(_ y: Int) -> (Int, Int)? {
+        let xs = (0..<s.w).filter { s.isDrawn($0, y) }
+        return xs.isEmpty ? nil : (xs.first!, xs.last!)
+    }
+    var stubRows: [Int] = []
+    var left = b.minX, right = b.maxX
+    for y in ((b.minY + b.maxY) / 2)...b.maxY {
+        guard let above = span(y - 1), let row = span(y) else { continue }
+        if stubRows.isEmpty && row.0 <= above.0 - 2 && row.1 >= above.1 + 2 { left = above.0; right = above.1 }
+        if row.0 <= left - 2 && row.1 >= right + 2 { stubRows.append(y) } else if !stubRows.isEmpty { break }
+    }
+    let raised = hull.map { Int(($0 - (top - Double(pad))).rounded()) }
+    let lifting = raised != nil && !stubRows.isEmpty
+    let c = PixelCanvas(Sprite.width, Sprite.height + pad)
+    for y in 0..<s.h {
+        for x in 0..<s.w where s.isDrawn(x, y) {
+            // Lifting, the stubs come off (they're drawn raised below), and so does the sword at his side, put away.
+            if lifting && y <= stubRows.last! && (x < left || x > right) { continue }
+            c.px(x, y + pad, unpremultiplied(s, (y * s.w + x) * 4))
+        }
+    }
+    if lifting, let hullRow = raised {
+        let wide = left - span(stubRows[0])!.0                    // as wide as the stub was
+        let stub = stubRows.map { unpremultiplied(s, ($0 * s.w + left - 1) * 4) }
+        let from = stubRows.last! + pad + 1                       // under the stub: where the arm comes out
+        // The hands go no higher than a little over his hair: tossed, the Roton leaves them behind.
+        let reach = max(hullRow, b.minY + pad + crouch - 3)
+        if reach < from - 4 {
+            let skin = stub[0], band = stub[stub.count / 2], ink = C(0x1E1828)
+            let shade = C(0xB05A40), lit = C(0xF09A78)
+            for (x0, out) in [(left - wide, -1), (right + 1, 1)] {
+                c.rect(x0, reach, wide, from - reach, skin)
+                c.rect(out < 0 ? x0 : x0 + wide - 1, reach + 3, 1, from - reach - 3, shade)
+                c.rect(x0, from - 5, wide, 2, band)              // his bracer
+                // The hand, a pixel wider on the outside, flat under the hull, lit along its top.
+                c.rect(out < 0 ? x0 - 1 : x0, reach, wide + 1, 3, skin)
+                c.rect(out < 0 ? x0 - 1 : x0, reach, wide + 1, 1, lit)
+                c.px(out < 0 ? x0 - 1 : x0 + wide, reach + 2, ink)
             }
         }
     }
