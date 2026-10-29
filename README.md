@@ -36,6 +36,8 @@ Clawd Clash is one app with many universes: **[Star Clawds](https://github.com/r
 | https://github.com/user-attachments/assets/76756ccd-d111-4290-b832-8ca4e9e728e4 | https://github.com/user-attachments/assets/dd9213e1-7192-4018-b169-ea451f6a146b |
 | **Stranger Clawds** | **Superclawdtural** |
 | https://github.com/user-attachments/assets/cd3941de-f7e2-4494-a7b3-f8872a0623d5 | https://github.com/user-attachments/assets/cdd105eb-1056-415e-b5bc-9cce6e1ae66a |
+| **Clawds of the Universe** | |
+| https://github.com/user-attachments/assets/6c5511ba-bc0a-4403-b6aa-c9a50501e095 | |
 
 <p align="center"><sub>🔊 Click the speaker in a player for sound: GitHub starts videos muted.</sub></p>
 
