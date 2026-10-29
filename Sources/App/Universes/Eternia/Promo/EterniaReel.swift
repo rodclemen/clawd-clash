@@ -39,6 +39,13 @@ struct EterniaReel: PromoReel {
                    prompt: "You: “by the power of Greyskull, fix the flaky test”", otherPrompt: "You: “steal the castle keys”")
     }
     func sound(_ m: Mix) { eterniaSound(m) }
+    /// Its panel on the promo's comic page: He-Clawd against Skeleclawd, and the title sequence's lightning striking
+    /// the raised Power Sword, with the thunder and the crackle after it.
+    var comic: ComicPanel? {
+        ComicPanel(hero: .hero(EterniaHero.heClawd), villain: .villain(EterniaVillain.skeleclawd), sound: "SHING!", pop: (0xE8902A, 0xFFC878),
+                   word: "KRA-KOOM!", piece: { eterniaIntro($0, local: eterniaThunderAt - 0.9 + $1, t: $2) },
+                   hit: { m, at in m.eterniaThunder(at + 0.15, vol: 0.26); m.crackle(at + 0.25, 0.6, vol: 0.04) })
+    }
 }
 
 /// The end card's line under "Have fun. Keep track.": never a count of universes.
