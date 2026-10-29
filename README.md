@@ -19,7 +19,7 @@
 
 <p align="center"><a href="https://ko-fi.com/F4F0290P72"><img src="https://ko-fi.com/img/githubbutton_sm.svg" alt="Support me on Ko-fi"></a></p>
 
-https://github.com/user-attachments/assets/a932957d-41c4-4854-9424-f6ab161fe7df
+https://github.com/user-attachments/assets/f2da9a7e-9e3d-422b-a75a-22a8136e33e5
 
 <p align="center"><sub>Full 1080p version: <a href="promo/clawd-clash-promo.mp4">promo/clawd-clash-promo.mp4</a></sub></p>
 
