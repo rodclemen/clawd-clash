@@ -10,7 +10,9 @@ import Foundation
 //  - Adorra into She-Clawd: a spiral of gold and rainbow light winds up round her, then the white-out. "For the
 //    honour of Greyskull!"
 //  - Spirit into Swift Wind: a rainbow sweeps over him and sparkles settle.
-//  - Back again, any of them: a soft white glow that fades, no lightning.
+//  - Back again: the power leaves them the way it came. A white-out flares over them, and their own light goes back
+//    up and away: the bolt climbs into the sky off Addam and Cringer, Adorra's spiral unwinds up off her head,
+//    Spirit's rainbow sweeps back off him; then the white clears on the plain self, sparks drifting up.
 // And the moral of the story: now and then, when a hero's session finishes its work, they step forward with a lesson,
 // as every episode ended (`morals` in the facts says who and how often; the lines are here).
 
@@ -29,17 +31,20 @@ private func eterniaPowerLine(_ into: Cast) -> String? {
     }
 }
 
-/// How the change looks, by who they become.
-private enum EterniaPowerKind { case lightning, stray, spiral, rainbow, back }
+/// How the change looks, by who they become; on the way back, the look of the power that's leaving them.
+private enum EterniaPowerKind { case lightning, stray, spiral, rainbow }
 
-private func eterniaPowerKind(_ into: Cast) -> EterniaPowerKind {
-    guard into.universe == .eternia, !into.isDark else { return .back }
+private func eterniaPowerKind(_ into: Cast) -> (kind: EterniaPowerKind, back: Bool) {
+    guard into.universe == .eternia, !into.isDark else { return (.lightning, true) }
     switch EterniaHero(rawValue: into.index) {
-    case .heClawd?: return .lightning
-    case .battleKat?: return .stray
-    case .sheClawd?: return .spiral
-    case .swiftWind?: return .rainbow
-    default: return .back
+    case .heClawd?: return (.lightning, false)
+    case .battleKat?: return (.stray, false)
+    case .sheClawd?: return (.spiral, false)
+    case .swiftWind?: return (.rainbow, false)
+    case .cringer?: return (.stray, true)
+    case .adorra?: return (.spiral, true)
+    case .spirit?: return (.rainbow, true)
+    default: return (.lightning, true)
     }
 }
 
@@ -67,8 +72,9 @@ private func eterniaBolt(_ c: PixelCanvas, _ a: (x: Double, y: Double), _ b: (x:
 /// The change, drawn over the character (the canvas: 72×52, its body about x 18…37, its head's top about row 20),
 /// `k` (0…1) through it.
 func eterniaDrawPower(_ c: PixelCanvas, k: Double, t: Double, into: Cast) {
-    let kind = eterniaPowerKind(into)
+    let (kind, back) = eterniaPowerKind(into)
     let flicker = 0.75 + 0.25 * sin(t * 40)
+    if back { eterniaDrawPowerLeaving(c, k: k, t: t, kind: kind, flicker: flicker); return }
     switch kind {
     case .lightning, .stray:
         // The bolt strikes for the first third, flickering; the white-out peaks as it lands and fades.
@@ -124,13 +130,57 @@ func eterniaDrawPower(_ c: PixelCanvas, k: Double, t: Double, into: Cast) {
             let x = 16 + Int(noise(i * 7 + 1) * 28), y = 16 + Int(noise(i * 7 + 2) * 26) + Int(k * 6)
             c.px(x, y, C(0xFFFFFF, 1 - k))
         }
-    case .back:
-        // A soft white glow that fades, no lightning.
-        eterniaWhiteOut(c, C(0xF4F0FF), 0.55 * (1 - k))
-        for i in 0..<6 {
-            let x = 16 + Int(noise(i * 5 + 3) * 26), y = 40 - Int(k * 24) + Int(noise(i * 5 + 4) * 10)
-            c.px(x, y, C(0xFFFFFF, 0.9 * (1 - k)))
+    }
+}
+
+/// The change back, `k` (0…1) through it: a white-out flares over them as the power gathers, their light leaves up
+/// and out of the top (the bolt climbing, the spiral unwinding upwards, the rainbow sweeping back), the white clears
+/// on the plain self and a few sparks drift up after it. Solid pixels throughout, so it reads on a dark desktop.
+private func eterniaDrawPowerLeaving(_ c: PixelCanvas, k: Double, t: Double, kind: EterniaPowerKind, flicker: Double) {
+    let white = k < 0.25 ? k / 0.25 : max(0, 1 - (k - 0.35) / 0.45)
+    eterniaWhiteOut(c, kind == .spiral ? C(0xFFF4D0) : C(0xFFFFFF), white * flicker)
+    let rainbow = [C(0xFF5A5A), C(0xFFB040), C(0xFFE860), C(0x6AE07A), C(0x5AB8FF), C(0xB070FF)]
+    let go = (k - 0.2) / 0.5                                    // 0…1 as the power leaves
+    switch kind {
+    case .lightning, .stray:
+        // The bolt goes back the way it came, its foot leaving their body first and climbing after it: straight up
+        // into the sky off Addam's head, off to the side off Cringer's back.
+        if go > 0 && go < 1 {
+            let from: (x: Double, y: Double) = kind == .lightning ? (28, 26) : (36, 28)
+            let to: (x: Double, y: Double) = kind == .lightning ? (28, -2) : (72, 4)
+            let climb = max(0, go - 0.25) / 0.75
+            let foot = (x: from.x + (to.x - from.x) * climb, y: from.y + (to.y - from.y) * climb)
+            eterniaBolt(c, foot, to, seed: Int(t * 14))
         }
+    case .spiral:
+        // The two strands, gold and rainbow, unwinding upwards off her head and out of the top.
+        if go > 0 && go < 1 {
+            let lift = go * 48
+            for strand in 0..<2 {
+                for i in 0..<30 {
+                    let u = Double(i) / 30
+                    let a = u * 4 * .pi + t * 7 + Double(strand) * .pi, r = 12 - 6 * u
+                    let x = Int((28 + cos(a) * r).rounded()), y = Int((40 - u * 34 - lift).rounded())
+                    guard y > 1, x > 1, x < c.w - 3 else { continue }
+                    c.rect(x, y, 2, 2, strand == 0 ? C(0xFFE070) : rainbow[i % rainbow.count])
+                }
+            }
+        }
+    case .rainbow:
+        // The rainbow sweeps back off him, front to back.
+        if go > 0 && go < 1 {
+            let sweep = 76 - go * 76
+            for (i, col) in rainbow.enumerated() {
+                for x in 2..<(c.w - 3) where Double(x) > sweep && Double(x) < sweep + 26 {
+                    c.px(x, 30 - Int(14 * sin(Double(x) / 72 * .pi)) + i, col)
+                }
+            }
+        }
+    }
+    // Sparks drifting up as it clears, each gone at its own moment.
+    for i in 0..<8 where k > 0.4 && k < 0.4 + 0.6 * noise(i * 7 + 3) {
+        let x = 16 + Int(noise(i * 7 + 1) * 28), y = 34 - Int(noise(i * 7 + 2) * 14) - Int((k - 0.4) * 30)
+        c.px(x, y, i % 2 == 0 ? C(0xFFFFFF) : C(0xFFE070))
     }
 }
 
