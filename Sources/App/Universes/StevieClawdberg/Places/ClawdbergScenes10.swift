@@ -55,12 +55,12 @@ extension Scenes {
             let zip = ((tree - trunk - 30 * s, g - 168 * s), (c.w * 14 / 100, g - 216 * s))
             let lights = [((tree - trunk - 40 * s, g - 70 * s), (c.w * 40 / 100, g - 60 * s), 16 * s),
                           ((tree + trunk + 46 * s, g - 120 * s), (c.w - 2 * s, g - 96 * s), 14 * s),
-                          ((c.w * 40 / 100, g - 60 * s), (c.w * 24 / 100, g - 120 * s), 12 * s)]
+                          ((c.w * 40 / 100, g - 60 * s), (c.w * 10 / 100 + 42 * s, g - 120 * s), 14 * s)]
             return (tree, trunk, g - 226 * s, (c.w * 10 / 100, 18 * s), decks, zip, lights)
         }
         let trunk = 15 * s
         let decks = [(tree - trunk - 26 * s, 17 * s, 30 * s), (tree + trunk - 4 * s, 12 * s, 32 * s)]
-        let zip = ((tree - trunk - 24 * s, 16 * s), (c.w * 18 / 100, 7 * s))
+        let zip = ((tree - trunk - 24 * s, 16 * s), (c.w * 9 / 100 + 18 * s, 8 * s))
         let lights = [((tree - trunk - 26 * s, 18 * s), (c.w * 44 / 100, 14 * s), 6 * s),
                       ((tree + trunk + 28 * s, 13 * s), (c.w - 2 * s, 9 * s), 5 * s)]
         return (tree, trunk, 4 * s, (c.w * 9 / 100, 10 * s), decks, zip, lights)
@@ -166,6 +166,9 @@ extension Scenes {
         }
         for l in f.lights where l.1.0 < c.w - 4 * s && l.1.1 > (tall ? g - 80 * s : 12 * s) {
             c.rect(l.1.0, l.1.1, s * 2, g - l.1.1, C(0x7A5232))   // a pole holding the far end
+        }
+        for l in f.lights where tall && l.1.0 < c.w - 4 * s && l.1.1 <= g - 80 * s {
+            c.rect(l.1.0 - 2 * s, l.1.1 - s, 3 * s, 2 * s, C(0x5A3A22))   // a peg in the cliff holding the far end
         }
         // The grass, with flowers.
         c.ground(g, C(0x4A8A3A), edge: C(0x7AC858), speck: C(0x3E7A30), seed: 91)

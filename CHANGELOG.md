@@ -21,6 +21,9 @@ Doctor Clawd, the fourth, was made for Clawd Clash ([doctor-clawd](https://githu
 - **A third kind of compaction, the transformation** (`compaction: .transform`), the engine request for Clawds of the Universe: when a session's leader is one of a pair of guises, compacting its context turns it into the other, and the next compaction turns it back, in a flash the universe draws (`transformation`, with a line over its head). Nobody meets their own secret identity: if the other guise already leads a session or works as an agent, only the flash plays and the leader stays as it is. `--transform` shows it in the Playground.
 - **The moral of the story** (`morals` in a universe's facts, the lessons in its module), also for Clawds of the Universe: now and then, when a session finishes its work, its leader steps forward with a short lesson in its speech line, as every Filmation episode ended. Each leader has its own chance on each finish, and never twice within half an hour for the same session. `--moral` shows it in the Playground.
 
+### Fixed
+- **Stevie Clawdberg's places hold together.** In Neverland, the left string of fairy lights on the screen saver ended in mid-air: it now ends on a peg in the cliff, and in the window the zip line ends on the cliff top instead of at a cloud. In Kingston Falls, the Peltclawd house floated over a dip in the hill: it now stands on the hill.
+
 ## 4.1.1 (2026-10-25)
 
 ### Added
