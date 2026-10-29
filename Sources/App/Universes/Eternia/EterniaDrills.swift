@@ -1,0 +1,750 @@
+import Foundation
+
+// Clawds of the Universe's own solo practice (`UniverseModule.drills`): He-Clawd pressing a boulder over his head,
+// Teelah running her staff through a kata, Man-At-Clawds at his anvil, Orkko juggling until a ball turns into a fish,
+// Ram Clawd charging a wall and bouncing off it, Bow shooting at a target, Jitsu chopping a stack of planks, Gwildor
+// tuning the Cosmic Key a note at a time, the Horde Troopers at rifle drill (in step with each other, on the shared
+// clock) and Skeleclawd practising his cackle on Screeech. Nobody floats cross-legged in meditation here
+// (`Meditation(who: .never)`): Orkko floats already.
+//
+// These are practice, not the signature moves again: Man-At-Clawds' signature tinkers with his gauntlet, so here he
+// beats out a hot blade on an anvil; Jitsu's chops one plank, so here it's a stack of four on bricks; the Troopers'
+// marches with the rifle shouldered, so here it's spun and ported too; Gwildor's plays a run on the Key held high, so
+// here he tries one note at a time and gets some wrong; Skeleclawd's cackle gets an audience, and a reply.
+
+let eterniaBespokeDrills: [Cast: BespokeDrill] = [
+    .hero(EterniaHero.heClawd): drawBoulderPress,
+    .hero(EterniaHero.teelah): drawStaffKata,
+    .hero(EterniaHero.manAtClawds): drawAnvil,
+    .hero(EterniaHero.orkko): drawJuggling,
+    .hero(EterniaHero.ramClawd): drawWallCharge,
+    .hero(EterniaHero.bow): drawTargetPractice,
+    .villain(EterniaVillain.jitsu): drawPlankStack,
+    .hero(EterniaHero.gwildor): drawKeyTuning,
+    .villain(EterniaVillain.hordeTrooper): drawRifleDrill,
+    .villain(EterniaVillain.skeleclawd): drawCacklePractice,
+]
+
+// MARK: - Shared bits
+
+/// Eased 0…1.
+private func ease(_ k: Double) -> Double {
+    let u = max(0, min(1, k))
+    return u * u * (3 - 2 * u)
+}
+
+/// The breathing bob `drawPersona` gives the upper body right now (-1 or 0), so a prop held in the hand moves with it.
+private func breath(_ who: Cast, _ t: Double) -> Int {
+    sin((t + Double(who.id) * 0.77) * 2 * .pi / 2.6) > 0.35 ? -1 : 0
+}
+
+/// Wipe what's drawn in `columns` × `rows` (an arm or a weapon the drill draws its own way).
+private func wipe(_ c: PixelCanvas, columns: Range<Int>, rows: Range<Int>) {
+    c.move(columns: columns, rows: rows, dy: c.h)
+}
+
+/// A solid line from one point to another, `r` from its centre.
+private func line(_ c: PixelCanvas, _ x0: Double, _ y0: Double, _ x1: Double, _ y1: Double, _ col: Px, _ r: Double = 0.6) {
+    c.glowLine(x0, y0, x1, y1, core: col, glow: C(0, 0), coreR: r, glowR: r + 0.1)
+}
+
+/// A value keyed through a loop: `keys` are (time, value) pairs, eased from one to the next; past the last it eases
+/// back to the first at `period`.
+private func keyed(_ e: Double, period: Double, _ keys: [(Double, Double)]) -> Double {
+    let u = e.truncatingRemainder(dividingBy: period)
+    for i in 0..<keys.count {
+        let a = keys[i], b = i + 1 < keys.count ? keys[i + 1] : (period, keys[0].1)
+        if u >= a.0 && u < b.0 { return a.1 + (b.1 - a.1) * ease((u - a.0) / max(0.001, b.0 - a.0)) }
+    }
+    return keys[0].1
+}
+
+/// A little puff of dust on the ground at `x`, `k` 0…1 through it.
+private func dustPuff(_ c: PixelCanvas, x: Double, y: Double = 43, k: Double, spread: Double = 4) {
+    guard k >= 0, k < 1 else { return }
+    for (dx, dy) in [(-1.0, 0.0), (1.0, 0.0), (-0.6, -1.0), (0.6, -1.0)] {
+        let px = x + dx * spread * (0.5 + k), py = y + dy * (1 + 2 * k)
+        c.glowLine(px, py, px, py, core: C(0xE8DCC0, 0.75 * (1 - k)), glow: C(0xE8DCC0, 0), coreR: 0.7, glowR: 0.8)
+    }
+}
+
+// MARK: - He-Clawd
+
+/// A rock to lift, centred on (`cx`, `cy`): a lumpy grey-brown boulder, lit on its upper left and shaded under,
+/// a crack across it and a few pits.
+private func boulder(_ c: PixelCanvas, cx: Double, cy: Double) {
+    let rock = C(0x8E8270), rockD = C(0x5E5446), rockL = C(0xB8AC96), pit = C(0x4A4238)
+    let rx = 10.0, ry = 6.0
+    for y in Int(cy - ry - 1)...Int(cy + ry + 1) {
+        for x in Int(cx - rx - 1)...Int(cx + rx + 1) {
+            let dx = (Double(x) + 0.5 - cx) / rx, dy = (Double(y) + 0.5 - cy) / ry
+            let bump = 0.08 * sin(atan2(dy, dx) * 5)
+            let d = dx * dx + dy * dy
+            guard d <= 1 + bump else { continue }
+            let col = dx + dy < -0.9 ? rockL : dy > 0.55 || dx + dy > 0.95 ? rockD : rock
+            c.px(x, y, col)
+        }
+    }
+    let x0 = Int(cx.rounded()), y0 = Int(cy.rounded())
+    c.px(x0 - 3, y0 - 2, rockD); c.px(x0 - 2, y0 - 1, rockD); c.px(x0 - 1, y0 - 1, rockD); c.px(x0, y0, rockD)
+    c.px(x0 + 1, y0, rockD); c.px(x0 + 2, y0 + 1, rockD)                      // the crack
+    c.px(x0 + 4, y0 - 3, pit); c.px(x0 - 6, y0 + 1, pit); c.px(x0 + 6, y0 + 2, pit)
+}
+
+/// He-Clawd pressing a boulder: it sits on the ground beside him, he heaves it up over his head in both hands,
+/// presses it up and down twice like a weight, then sets it back down with a thump and a puff of dust.
+private func drawBoulderPress(_ c: PixelCanvas, _ who: Cast, _ d: DrillPlay, _ t: Double) {
+    let r = setRamp(d)
+    standing(c, who, t: t)
+    guard r > 0.15 else { return }
+    let period = 3.8
+    let lifting = r > 0.6
+    let f = lifting ? frac(d.e / period) : 0
+    // How far up: 0 on the ground, 1 overhead; the presses on top of that.
+    var u = 0.0
+    if f > 0.1 && f < 0.3 { u = ease((f - 0.1) / 0.2) } else if f >= 0.3 && f < 0.74 { u = 1 } else if f >= 0.74 && f < 0.9 {
+        u = 1 - ease((f - 0.74) / 0.16)
+    }
+    let press = f > 0.34 && f < 0.7 ? Int((2 * (0.5 - 0.5 * cos((f - 0.34) / 0.18 * 2 * .pi))).rounded()) : 0
+    let b = breath(who, t)
+    let ground = (x: 52.0, y: 37.5), over = (x: 28.0, y: 13.5)
+    let bx = ground.x + (over.x - ground.x) * u * u
+    let by = ground.y + (over.y - ground.y) * (1 - (1 - u) * (1 - u)) + Double(press)
+    boulder(c, cx: bx, cy: by)
+    guard u > 0 else {
+        dustPuff(c, x: 52, k: f >= 0.9 ? (f - 0.9) / 0.1 : -1, spread: 6)
+        return
+    }
+    // His arms, both fists under the rock: the near one goes up with it all the way, the back one joins it once it's
+    // over his head. Clawd's arms are short nubs, so the fists simply rise, as when he raises the Power Sword.
+    wipe(c, columns: 15..<18, rows: 31..<37)
+    wipe(c, columns: 38..<41, rows: 31..<37)
+    let near = Int((33 + Double(b) + (by + 4.5 - 33 - Double(b)) * min(1, u * 1.2)).rounded())
+    let back = Int((33 + Double(b) + (18 + Double(press) - 33 - Double(b)) * ease((u - 0.5) / 0.5)).rounded())
+    let nearX = Int((38 - 2 * ease((u - 0.6) / 0.4)).rounded()), backX = Int((15 + 2 * ease((u - 0.6) / 0.4)).rounded())
+    let bracer = C(0x6A4428), bracerL = C(0x8A5E38)
+    for (x, y) in [(backX, back), (nearX, near)] {
+        c.rect(x, y, 3, 3, clawdOrange); c.rect(x, y + 1, 3, 1, bracer); c.px(x, y + 1, bracerL)
+    }
+}
+
+// MARK: - Teelah
+
+/// Teelah's staff kata, looping: on guard, the staff wound back overhead and brought down in a strike, a low sweep,
+/// a full spin with a hop, a thrust straight out, a high block, and back on guard. A smear behind every fast move.
+private func drawStaffKata(_ c: PixelCanvas, _ who: Cast, _ d: DrillPlay, _ t: Double) {
+    let r = setRamp(d)
+    let period = 3.6
+    let angleKeys: [(Double, Double)] = [(0, -60), (0.4, -150), (0.55, 20), (0.9, 20), (1.1, 30), (1.6, -330), (1.8, -330),
+                                         (2.05, -360), (2.4, -360), (2.75, -450), (3.15, -450),
+                                         (3.6, -420)]
+    let dxKeys: [(Double, Double)] = [(0, 0), (0.4, -1), (0.55, 2), (1.1, 2), (1.6, 1), (2.05, 4), (2.4, 4), (2.75, 0)]
+    let hopKeys: [(Double, Double)] = [(0, 0), (1.25, 0), (1.45, -3), (1.65, 0)]
+    let raiseKeys: [(Double, Double)] = [(0, 0), (0.4, 2), (0.55, 0), (2.4, 0), (2.75, 3), (3.15, 3)]
+    guard r > 0.5 else { standing(c, who, t: t); return }
+    let e = d.e - 0.4
+    // The angle runs on round past a full turn and a bit: -420 at the end of the loop is -60 again, its start.
+    let a = keyed(e, period: period, angleKeys)
+    var trail: [Double] = []
+    let prev = keyed(e - 0.035, period: period, angleKeys), prev2 = keyed(e - 0.07, period: period, angleKeys)
+    if abs(a - prev) > 6 { trail = [prev, prev2] }
+    let dx = Int(keyed(e, period: period, dxKeys).rounded())
+    let hop = Int(keyed(e, period: period, hopKeys).rounded())
+    let raise = Int(keyed(e, period: period, raiseKeys).rounded())
+    standing(c, who, t: t) { p in
+        p.melee = a; p.trail = trail; p.dx = dx; p.hop = hop; p.armRaise = raise; p.breathe = 0
+    }
+}
+
+// MARK: - Man-At-Clawds
+
+/// Man-At-Clawds at the anvil: a blade glowing hot on it, his mace for a hammer, wound up high and brought down on
+/// it with a shower of sparks, again and again; the blade cools a shade between blows and flares at each one.
+private func drawAnvil(_ c: PixelCanvas, _ who: Cast, _ d: DrillPlay, _ t: Double) {
+    let r = setRamp(d)
+    let period = 1.3
+    let working = r > 0.5
+    let f = frac(d.e / period)
+    func swing(_ f: Double) -> Double {
+        if f < 0.45 { return -8 + (-105 + 8) * ease(f / 0.45) }
+        if f < 0.55 { return -105 }
+        if f < 0.6 { return -105 + 97 * (1 - pow(1 - (f - 0.55) / 0.05, 2)) }
+        if f < 0.8 { return -8 }
+        return -8 - 6 * ease((f - 0.8) / 0.2) * (1 - ease((f - 0.8) / 0.2)) * 4
+    }
+    let angle = swing(f)
+    var trail: [Double] = []
+    if f > 0.55 && f < 0.62 { trail = [swing(f - 0.012), swing(f - 0.024)] }
+
+    // The anvil, drawn first so the mace comes down on top of it: a dark iron top face with its horn out to the
+    // right, a narrow waist and a broad foot, lit along the top.
+    if r > 0.15 {
+        let iron = C(0x4A4E58), ironD = C(0x2E3038), ironL = C(0x7A808E)
+        c.rect(45, 37, 13, 2, iron); c.rect(45, 37, 13, 1, ironL)
+        c.rect(58, 37, 3, 1, iron); c.px(61, 37, ironD); c.rect(58, 38, 2, 1, ironD)   // the horn
+        c.rect(48, 39, 7, 2, ironD); c.rect(48, 39, 1, 2, iron)
+        c.rect(46, 41, 11, 2, iron); c.rect(46, 41, 11, 1, ironL); c.rect(45, 43, 13, 1, ironD)
+        // The blade on it, hot: orange through to yellow-white where it's just been struck.
+        let since = working ? (f >= 0.6 ? f - 0.6 : f + 0.4) : 1
+        let heat = max(0, 1 - since * 1.4)
+        eterniaAnvilBlade(c, heat: heat, e: d.e)
+    }
+    standing(c, who, t: t) { p in if working { p.melee = angle; p.trail = trail } }
+
+    // The sparks off each blow, flying up and out, falling back, gone before they reach the frame's edge.
+    guard working, f >= 0.6, f < 0.9 else { return }
+    let k = (f - 0.6) / 0.3, n = Int(floor(d.e / period))
+    let white = C(0xFFFFFF), yellow = C(0xFFE040), orange = C(0xFF8A20)
+    if k < 0.15 {   // the flash of the blow: a solid four-pointed burst
+        c.pattern(48, 31, ["...Y...", "...W...", "..YWY..", "YWWWWWY", "..YWY..", "...W...", "...Y..."],
+                  ["W": white, "Y": yellow])
+    }
+    for i in 0..<8 {
+        let vx = (noise(n * 31 + i * 7) - 0.4) * 44, vy = 26 + noise(n * 17 + i * 3) * 16
+        let x = 51 + vx * k, y = 34 - vy * k + 34 * k * k
+        guard y < 42, y > 2, x > 2, x < 68 else { continue }
+        // A chunky spark, 2 across: white-hot when fresh, yellow then orange as it cools, a pixel of tail behind.
+        let col = k < 0.35 ? (i % 3 == 0 ? white : yellow) : k < 0.7 ? yellow : orange
+        let sx = Int(x.rounded()), sy = Int(y.rounded())
+        c.rect(sx, sy, 2, 2, col)
+        let tx = vx > 0 ? sx - 1 : sx + 2, ty = vy - 68 * k > 0 ? sy + 2 : sy - 1
+        c.px(tx, ty, k < 0.5 ? yellow : orange)
+    }
+}
+
+/// The hot blade on the anvil, all solid pixels: a dark-red outline, an orange body, its edge white-hot to yellow to
+/// orange as `heat` 1…0 falls off after a blow, and its glow a chunky rim of flame-coloured pixels above it that is
+/// widest and tallest just after the blow and shrinks to a few flickering embers as it cools (never a faded halo).
+private func eterniaAnvilBlade(_ c: PixelCanvas, heat: Double, e: Double) {
+    let rim = C(0x8A1E0A), body = C(0xE8601A), white = C(0xFFF6D0), yellow = C(0xFFD040), orange = C(0xFF8A20)
+    let edge = heat > 0.6 ? white : heat > 0.25 ? yellow : C(0xFFA030)
+    // The blade: outlined, the point out to the right, the tang into the tongs' side at the left.
+    c.rect(45, 34, 12, 1, rim); c.rect(44, 35, 1, 2, rim); c.px(57, 35, rim); c.px(57, 36, rim)
+    c.rect(45, 35, 12, 2, body); c.rect(46, 35, 10, 1, edge); c.px(56, 36, C(0xB83A12))
+    // The glow: a row of flame pixels resting on the blade's back, and over it, when hot, a second broken row.
+    let flick = Int(e * 9) % 2
+    if heat > 0.25 {
+        c.rect(45, 33, 12, 1, heat > 0.6 ? yellow : orange)
+        for x in stride(from: 46 + flick, through: 55, by: 2) { c.px(x, 33, heat > 0.6 ? white : yellow) }
+        c.px(44, 34, orange); c.px(57, 34, orange)
+    } else {
+        for x in stride(from: 46 + flick * 2, through: 55, by: 4) { c.px(x, 33, orange) }
+    }
+    if heat > 0.6 {
+        for x in stride(from: 46 + 2 * flick, through: 55, by: 3) { c.px(x, 32, yellow) }
+    }
+}
+
+// MARK: - Orkko
+
+/// Orkko juggling three bright balls in his raised hand, up and round in a loop; at the top of a throw one of them
+/// turns into a fish with a pop of sparkles, which flops down on the floor in front of him, wriggles, and vanishes in
+/// another pop, and the trick starts over with three balls.
+private func drawJuggling(_ c: PixelCanvas, _ who: Cast, _ d: DrillPlay, _ t: Double) {
+    let r = setRamp(d)
+    let juggling = r > 0.5
+    standing(c, who, t: t) { p in if juggling { p.armRaise = 2 } }
+    guard juggling else { return }
+    // His float and breath, so the balls stay with his hand.
+    let lt = t + Double(who.id) * 0.77
+    let lift = -3 + (sin(lt * 2.4) > 0 ? -1 : 0) + breath(who, t)
+    let hand = (x: 40.5, y: 31.0 + Double(lift))
+    let round = 4.4, f = frac(d.e / round), throwT = 1.1
+    let cols: [(Px, Px, Px)] = [(C(0xFFB0F0), C(0xE040C0), C(0x9A2088)), (C(0xB0F0FF), C(0x2AA8E8), C(0x1A6AA8)),
+                                (C(0xFFF6A0), C(0xF0C830), C(0xB08A18))]
+    let ballRim = C(0x2A1830)
+    // Where a ball is, 0…1 through its loop: thrown up the inside and over, caught on the outside, carried back in.
+    func at(_ u: Double) -> (x: Double, y: Double) {
+        if u < 0.78 {
+            let k = u / 0.78
+            return (hand.x + 1 + 7 * k, hand.y - 1 - 13 * 4 * k * (1 - k))
+        }
+        let k = (u - 0.78) / 0.22
+        return (hand.x + 8 - 7 * k, hand.y - 1 + sin(k * .pi) * 1.5)
+    }
+    // The fish: ball 0 turns at the top of its throw a third of the way into the round, falls, flops, and goes.
+    let turnAt = 0.3, landAt = 0.42, goneAt = 0.82
+    for i in 0..<3 {
+        let u = frac(d.e / throwT + Double(i) / 3)
+        var p = at(u)
+        if i == 0 && f > turnAt {
+            if f > goneAt { continue }
+            // Falling from where it turned, out past his hand to the floor, then flopping there.
+            let k = min(1, (f - turnAt) / (landAt - turnAt))
+            let start = (x: hand.x + 5, y: hand.y - 13)
+            p = (start.x + 9 * k, start.y + (41.5 - start.y) * k * k)
+            drawFish(c, x: p.x, y: p.y, flop: k >= 1 ? frac(d.e * 3) : 0, t: t)
+            if f - turnAt < 0.05 { sparklePop(c, x: start.x, y: start.y, k: (f - turnAt) / 0.05) }
+            continue
+        }
+        if i == 0 && f < 0.04 && d.e > round { sparklePop(c, x: p.x, y: p.y, k: f / 0.04) }
+        // A solid round ball, 5 across: its colour, a shine on the upper left, shade under, a dark rim.
+        let (lit, main, shade) = cols[i]
+        let bx = Int(p.x.rounded()) - 2, byy = Int(p.y.rounded()) - 2
+        c.pattern(bx, byy, [".kkk.", "kLBBk", "kBBdk", "kBddk", ".kkk."], ["k": ballRim, "L": lit, "B": main, "d": shade])
+    }
+    if f > goneAt && f < goneAt + 0.05 { sparklePop(c, x: hand.x + 14, y: 41, k: (f - goneAt) / 0.05) }
+}
+
+/// A little orange fish at (`x`, `y`), nose to the left; `flop` 0…1 flips its tail up and down on the floor.
+private func drawFish(_ c: PixelCanvas, x: Double, y: Double, flop: Double, t: Double) {
+    let body = C(0xF08A30), bodyD = C(0xB85A18), bodyL = C(0xFFC070)
+    let x0 = Int(x.rounded()) - 3, y0 = Int(y.rounded()) - 1
+    let up = flop > 0.5 ? -1 : 0
+    c.pattern(x0, y0 + up, [
+        ".LBBB.T",
+        "LBkBBTT",
+        ".dBBd.T",
+    ], ["B": body, "L": bodyL, "d": bodyD, "T": bodyD, "k": C(0x1A1420)])
+}
+
+/// A pop of lemon and magenta sparkles at (`x`, `y`), `k` 0…1 through it: Orkko's magic going off.
+private func sparklePop(_ c: PixelCanvas, x: Double, y: Double, k: Double) {
+    for i in 0..<6 {
+        let a = Double(i) / 6 * 2 * .pi
+        let rr = 1.5 + k * 4
+        c.px(Int((x + cos(a) * rr).rounded()), Int((y + sin(a) * rr).rounded()),
+             (i % 2 == 0 ? C(0xFFF6A0) : C(0xE040C0)).alpha(1 - k * 0.6))
+    }
+}
+
+// MARK: - Ram Clawd
+
+/// Ram Clawd charging a wall: a long stone wall out in front, he hunkers down, charges at it head first, slams into
+/// it (the wall shudders, cracks, and a block tumbles off its end), bounces back off in a hop, stands there dizzy with stars round his helmet,
+/// and walks back to where he started.
+private func drawWallCharge(_ c: PixelCanvas, _ who: Cast, _ d: DrillPlay, _ t: Double) {
+    let r = setRamp(d)
+    let period = 3.6
+    let going = r > 0.6
+    let f = going ? frac(d.e / period) : -1
+    var dx = 0.0, hop = 0.0, crouch: Double?, running = false
+    if f < 0 {
+        // Not yet (or no longer) at it: stood in front of the wall.
+    } else if f < 0.2 { crouch = 0.05 + 0.17 * ease(f / 0.15) }
+    else if f < 0.38 { dx = 7 * pow((f - 0.2) / 0.18, 1.6); running = true }
+    else if f < 0.42 { dx = 7 }
+    else if f < 0.56 { let k = (f - 0.42) / 0.14; dx = 7 - 8 * ease(k); hop = 4 * sin(k * .pi) }
+    else if f < 0.86 { dx = -1 }
+    else { dx = -1 + ease((f - 0.86) / 0.12); running = f < 0.98 }
+    // He steps back a few paces as the set starts, to give the wall room to run on out of the frame.
+    let back = -3 * ease((r - 0.15) / 0.45)
+    if r > 0.15 && r < 0.6 { running = true }
+    dx += back
+
+    // The wall: a long, low wall of stone blocks running on out of the frame, laid in courses with the joints
+    // staggered, a row of capstones along the top. It shudders when he hits it, and every hit cracks it further and
+    // knocks a block off its top end, which tumbles down into the rubble at its foot.
+    if r > 0.15 {
+        let shake = f >= 0.38 && f < 0.46 ? (Int(t * 40) % 2 == 0 ? 1 : 0) : 0
+        // Hits so far this set (counted up to where he stops charging, so the damage stays put as the set ends).
+        let eh = max(0, min(d.e, d.length - 0.45))
+        let hits = Int(floor(eh / period)) + (frac(eh / period) >= 0.4 ? 1 : 0)
+        ramWall(c, x0: 55 + shake, hits: hits, fall: f >= 0.4 && f < 0.56 ? (f - 0.4) / 0.16 : -1)
+    }
+
+    let body = PixelCanvas(c.w, c.h)
+    drillPose = { p in if let s = crouch { p.signature = s } }
+    drawPersona(body, who, t: t, mode: .idle, walking: running, role: .none)
+    drillPose = nil
+    let ix = Int(dx.rounded()), iy = Int(hop.rounded())
+    if running && f < 0.4 {
+        // The rush of air behind him as he charges.
+        for (k, y) in [27.0, 31, 35].enumerated() {
+            let x = 13 + dx, len = 3 + Double(k % 2) * 3 + dx * 0.5
+            c.glowLine(x - len, y, x, y, core: C(0xF4F8FF, 0.8), glow: C(0xD8E4F8, 0.35), coreR: 0.4, glowR: 1.2)
+        }
+    }
+    c.paste(body, x: ix, y: -iy)
+    if f >= 0.38 && f < 0.44 {
+        // The clonk: a white burst where his horn meets the stone.
+        let k = (f - 0.38) / 0.06
+        for (ax, ay) in [(-1.0, -1.0), (-1.0, 1.0), (-1.4, 0.0), (0.0, -1.4), (0.0, 1.4)] {
+            let x = 54 + ax * (1 + k * 3), y = 28 + ay * (1 + k * 3)
+            c.px(Int(x.rounded()), Int(y.rounded()), C(0xFFF8D8))
+        }
+    }
+    if f >= 0.5 && f < 0.86 {
+        // Dizzy: three stars circling over his helmet.
+        for i in 0..<3 {
+            let a = t * 5 + Double(i) * 2.1
+            let x = 28 + cos(a) * 9 + Double(ix), y = 13 + sin(a) * 2
+            let col = C(0xFFE860)
+            let sx = Int(x.rounded()), sy = Int(y.rounded())
+            c.px(sx, sy, col); c.px(sx - 1, sy, col.alpha(0.7)); c.px(sx + 1, sy, col.alpha(0.7))
+            c.px(sx, sy - 1, col.alpha(0.7)); c.px(sx, sy + 1, col.alpha(0.7))
+        }
+    }
+}
+
+/// Ram Clawd's wall, its near end at `x0`: capstones along the top over four courses of grey stone blocks, joints
+/// staggered, each block lit along its top; it runs on out past the frame's edge. `hits` so far crack its face and
+/// knock blocks off its top end into a heap of rubble at its foot; `fall` 0…1 tumbles down the one just knocked off.
+private func ramWall(_ c: PixelCanvas, x0: Int, hits: Int, fall: Double) {
+    let stone = C(0x8A7E6E), stoneD = C(0x5A5046), stoneL = C(0xB0A490), cap = C(0x9C9080), crack = C(0x2A2420)
+    let gone = min(hits, 3)
+    // The courses: rows 30 to 43, three rows each (lit top, face, mortar), joints every 6, offset by 3 a course.
+    for (n, y) in [30, 33, 36, 39, 42].enumerated() {
+        let rows = y == 42 ? 2 : 3
+        c.rect(x0, y, c.w - x0, rows, stone)
+        c.rect(x0, y, c.w - x0, 1, stoneL)
+        if rows == 3 { c.rect(x0, y + 2, c.w - x0, 1, stoneD) }
+        var jx = x0 + (n % 2 == 0 ? 6 : 3)
+        while jx < c.w { c.rect(jx, y, 1, rows, stoneD); jx += 6 }
+    }
+    c.rect(x0, 30, 1, 14, stoneL)   // the lit near end
+    // The capstones: a row of long blocks overhanging the near end by one.
+    c.rect(x0 - 1, 28, c.w - x0 + 1, 2, cap); c.rect(x0 - 1, 28, c.w - x0 + 1, 1, stoneL)
+    var jx = x0 + 6
+    while jx < c.w { c.rect(jx, 28, 1, 2, stoneD); jx += 7 }
+    // Blocks knocked off the top end, one a hit: the end capstone, the half block under it, the next capstone.
+    let holes: [(Int, Int, Int, Int)] = [(x0 - 1, 28, 7, 2), (x0, 30, 3, 3), (x0 + 6, 28, 7, 2)]
+    for i in 0..<gone {
+        let h = holes[i]
+        c.move(columns: h.0..<(h.0 + h.2), rows: h.1..<(h.1 + h.3), dy: c.h)
+    }
+    // The crack, longer with every hit, zigzagging down and back from where his horns land.
+    let path = [(1, 31), (2, 32), (2, 33), (3, 34), (4, 35), (4, 36), (5, 37), (6, 38), (6, 39), (7, 40), (8, 41), (8, 42)]
+    for (x, y) in path.prefix(min(path.count, hits * 5)) { c.px(x0 + x, y, crack) }
+    if hits >= 2 { c.px(x0 + 3, 33, crack); c.px(x0 + 4, 32, crack) }
+    // The rubble at its foot: a lump for every block that's come down.
+    let landed = fall >= 0 ? gone - 1 : gone
+    let lumps: [(Int, Int, Int)] = [(-4, 42, 3), (-7, 42, 2), (-2, 41, 2)]
+    for i in 0..<max(0, min(landed, 3)) {
+        let l = lumps[i]
+        c.rect(x0 + l.0, l.1, l.2, 43 - l.1 + 1, stone); c.rect(x0 + l.0, l.1, l.2, 1, stoneL)
+        c.px(x0 + l.0 + l.2 - 1, 43, stoneD)
+    }
+    // The block coming down now: off the top end, tumbling over as it drops to the ground in front.
+    if fall >= 0 && gone > 0 {
+        let k = min(1, fall)
+        let bx = Double(x0) - 1 - 4 * k, by = 28 + 13 * k * k
+        let flat = Int(k * 6) % 2 == 0
+        let ix = Int(bx.rounded()), iy = Int(by.rounded())
+        if flat {
+            c.rect(ix, iy, 5, 2, cap); c.rect(ix, iy, 5, 1, stoneL); c.px(ix + 4, iy + 1, stoneD)
+        } else {
+            c.rect(ix, iy - 1, 2, 4, cap); c.rect(ix, iy - 1, 1, 4, stoneL); c.px(ix + 1, iy + 2, stoneD)
+        }
+        // Grit off the broken top, falling with it.
+        c.px(x0 + 1, 30 + Int(k * 10), stoneL); c.px(x0 - 2, 31 + Int(k * 7), stone)
+    }
+}
+
+// MARK: - Bow
+
+/// Bow at the butts: a round target on a stand out in front, an arrow loosed at it every second and a half, each one
+/// staying where it struck (now and then dead centre), so they gather in it through the set.
+private func drawTargetPractice(_ c: PixelCanvas, _ who: Cast, _ d: DrillPlay, _ t: Double) {
+    let r = setRamp(d)
+    let period = 1.6
+    let shooting = d.e > 0.6 && d.length - d.e > 0.8
+    standing(c, who, t: t) { p in if shooting { p.fire = (d.e, false); p.firePeriod = period } }
+    guard r > 0.15 else { return }
+    // The target: seen side on, a tall oval of straw, white, red and gold rings, on a two-legged stand.
+    let cx = 63.5, cy = 30.5
+    let straw = C(0xC8A060), strawD = C(0x8A6A34)
+    line(c, 62, 36, 60, 43, strawD, 0.6); line(c, 65, 36, 67, 43, strawD, 0.6)
+    let rings: [(Double, Px)] = [(1, C(0xF0ECE0)), (0.72, C(0xC83838)), (0.46, C(0xF0ECE0)), (0.22, C(0xF0C040))]
+    for y in 22...39 {
+        for x in 59...68 {
+            let dx = (Double(x) + 0.5 - cx) / 4.2, dy = (Double(y) + 0.5 - cy) / 8.2
+            let dd = sqrt(dx * dx + dy * dy)
+            guard dd <= 1 else { continue }
+            var col = straw
+            for (rr, ring) in rings where dd <= rr { col = ring }
+            if dd > 0.86 { col = dd > 0.94 || dx > 0.5 ? strawD : straw }
+            c.px(x, y, col)
+        }
+    }
+    // The arrows: the one in flight, and every one that's landed this set, stuck in the face.
+    let arrow = C(0x6A4A2A), head = C(0xC8CCD4), fletch = C(0xF0ECE0)
+    func hit(_ k: Int) -> (x: Double, y: Double) {
+        let bull = noise(d.seed &+ k * 13) < 0.25
+        return bull ? (cx - 1, cy) : (cx - 1.5 + (noise(k * 7 + d.seed) - 0.5) * 2, cy + (noise(k * 11 + d.seed) - 0.5) * 11)
+    }
+    func stuck(_ h: (x: Double, y: Double), alpha: Double = 1) {
+        let y = Int(h.y.rounded()), x = Int(h.x.rounded())
+        c.rect(x - 6, y, 6, 1, arrow.alpha(alpha)); c.px(x - 7, y - 1, fletch.alpha(alpha)); c.px(x - 7, y + 1, fletch.alpha(alpha))
+        c.px(x - 6, y - 1, fletch.alpha(alpha * 0.8)); c.px(x - 6, y + 1, fletch.alpha(alpha * 0.8))
+    }
+    let first = Int(ceil(0.6 / period)), last = Int(floor(d.e / period))
+    guard last >= first else { return }
+    for k in first...last {
+        let shot = Double(k) * period
+        guard shot < d.length - 0.8 else { break }
+        let flight = (d.e - shot) / 0.2
+        let h = hit(k)
+        if flight >= 1 { stuck(h); continue }
+        let x = 50 + (h.x - 50) * flight, y = 34 + (h.y - 34) * flight
+        line(c, x - 7, y, x - 1, y, arrow, 0.45)
+        c.px(Int(x.rounded()), Int(y.rounded()), head); c.px(Int((x - 7).rounded()), Int(y.rounded()), fletch)
+    }
+}
+
+// MARK: - Jitsu
+
+/// Jitsu chopping a stack of planks: four boards laid on two piles of bricks in front of him, the gold hand raised
+/// high and brought down through the lot, each board snapping a moment after the one above it and folding down into
+/// a V, splinters flying; then a fresh stack for the next one.
+private func drawPlankStack(_ c: PixelCanvas, _ who: Cast, _ d: DrillPlay, _ t: Double) {
+    let r = setRamp(d)
+    let period = 2.8
+    let working = r > 0.5
+    let f = working ? frac(d.e / period) : 0
+    func swing(_ f: Double) -> Double? {
+        if f < 0.08 || f > 0.86 { return nil }
+        if f < 0.4 { return -78 - 40 * ease((f - 0.08) / 0.3) }
+        if f < 0.47 { let k = (f - 0.4) / 0.07; return -118 + 128 * (1 - pow(1 - k, 3)) }
+        if f < 0.74 { return 10 }
+        return 10 - 88 * ease((f - 0.74) / 0.12)
+    }
+    var trail: [Double] = []
+    if f > 0.4, f < 0.48, let a = swing(f), let b = swing(f - 0.012), abs(a - b) > 6 { trail = [b, swing(f - 0.024) ?? b] }
+    let broke = f >= 0.44 && f < 0.92 ? f - 0.44 : -1
+
+    if r > 0.15 {
+        // The bricks: two piles of two, red, mortar between.
+        let brick = C(0xA8483A), brickD = C(0x6E2A22), brickL = C(0xC86A54)
+        for x in [46, 58] {
+            for y in [39, 41] {
+                c.rect(x, y, 5, 2, brick); c.rect(x, y, 5, 1, brickL); c.px(x + 4, y + 1, brickD)
+            }
+            c.rect(x, 43, 5, 1, brickD)
+        }
+        // The planks, top first.
+        let wood = C(0xC89A5A), woodD = C(0x8A6232), woodL = C(0xE8C080)
+        let fresh = f >= 0.92 ? (f - 0.92) / 0.08 : 1
+        for i in 0..<4 {
+            let y = 31 + i * 2
+            let snap = broke - Double(i) * 0.012
+            if broke < 0 || snap < 0 {
+                let a = broke < 0 && f >= 0.92 ? fresh : 1
+                c.rect(45, y, 18, 2, wood.alpha(a)); c.rect(45, y, 18, 1, woodL.alpha(a)); c.px(62, y + 1, woodD.alpha(a))
+                for x in [48, 55, 59] { c.px(x, y + 1, woodD.alpha(a)) }
+                continue
+            }
+            // Snapped: the two halves fold down into a V from their outer ends.
+            let droop = 26 * ease(min(1, snap / 0.06))
+            for (pivot, dir) in [((45.5, Double(y) + 0.5), 0.0), ((62.5, Double(y) + 0.5), 180.0)] {
+                let a = dir == 0 ? droop : 180 - droop
+                let tip = eterniaReach(pivot, a, 8.5)
+                line(c, pivot.0, pivot.1, tip.x, tip.y, wood, 0.9)
+                let q0 = eterniaReach(pivot, a, 2), q1 = eterniaReach(pivot, a, 7)
+                line(c, q0.x, q0.y - 0.6, q1.x, q1.y - 0.6, woodL, 0.3)
+            }
+        }
+        if broke >= 0 && broke < 0.2 {
+            // Splinters thrown up off the break, and the flash of the blow.
+            let u = broke / 0.2
+            for k in 0..<6 {
+                let vx = (Double(k) - 2.5) * 2.2, vy = 8 + Double(k % 3) * 2.5
+                let x = 54 + vx * u * 2, y = 31 - vy * u + 16 * u * u
+                guard y < 43 else { continue }
+                c.px(Int(x.rounded()), Int(y.rounded()), k % 2 == 0 ? woodL : wood)
+            }
+            if broke < 0.04 {
+                c.glowLine(54, 31, 54, 31, core: C(0xFFFFFF, 0.9), glow: C(0xFFE28A), coreR: 0.8, glowR: 4,
+                           strength: 1 - broke / 0.04)
+            }
+        }
+    }
+    standing(c, who, t: t) { p in
+        if working, let a = swing(f) { p.melee = a; p.trail = trail }
+    }
+}
+
+// MARK: - Gwildor
+
+/// Gwildor tuning the Cosmic Key at his side, one note at a time up its row of lights: a light flares, a single note
+/// floats up off it in its colour; now and then the note comes out sour (grey and wobbling, drooping instead of
+/// rising) and he tries that one again.
+private func drawKeyTuning(_ c: PixelCanvas, _ who: Cast, _ d: DrillPlay, _ t: Double) {
+    let r = setRamp(d)
+    standing(c, who, t: t)
+    guard r > 0.5 else { return }
+    let beat = 1.1
+    let n = Int(floor((d.e - 0.4) / beat))
+    guard n >= 0 else { return }
+    // Walk the notes so far: a sour one is played again, a good one moves on to the next light.
+    var light = 0, sour = false
+    for k in 0...n {
+        if k > 0 && !sour { light = (light + 1) % 4 }
+        sour = noise(d.seed &+ k * 29) < 0.3
+    }
+    let k = frac((d.e - 0.4) / beat)
+    let b = breath(who, t)
+    let lights: [UInt32] = [0xFF4A4A, 0xFFE040, 0x40F060, 0x30D8FF]
+    let lx = 42 + light * 3, ly = 34 + b
+    let col = C(lights[light])
+    if k < 0.35 {
+        // The light he's sounding, flaring (or flickering dully, for a sour one).
+        let on = !sour || Int(t * 16) % 2 == 0
+        if on {
+            c.rect(lx, ly, 2, 2, sour ? col.alpha(0.6) : C(0xFFFFFF)); c.px(lx + 1, ly + 1, col)
+            c.glowLine(Double(lx) + 1, Double(ly) + 1, Double(lx) + 1, Double(ly) + 1, core: C(0xFFFFFF, 0),
+                       glow: col.alpha(sour ? 0.3 : 0.8), coreR: 0.1, glowR: 3.2)
+        }
+    }
+    // The note: up and away in the light's colour, or a sour grey one that wobbles, sags and fades.
+    let x0 = Double(lx + 1), y0 = Double(ly - 3)
+    let x = sour ? x0 + 1 + (Int(t * 14) % 2 == 0 ? 1 : 0) : x0 + 2 + sin(k * 5) * 1.2
+    let y = sour ? y0 - 4 * sin(min(1, k * 1.6) * .pi * 0.6) + max(0, k - 0.5) * 6 : y0 - k * 15
+    let a = k < 0.6 ? 1 : max(0, 1 - (k - 0.6) / 0.4)
+    let nc = sour ? C(0x8A9A7A, a) : col.alpha(a)
+    c.pattern(Int(x.rounded()), Int(y.rounded()) - 4, sour ? ["..N", "..N", "NNN", "NN."] : ["..NN", "..N.", "..N.", "NNN.", "NN.."],
+              ["N": nc])
+}
+
+// MARK: - Horde Trooper
+
+/// A Horde Trooper at rifle drill, marking time on the spot: four counts with the rifle shouldered, a spin of it
+/// in the hand, two at the port (slanted out in front), and back to the shoulder. The counts run on the shared
+/// clock, so two Troopers practising at once drill in step.
+private func drawRifleDrill(_ c: PixelCanvas, _ who: Cast, _ d: DrillPlay, _ t: Double) {
+    let drilling = d.e > 0.4 && d.length - d.e > 0.4
+    guard drilling else { standing(c, who, t: t); return }
+    let count = 0.5
+    let beats = t / count
+    let step = Int(floor(beats)) % 2, ph = frac(beats)
+    // The signature's marching legs, stepped to this clock: it reads `beats` from how far through it is.
+    standing(c, who, t: t) { p in p.signature = (2 + Double(step) + ph) / 8 }
+    // Its shouldered rifle comes off; the drill's own is drawn in the fist.
+    let b = breath(who, t)
+    wipe(c, columns: 39..<42, rows: 14..<33)
+    let n = Int(floor(beats)) % 8
+    var angle = -90.0, trail: [Double] = []
+    switch n {
+    case 4:
+        let spin = { (u: Double) -> Double in -90 - 360 * ease(u) }
+        angle = spin(ph); trail = [spin(ph - 0.08), spin(ph - 0.16)]
+    case 5: angle = -90 + 45 * ease(ph / 0.4)
+    case 6: angle = -45
+    case 7: angle = -45 - 45 * ease(ph / 0.4)
+    default: break
+    }
+    let hand = (x: 39.5, y: 34.5 + Double(b))
+    let dark = C(0x24262E), darkL = C(0x40434E), greyD = C(0x646876), red = C(0xD8202A)
+    for (i, a) in trail.enumerated() where abs(a - angle) > 4 {
+        let e0 = eterniaReach(hand, a, 4), e1 = eterniaReach(hand, a, 14)
+        c.glowLine(e0.x, e0.y, e1.x, e1.y, core: C(0xE8E8F0), glow: C(0xE8E8F0), coreR: 0.5, glowR: 1.4,
+                   strength: 0.3 / Double(i + 1))
+    }
+    eterniaBar(c, hand, angle, from: -4, to: 11, dark, r: 1.0)
+    eterniaBar(c, hand, angle, from: -3, to: 10, darkL, r: 0.3)
+    eterniaBar(c, hand, angle, from: 11, to: 14, greyD, r: 0.5)
+    let sight = eterniaReach(eterniaReach(hand, angle, 7), angle - 90, 1.6)
+    c.px(Int(sight.x.rounded()), Int(sight.y.rounded()), red)
+    c.rect(38, 33 + b, 3, 3, C(0x9498A6)); c.px(38, 33 + b, C(0xC6CAD4))   // the fist round it
+}
+
+// MARK: - Skeleclawd
+
+/// Screeech perched small, as the vulture he is, his top-left at (`x`, `y`), facing left: hunched green wings up
+/// over his back like shoulders, ragged at their tips; a bald plum head poking forward on a thin neck out of a
+/// lavender ruff, a hooked yellow beak, an angry eye under a heavy brow, and four thin yellow legs with talons (his
+/// own art's colours). `cry`: he flings his wings up and screeches back, beak open, rings of sound off it.
+private func perchedScreeech(_ c: PixelCanvas, x: Int, y: Int, cry: Bool, t: Double) {
+    let pal: [Character: Px] = [
+        "P": C(0x7A3A9E), "D": C(0x56247A), "p": C(0xA060C4), "R": C(0xC09ADA), "r": C(0x9A72B8),
+        "G": C(0x4CA83A), "g": C(0x2E7424), "L": C(0x86D45E), "B": C(0xF0B830), "b": C(0xB4801A),
+        "T": C(0xE0A834), "t": C(0xA8761E), "k": C(0x1A1420), "W": C(0xFFFFFF), "M": C(0xC0304A),
+    ]
+    let legs = [
+        "........T.T.T.T...",
+        "........T.T.T.T...",
+        ".......tTtTtTtTt..",
+    ]
+    let body = [
+        "......r.rRRRRgGgGg",
+        "......rRRRRRgGgGgG",
+        ".......rRRRRggGgGg",
+        ".......rRRRgg.g.g.",
+        "........rRrg..g...",
+    ]
+    if cry {
+        // Wings flung up over his back, ragged at the ends; beak open.
+        c.pattern(x, y - 7, [
+            ".........L....L...",
+            "........gL...LgL..",
+            "........gGL.LGg.L.",
+            ".......g.GLLLGg.G.",
+            ".......gGGGLGGGgG.",
+            "........gGGLGGGG..",
+            "........gGGGGGGg..",
+        ], pal)
+        c.pattern(x, y, [
+            "........gGGGGGGg..",
+            "..DPPD..rgGGGGg...",
+            ".DPpPPP.rRgGGGgg..",
+            "BBkWPPP.rRRgGgGg..",
+            "B.MDPP..rRRRgGgGg.",
+            "BMb.PP.rRRRRGgGgG.",
+            "bb...PPrRRRRgGgGgG",
+            "......PPRRRRRgGgGg",
+            ".......rRRRRRRgGgG",
+        ] + body + legs, pal)
+        // Rings of sound off the open beak, solid, out towards Skeleclawd.
+        let f = frac(t * 3)
+        for k in 0..<2 {
+            let rr = 3.0 + (f + Double(k)) * 4
+            for dd in stride(from: -45.0, through: 45.0, by: 15) {
+                let a = (180 + dd) * .pi / 180
+                c.px(Int((Double(x) + cos(a) * rr).rounded()), Int((Double(y) + 4 + sin(a) * rr).rounded()), C(0xF4F0FF))
+            }
+        }
+        return
+    }
+    // Hunched: the folded wings stand up over his back higher than his head, which hangs forward and low.
+    c.pattern(x, y - 3, [
+        "..........LLLL....",
+        ".........LGGGGLL..",
+        "........LGGgGGGGL.",
+        "........gGGgGGgGGL",
+        "...DPPD.rGGgGGgGGG",
+        "..DDpPPPrRGgGGgGGG",
+        ".BBkWPPPrRGgGgGgGG",
+        "BBbDPPP.rRRgGgGgGg",
+        "B..bPP..rRRgGgGgGG",
+        "b....PP.rRRRgGgGgG",
+        "......PPrRRRgGgGgG",
+        ".......rRRRRgGgGgG",
+    ] + body + legs, pal)
+}
+
+/// The 3×5 letters of his "HA HA".
+private let cackleGlyphs: [Character: [String]] = [
+    "H": ["X.X", "X.X", "XXX", "X.X", "X.X"],
+    "A": [".X.", "X.X", "XXX", "X.X", "X.X"],
+]
+
+/// Skeleclawd practising his cackle on Screeech, perched small in front of him: he shakes his fist and
+/// cackles, HAs floating up off him; the bird sits through it unimpressed, then flings up his wings and screeches
+/// right back at him, and Skeleclawd shuts up and flinches.
+private func drawCacklePractice(_ c: PixelCanvas, _ who: Cast, _ d: DrillPlay, _ t: Double) {
+    let r = setRamp(d)
+    let period = 4.6
+    let on = r > 0.5
+    let f = on ? frac(d.e / period) : 0
+    let cackling = on && f > 0.08 && f < 0.56
+    let reply = on && f > 0.62 && f < 0.9
+    let body = PixelCanvas(c.w, c.h)
+    standing(body, who, t: t) { p in if cackling { p.signature = 0.5 } }
+    c.paste(body, x: reply ? -1 : 0)
+    guard r > 0.15 else { return }
+
+    // Screeech, perched on the ground in front of him, facing his master.
+    perchedScreeech(c, x: 51, y: 27, cry: reply, t: t)
+
+    // The HAs, rising off him while he cackles.
+    guard cackling else { return }
+    let ink = C(0xFFF09A)
+    for i in 0..<2 {
+        let u = frac((d.e - 0.08 * period) / 1.0 + Double(i) / 2)
+        let x = 17 + i * 10 + Int((sin(u * 6 + Double(i)) * 1.2).rounded()), y = 10 - Int(u * 8)
+        guard y >= 2 else { continue }
+        let a = 0.95 * (u < 0.6 ? 1 : 1 - (u - 0.6) / 0.4)   // just short of solid: no outline, so the letters stay crisp
+        c.pattern(x, y, cackleGlyphs["H"]!, ["X": ink.alpha(a)])
+        c.pattern(x + 4, y, cackleGlyphs["A"]!, ["X": ink.alpha(a)])
+    }
+}
