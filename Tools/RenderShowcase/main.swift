@@ -7,7 +7,7 @@ import AppKit
 // CLAWD_SHOT captures of a Playground run.)
 //   source Tools/universes.sh && swiftc -swift-version 5 Sources/App/{Pixel,Characters,Fights,Persona,Theme,Pose,Locations,Cast,Habits,Drills,Icon,Rides}.swift \
 //          $UNIVERSE_APP $UNIVERSE_SHOWCASE Sources/Shared/*.swift Tools/RenderShowcase/main.swift -o build/rendershowcase
-//   build/rendershowcase docs <name>        doctor, files, clawdberg, rings, slayer, hawkins: each showcase's `name`
+//   build/rendershowcase docs <name>        doctor, files, clawdberg, rings, slayer, hawkins, hunters, eternia: each showcase's `name`
 
 /// A universe's showcase pictures. The registered ones (`registeredShowcases`) are generated from the folders by
 /// Tools/universes.sh.
