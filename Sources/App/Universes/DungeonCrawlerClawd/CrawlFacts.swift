@@ -14,12 +14,29 @@ import Foundation
 enum CrawlHero: Int, CaseIterable {
     // The Royal Court
     case carl, donut, mongo
+    case katia, mordecai, samantha, prepotente, louis
+    // Meadow Lark
+    case elle, imani, brandon, chris
+    // Crawlers
+    case bautista, florin, ifechi
+    // The Desperado Club and its dancers
+    case sledge, bomo, doctorBones, splashZone
+    // NPC allies
+    case rory, lorelai
+    // The show's side
+    case odette, zev
     case hem   // always last (`Universe.hem`)
 }
 
 enum CrawlVillain: Int, CaseIterable {
     // Bosses
-    case maestro
+    case maestro, hoarder, juicer, krakaren, ballOfSwine, ralph
+    // Player killers and rivals
+    case lucia, frankQ, maggieMy, hekla
+    // The Syndicate
+    case chaco, cascadia
+    // Gods
+    case emberus
 }
 
 extension Universe {
@@ -34,7 +51,9 @@ enum CrawlFacts {
         // The counts come from the enums, never typed by hand.
         villainCount: CrawlVillain.allCases.count, heroCount: CrawlHero.allCases.count,
         // Claude plays the crawlers.
-        claudeSide: false
+        claudeSide: false,
+        // The Hoarder never leaves her lair.
+        homebound: [CrawlVillain.hoarder.rawValue: "crawlHoard"]
         // Everything below is optional: uncomment what your universe needs. Ids here are local: a villain's is its
         // rawValue, a hero's `UniverseFacts.heroBase + rawValue`.
         //
