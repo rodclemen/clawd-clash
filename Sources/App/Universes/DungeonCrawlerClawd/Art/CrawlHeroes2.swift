@@ -10,7 +10,7 @@ let crawlHeroes2: [CrawlHero: Persona] = [
                        headTop: 22, signature: 3.4, draw: drawMordecai),
     .samantha: Persona(name: "Samantha", weapon: .saber, headTop: 14, signature: 2.8, callout: "I'll kill your mother!",
                        draw: drawSamantha),
-    .prepotente: Persona(name: "Prepotente", weapon: .saber, pivot: (35.5, 24.5), headTop: 7, signature: 2.6,
+    .prepotente: Persona(name: "Prepotente", weapon: .saber, headTop: 14, signature: 2.6,
                          callout: "AAAAAH!", draw: drawPrepotente),
     .louis: Persona(name: "Louis", weapon: .lightning,
                     magic: Magic(core: C(0xDCE6C8), glow: C(0x7E9A5E), jagged: false, waves: true),
@@ -399,71 +399,38 @@ private func drawSamantha(_ c: PixelCanvas, _ p: Pose) {
 
 // MARK: - Prepotente
 
-/// Prepotente: a goat sat upright on his hellgoat Bianca, in a dark plum robe draped over her back, a cream goat's head
-/// with ram's horns curling back, a beard and yellow eyes, curled black nails on the hand that holds his axe. Bianca is
-/// Clawd's body and legs: a black goat with a glowing red eye, horns swept back, a pair of bat wings folded up behind
-/// them, and black flames, edged in violet, flickering along her neck and tail. Signature: he throws his head back and
-/// screams.
+/// Prepotente: a goat standing on his own four legs, in a dark plum robe down to his hocks, a cream goat's head with
+/// ram's horns curling back, a beard and yellow eyes, curled black nails on the hand that holds his axe. Signature: he
+/// throws his head back and screams.
 private func drawPrepotente(_ c: PixelCanvas, _ p: Pose) {
-    let goat = C(0x2A2630), goatD = C(0x16141A), goatL = C(0x444050), horn = C(0x6A6272), hoof = C(0x54505C)
-    let flame = C(0x0C0A10), flameE = C(0x9A48E0), eyeR = C(0xFF4A2A)
-    let wing = C(0x302A3A), wingD = C(0x1E1A24), wingL = C(0x5A5068)
     let wool = C(0xE6E0D2), woolD = C(0xB8AE9C), woolL = C(0xFFFCF2), ram = C(0x9A8462), ramD = C(0x6A5640)
-    let robe = C(0x5A2036), robeD = C(0x3C1424), robeL = C(0x7C3652), nail = C(0x0E0C10)
+    let robe = C(0x5A2036), robeD = C(0x3C1424), robeL = C(0x7C3652), nail = C(0x0E0C10), hoof = C(0x2A2630)
     let steel = C(0xB8BEC8), steelD = C(0x7A808C), steelL = C(0xEEF2F8), haft = C(0x6A4A2A)
     let s = p.signature ?? -1
     let scream = s > 0.1 && s < 0.9
     let back = scream ? min(1, (s - 0.1) / 0.12, (0.9 - s) / 0.12) : 0
 
-    // 1. Bianca's legs, black, grey hooves.
-    drawLegs(c, Look(leg: goat), step: p.step)
+    // 1. His legs: cream wool under the robe's hem, black hooves.
+    drawLegs(c, Look(leg: woolD), step: p.step)
     if !seatedPose {
-        for (i, lx) in [19, 23, 31, 35].enumerated() {
-            let b = footRow(i, p.step)
-            c.rect(lx + 1, 37, 1, b - 38, goatD)
-            c.rect(lx, b, 2, 1, hoof)
-        }
+        for (i, lx) in [19, 23, 31, 35].enumerated() { c.rect(lx, footRow(i, p.step), 2, 1, hoof) }
     }
 
     // 2. The breath.
     c.oy += p.breathe
 
-    // 3. Bianca's wings, folded up behind them: membrane between three fingers, the leading edge lit, the trailing edge
-    //    scalloped.
-    fillTriangle(c, (24, 30), (12, 9), (6, 27)) { wa, wb, wd in
-        let r = wb / max(0.001, wb + wd)
-        if wa < 0.16 * abs(sin(r * .pi * 3)) { return nil }
-        if wd < 0.06 { return wingL }
-        if abs(r - 0.36) < 0.03 || abs(r - 0.7) < 0.03 { return wingL }
-        return wa < 0.35 ? wingD : wing
-    }
+    // 3. The robe: dark plum over the body, lit on the left, shaded under and on the far side, a fold or two, a
+    //    darker hem.
+    c.rect(18, 26, 20, 12, robe)
+    c.rect(18, 26, 1, 12, robeL); c.rect(18, 26, 20, 1, robeL)
+    c.rect(37, 26, 1, 12, robeD); c.rect(18, 37, 20, 1, robeD)
+    c.rect(23, 30, 1, 7, robeD); c.rect(29, 31, 1, 6, robeD)
 
-    // 4. Black flames along her tail, violet at their edges.
-    let n = Int(p.lt * 12)
-    for (i, x) in [14, 15, 16].enumerated() {
-        let h = 3 + (n + i * 2) % 3
-        c.rect(x, 30 - h, 1, h, flame); c.px(x, 29 - h, flameE)
-    }
-    c.rect(15, 29, 3, 3, goat)
-
-    // 5. Bianca's body: black, lit along her back, shaded under and on the far side; a few strokes in her coat.
-    c.rect(17, 29, 21, 9, goat)
-    c.rect(17, 29, 21, 1, goatL); c.rect(17, 37, 21, 1, goatD); c.rect(37, 29, 1, 9, goatD)
-    for x in [20, 34] { c.px(x, 31, goatL); c.px(x + 1, 32, goatL) }
-
-    // 6. Prepotente's robe: sat upright on her, its skirt draped over her side, lit on the left, a fold or two.
-    c.rect(23, 19, 9, 11, robe)
-    c.rect(21, 29, 12, 5, robe)
-    c.rect(23, 19, 1, 11, robeL); c.rect(21, 29, 1, 5, robeL)
-    c.rect(31, 19, 1, 10, robeD); c.rect(21, 33, 12, 1, robeD)
-    c.rect(26, 30, 1, 3, robeD); c.rect(29, 24, 1, 5, robeD)
-    c.rect(24, 19, 7, 1, robeD)   // the collar
-
-    // 7. His head: cream, ram's horns curling back, an ear, a yellow eye with its flat pupil, a long muzzle with a black
-    //    nose, a beard. Thrown back when he screams, the mouth open.
+    // 4. His head: cream, ram's horns curling back, an ear, a yellow eye with its flat pupil, a long muzzle with a black
+    //    nose, a beard down over the robe's collar. Thrown back when he screams, the mouth open.
     let wide = scream && back > 0.5
-    turned(c, -38 * back, about: (28, 19)) { h in
-        h.pattern(20, 7, [
+    turned(c, -38 * back, about: (28, 26)) { h in
+        h.pattern(20, 14, [
             "..rrrr............",
             ".rRRRRr...........",
             "rR...rRr..........",
@@ -480,48 +447,28 @@ private func drawPrepotente(_ c: PixelCanvas, _ p: Pose) {
             "...........b......",
         ], ["r": ramD, "R": ram, "w": wool, "L": woolL, "d": woolD, "e": woolD, "Y": C(0xF0D040), "k": ink,
             "N": ink, "b": woolD])
-        if wide { h.pattern(31, 15, ["mmmmmm", ".mmmm."], ["m": C(0x4A1A22)]) } else { h.rect(32, 16, 5, 1, woolD) }
+        if wide { h.pattern(31, 22, ["mmmmmm", ".mmmm."], ["m": C(0x4A1A22)]) } else { h.rect(32, 23, 5, 1, woolD) }
     }
     if scream && Int(p.lt * 10) % 3 != 0 {
         for i in 0..<3 {
             let x = 41 + i * 2
-            c.px(x, 7 - i, C(0xFFFFFF, 0.8)); c.px(x + 1, 8 - i, C(0xFFFFFF, 0.8))
-            c.px(x + 1, 12 + i, C(0xFFFFFF, 0.8)); c.px(x + 2, 11 + i, C(0xFFFFFF, 0.8))
+            c.px(x, 14 - i, C(0xFFFFFF, 0.8)); c.px(x + 1, 15 - i, C(0xFFFFFF, 0.8))
+            c.px(x + 1, 19 + i, C(0xFFFFFF, 0.8)); c.px(x + 2, 18 + i, C(0xFFFFFF, 0.8))
         }
     }
 
-    // 8. Bianca's neck and head, out in front: black, horns swept back, a glowing red eye, a little beard; black
-    //    flames flickering up her mane.
-    for (i, x) in [31, 32, 33, 34].enumerated() {
-        let h = 3 + (n + i) % 3
-        c.rect(x, 26 - h, 1, h, flame); c.px(x, 25 - h, flameE)
-    }
-    c.rect(33, 25, 5, 5, goat); c.rect(33, 25, 1, 4, goatL)
-    c.pattern(36, 21, [
-        "..hh.hh.....",
-        "...hh.hh....",
-        "....GGGGGG..",
-        "...GGGGGRGG.",
-        "..GGGGGGGGGG",
-        "..GGGGGGGGGn",
-        "..GGGGGGGGG.",
-        "..GGGdddd...",
-        "......bb....",
-    ], ["h": horn, "G": goat, "d": goatD, "R": eyeR, "n": hoof, "b": goatD])
-    c.px(40, 23, goatL); c.px(41, 23, goatL)
-
-    // 9. The near arm in its sleeve, the hand with its curled black nails, and the axe: at rest held up, or swung.
-    c.rect(30, 22, 5, 3, robe); c.rect(30, 22, 5, 1, robeL)
+    // 5. The near arm in its sleeve, the hand with its curled black nails, and the axe: at rest held up, or swung.
+    c.rect(37, 32, 3, 3, robe); c.rect(37, 32, 3, 1, robeL)
     let ang = p.melee ?? -70
-    let piv = (x: 35.5, y: 24.5)
+    let piv = Sprite.hand
     for (i, t) in p.trail.enumerated() {
         angledBlock(c, piv, t, along: 7, 10.5, across: 0.5, 4, steel.alpha(0.3 / Double(i + 1)),
                     steel.alpha(0.3 / Double(i + 1)), steel.alpha(0.3 / Double(i + 1)))
     }
     crawlBar(c, piv, ang, from: -1, to: 11, haft, r: 0.7)
     angledBlock(c, piv, ang, along: 6.5, 10.5, across: 0.5, 4.2, steel, steelD, steelL)
-    c.rect(34, 23, 3, 3, wool); c.px(34, 23, woolL)
-    c.px(37, 23, nail); c.px(38, 24, nail); c.px(37, 26, nail); c.px(36, 27, nail)
+    c.rect(40, 33, 3, 3, wool); c.px(40, 33, woolL)
+    c.px(43, 33, nail); c.px(43, 35, nail); c.px(42, 36, nail)
 }
 
 // MARK: - Louis

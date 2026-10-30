@@ -277,7 +277,7 @@ extension Scenes {
     /// purple potion in a conical flask and a tall red vial. In the middle, two shelves of potions (red, blue, green,
     /// amber, purple) in round, square and tall bottles. On the right, his cot with its headboard, the blanket pulled
     /// up, and the guild's sign hanging over it. On the screen saver the wall rises to bookcases either side, jars of
-    /// things in murky liquid between the books, a ladder on the right, and between them an alchemical chart pinned
+    /// things in murky liquid between the books, and between them an alchemical chart pinned
     /// up over a brass lantern hanging on its chain.
     static func crawlGuild(_ c: PixelCanvas, _ g: Int) {
         let s = unit(g), tall = isTall(c), f = crawlGuildFrame(c, g)
@@ -409,7 +409,7 @@ extension Scenes {
     }
 
     /// The screen saver's wall above the room: a bookcase up to the ceiling on each side (a dark frame, deep shelves,
-    /// books in runs of one dusty colour and big jars of murky things between them, a ladder against the right one),
+    /// books in runs of one dusty colour and big jars of murky things between them),
     /// and between them the plaster with an alchemical chart pinned up and a brass lantern hanging on a chain.
     private static func crawlGuildStacks(_ c: PixelCanvas, _ g: Int) {
         let s = unit(g), bottom = g - 72 * s, top = 8 * s, pitch = 24 * s
@@ -451,16 +451,6 @@ extension Scenes {
             c.rect(x0 - 2 * s, top, 4 * s, bottom - top, frame); c.rect(x1 - 2 * s, top, 4 * s, bottom - top, frame)
             c.rect(x0 - 2 * s, top, s, bottom - top, plankL)
             c.rect(x0 - 2 * s, bottom, x1 - x0 + 4 * s, 5 * s, frame); c.rect(x0 - 2 * s, bottom, x1 - x0 + 4 * s, s, plankL)
-        }
-        // The ladder leaning on the right-hand bookcase.
-        let lx = c.w * 82 / 100
-        for off in [0, 12 * s] {
-            c.glowLine(Double(lx + off), Double(top + 4 * s), Double(lx + off - 18 * s), Double(bottom + 4 * s), core: C(0x9A6A3A), glow: C(0, 0), coreR: Double(s) * 1.2, glowR: Double(s) * 1.3)
-        }
-        let span = bottom - top
-        for y in stride(from: top + 12 * s, to: bottom, by: 12 * s) {
-            let x0 = lx - Int(Double(y - top) / Double(span) * Double(18 * s))
-            c.rect(x0, y, 12 * s, s, C(0x9A6A3A))
         }
         // The lantern's chain, hanging behind the chart.
         let mx = c.w / 2, cy = top + (bottom - top) * 35 / 100, pw = 46 * s, ph = 56 * s
