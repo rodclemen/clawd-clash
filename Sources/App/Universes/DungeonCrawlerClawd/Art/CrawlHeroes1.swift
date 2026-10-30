@@ -136,108 +136,100 @@ private func drawCarl(_ c: PixelCanvas, _ p: Pose) {
 
 // MARK: - Princess Donut
 
-/// Princess Donut: a tortoiseshell Persian, Clawd in her long fur: black and ginger patches with cream through them,
-/// fluffy fringes along her back and sides, a full ruff at her chest and a great plume of a tail held up behind her.
-/// Small round ears set wide, big copper eyes, a squashed flat face with a tiny pink nose and a haughty frown, and a
-/// little gold crown with a pink gem. Her Magic Missiles fly from her in hot pink. Signature: she poses for the
-/// cameras: a flash goes off, she lifts her chin with her eyes shut in bliss, and a little green viewer counter floats
-/// up over her: +10K.
+/// Princess Donut: a Persian, Clawd in her long fawn fur: a ginger saddle over her back, fluffy tufts along it, a full
+/// cream ruff at her chest and a great plume of a tail held up behind her, fawn like the rest of her. Small round ears set wide, big copper
+/// eyes, a squashed flat face with a tiny pink nose, and a little gold crown with a pink gem. Her Magic Missiles fly
+/// from her in hot pink. Signature: she poses for the cameras: a flash goes off, she shuts her eyes in bliss, and a
+/// little green viewer counter floats up over her: +10K.
 private func drawDonut(_ c: PixelCanvas, _ p: Pose) {
-    let black = C(0x2A2220), blackL = C(0x4A3C36), ginger = C(0xC0602E), gingerL = C(0xE08A4A), gingerD = C(0x8E4220)
+    let fur = C(0xA88058), furD = C(0x82603C), furL = C(0xC09A70)
+    let saddle = C(0x9A4E22), saddleL = C(0xB86634)
     let cream = C(0xEAD2A0), creamD = C(0xC8AE7C), nose = C(0xE88AA0)
     let gold = C(0xF0C840), goldD = C(0xB88A20), gem = C(0xFF5AB8)
     let s = p.signature ?? -1
     let flash = s > 0.08 && s < 0.2
     let posing = s > 0.12 && s < 0.88
-    let lift = posing ? 1 : 0
 
-    // The fur's patches, fixed for every pixel so they never crawl: black, ginger or cream.
-    func patch(_ x: Int, _ y: Int) -> Int {   // 0 black, 1 ginger, 2 cream
-        let n = noise(x / 4 * 31 + y / 4 * 17 + 5)
-        return n < 0.42 ? 0 : n < 0.86 ? 1 : 2
-    }
-    func fur(_ x: Int, _ y: Int) -> Px { [black, ginger, cream][patch(x, y)] }
-
-    // 1. Her legs, fluffy: patched fur, wider at the top where the long hair hangs, cream toes.
+    // 1. Her legs in fawn, cream toes.
     if seatedPose {
-        for lx in [19, 23, 31, 35] { c.rect(lx - 1, 38, 4, 2, fur(lx, 38)); c.rect(lx, 39, 2, 1, cream) }
+        for lx in [19, 23, 31, 35] { c.rect(lx - 1, 38, 4, 2, fur); c.rect(lx, 39, 2, 1, cream) }
     } else {
         for (i, lx) in [19, 23, 31, 35].enumerated() {
             let bottom = p.step >= 0 && i % 2 == p.step ? 42 : 43
-            for y in 36...bottom { c.rect(lx, y, 2, 1, fur(lx, y)) }
-            c.rect(lx - (i == 0 ? 1 : 0), 37, i == 0 ? 3 : 2, 2, fur(lx, 37))   // the back legs' pantaloons
+            c.rect(lx, 36, 2, bottom - 36 + 1, fur)
             c.rect(lx, bottom, 2, 1, cream); c.px(lx + 1, bottom, creamD)
         }
     }
 
     // 2. The breath.
-    c.oy += p.breathe - lift
+    c.oy += p.breathe
 
-    // 3. The tail: a great plume held up behind her, patched, swaying a little, its tip cream.
+    // 3. The tail: a fawn plume held up behind her, swaying a little, lit along its near edge.
     let sway = Int((sin(p.lt * 1.3) * 1.2).rounded())
-    for y in 16...33 {
-        let k = Double(33 - y) / 17
+    for y in 17...33 {
+        let k = Double(33 - y) / 16
         let cx = 13 - Int((sin(k * 2.2) * 4).rounded()) + (y < 24 ? sway : 0)
-        let half = y < 19 ? 2 : 3
-        for x in (cx - half)...(cx + half) { c.px(x, y, y < 19 ? cream : fur(x, y)) }
-        c.px(cx - half, y, y < 19 ? creamD : blackL)
+        let half = y < 20 ? 2 : 3
+        c.rect(cx - half, y, 2 * half + 1, 1, fur)
+        c.px(cx - half, y, furL); c.px(cx + half, y, furD)
     }
 
-    // 4. Her body, all in patched fur, lit on top and the left, a soft shade under her and on the far side.
-    for y in 26...37 { for x in 18...37 { c.px(x, y, fur(x, y)) } }
-    for x in 18...37 where patch(x, 26) != 0 { c.px(x, 26, patch(x, 26) == 1 ? gingerL : C(0xF6E4BC)) }
-    for y in 27...37 where patch(37, y) == 1 { c.px(37, y, gingerD) }
-    // The long fur: fringes along her back and down her sides, the hair hanging in points.
-    for x in stride(from: 18, through: 36, by: 3) { c.px(x + 1, 25, fur(x, 26)); c.px(x, 25, fur(x, 26)) }
-    for y in stride(from: 28, through: 36, by: 3) { c.px(17, y, fur(18, y)); c.px(17, y + 1, fur(18, y)); c.px(38, y + 1, fur(37, y)) }
-    // The ruff at her chest: cream, full, in tufts.
-    c.pattern(23, 33, [
-        "..CCCCCCCCCC..",
-        ".CCcCCCCCcCCC.",
-        "CCCCCcCCCCCcCC",
-        ".C.CC.CC.CC.C.",
+    // 4. Her body: the fawn fur, lit on top and the left, shaded under and on the far side, then the ginger saddle
+    //    over her back, lit along its top.
+    c.rect(18, 26, 20, 12, fur)
+    c.rect(18, 26, 20, 1, furL); c.rect(18, 26, 1, 12, furL)
+    c.rect(37, 26, 1, 12, furD); c.rect(18, 37, 20, 1, furD)
+    c.rect(19, 26, 14, 4, saddle); c.rect(19, 26, 14, 1, saddleL)
+    // The long fur: a few soft tufts along her back and the bottom of her sides.
+    for x in [20, 25, 30, 35] { c.px(x, 25, x < 33 ? saddleL : furL) }
+    for (x, y) in [(17, 30), (17, 34), (38, 30)] { c.px(x, y, fur) }
+
+    // 5. The ruff at her chest: cream, full, in a few tufts.
+    c.pattern(24, 33, [
+        ".CCCCCCCCCC.",
+        "CCCcCCCCcCCC",
+        "CC.CCC.CCC.C",
     ], ["C": cream, "c": creamD])
 
-    // 5. The near paw, a fluffy forepaw: ginger fur, cream toes.
-    c.rect(38, 33, 3, 3, ginger); c.px(38, 33, gingerL); c.rect(38, 35, 3, 1, cream)
+    // 6. The near paw: cream.
+    c.rect(38, 33, 3, 3, cream); c.rect(38, 35, 3, 1, creamD)
 
-    // 6. The face: a mask of black over one eye and ginger over the other (a tortie's split face), the ears set wide,
-    //    big copper eyes (shut in bliss while she poses), the squashed muzzle and the tiny pink nose with its frown.
-    c.rect(18, 27, 9, 5, black); c.rect(27, 27, 11, 5, ginger)
-    c.rect(27, 27, 11, 1, gingerL)
-    c.pattern(17, 23, ["BB..", "BBB.", "BpBB"], ["B": black, "p": C(0x6A4A4A)])
-    c.pattern(35, 23, ["..GG", ".GGG", "GGpG"], ["G": ginger, "p": C(0xA86A5A)])
+    // 7. The face: the ears small and set wide, the face's own colour (and the blaze, if she has one), big copper
+    //    eyes with a black pupil and a glint (shut in bliss while she poses), heavy lids for her unimpressed look, the
+    //    small cream muzzle with its pink nose, and a few whiskers.
+    c.pattern(17, 23, ["FF..", "FFF.", "FpFF"], ["F": saddle, "p": C(0x8A5A5A)])
+    c.pattern(35, 23, ["..FF", ".FFF", "FFpF"], ["F": fur, "p": C(0x8A5A5A)])
     if posing {
         c.rect(21, 30, 3, 1, ink); c.px(21, 29, ink)
         c.rect(32, 30, 3, 1, ink); c.px(34, 29, ink)
     } else {
         for x in [21, 32] {
-            c.rect(x, 28, 3, 3, C(0xD88A2A)); c.rect(x + 1, 28, 1, 3, ink); c.px(x, 28, C(0xFFF6E0))
+            c.rect(x, 28, 3, 3, C(0xE0902A)); c.rect(x + 1, 28, 1, 3, ink); c.px(x, 28, C(0xFFF6E0))
+            c.rect(x, 27, 3, 1, furD)
         }
-        c.rect(21, 27, 3, 1, blackL); c.rect(32, 27, 3, 1, gingerD)   // the lids, half lowered: unimpressed
     }
     c.pattern(25, 30, [
         ".CCCCC.",
         "CCcNcCC",
         ".CcccC.",
     ], ["C": cream, "c": creamD, "N": nose])
-    for y in [31, 33] { c.rect(19, y, 3, 1, C(0xF8F4EC, 0.85)); c.rect(34, y, 3, 1, C(0xF8F4EC, 0.85)) }
+    for y in [31, 33] { c.rect(19, y, 3, 1, C(0xF8F4EC, 0.8)); c.rect(34, y, 3, 1, C(0xF8F4EC, 0.8)) }
 
-    // 7. The crown, small and set at an angle, gold with a pink gem in its front point.
-    c.pattern(23, 19, [
+    // 8. The crown, small, gold with a pink gem in its front point.
+    c.pattern(23, 20, [
         ".g..g..g.",
         ".G..G..G.",
         "GGGGGGGGG",
         "GGGEGGGGG",
         "ggggggggg",
     ], ["G": gold, "g": goldD, "E": gem])
+    c.rect(23, 25, 9, 1, fur)   // no see-through row between the crown and her head
 
-    // 8. The signature: a camera flash from the audience (a white star low on the left), then the viewer counter in a
+    // 9. The signature: a camera flash from the audience (a white star low on the left), then the viewer counter in a
     //    green box floating up over her head and fading.
     if flash {
         let k = sin((s - 0.08) / 0.12 * .pi)
         c.rect(4, 24, 5, 1, C(0xFFFFFF, k)); c.rect(6, 22, 1, 5, C(0xFFFFFF, k)); c.px(6, 24, C(0xFFFFFF))
-        c.px(4, 22, C(0xFFFFFF, k * 0.5)); c.px(8, 26, C(0xFFFFFF, k * 0.5))
     }
     if s > 0.22 && s < 0.9 {
         let k = (s - 0.22) / 0.68
@@ -251,13 +243,25 @@ private func drawDonut(_ c: PixelCanvas, _ p: Pose) {
 
 // MARK: - Mongo
 
-/// Mongo: Clawd in a pink-feathered raptor suit, a red stripe of feathers down his back to the tail, a pale pink belly,
-/// a crest of plumes on his head, a toothy snout and a fierce orange eye, a black collar with a silver ring, feathered
-/// little arms with dark claws, and his tail held out stiff with a fan of feathers at the end. He fights with his
-/// claws. Signature: he throws his head up and screeches, bobbing it.
+/// Mongo's colours: his scaly hide (base, shade, light, belly) under the pink plumage, and the plumage's own tones.
+private struct MongoHide {
+    var hide: Px, hideD: Px, hideL: Px, belly: Px, bellyD: Px
+    var feather: Px, featherD: Px, featherL: Px
+    var stripe: Px
+}
+
+/// Blue-grey scales with a little green left in them, pink plumage, a red stripe.
+private let mongoHide = MongoHide(
+    hide: C(0x5E7488), hideD: C(0x42546A), hideL: C(0x7C92A4), belly: C(0xC0C8CC), bellyD: C(0x9CA4AA),
+    feather: C(0xF07AB0), featherD: C(0xC0507E), featherL: C(0xFFB0D2), stripe: C(0xC8283A))
+
+/// Mongo: Clawd in a raptor suit, a scaly hide under pink plumage: a crest of plumes on his head, a feathered mane
+/// down the back of his neck, a ruff of feathers along his back with a red stripe through it, feathered arms and
+/// thighs, and a fan of feathers at the end of his stiff tail. A toothy snout, a fierce orange eye, a black collar
+/// with a silver ring, dark claws. He fights with his claws. Signature: he throws his head up and screeches, bobbing
+/// it.
 private func drawMongo(_ c: PixelCanvas, _ p: Pose) {
-    let pink = C(0xE87AAE), pinkD = C(0xB8507E), pinkL = C(0xF8A8CC), belly = C(0xF8CCDE), bellyD = C(0xE0A8C0)
-    let stripe = C(0xC8283A), stripeD = C(0x8E1A28)
+    let m = mongoHide
     let claw = C(0x2A2024), tooth = C(0xF4F0E4), mouth = C(0x6A1E2E)
     let collar = C(0x1E1A1E), ring = C(0xC8CCD4)
     let s = p.signature ?? -1
@@ -267,42 +271,56 @@ private func drawMongo(_ c: PixelCanvas, _ p: Pose) {
     if let a = p.melee, a > -40 { gape = 2 }
     if screech { gape = 3 }
 
-    // 1. The legs, feathered pink to the ankle, dark claws on each foot.
-    drawLegs(c, Look(leg: pink), step: p.step)
+    // 1. The legs: scaly, feathered at the thigh, dark claws on each foot.
+    drawLegs(c, Look(leg: m.hide), step: p.step)
     if !seatedPose {
         for (i, lx) in [19, 23, 31, 35].enumerated() {
             let y = p.step >= 0 && i % 2 == p.step ? 42 : 43
-            c.rect(lx, 36, 2, 2, pinkL); c.px(lx + 1, 37, pinkD)   // the feathered thighs
+            c.rect(lx, 36, 2, 3, m.feather); c.px(lx + 1, 38, m.featherD)
+            c.px(lx, 40, m.hideD)
             c.px(lx + 2, y, claw); c.px(lx - 1, y - 2, claw)
         }
     }
     c.oy += p.breathe
 
-    // 2. The tail, held out stiffly behind, the red stripe along its top and a fan of feathers at the tip.
+    // 2. The tail, held out stiffly behind: scaly underneath, feathered along its top, a fan of plumes at the tip.
     for x in 6...18 {
         let f = Double(18 - x) / 12
         let sway = sin(p.lt * 1.4 + f * 2) * f
         let mid = 31 - f * 4 + sway
         let half = 3.0 - f * 2.2
         let top = Int((mid - half).rounded()), bottom = Int((mid + half).rounded())
-        c.rect(x, top, 1, bottom - top + 1, pink)
-        c.px(x, bottom, pinkD); c.px(x, top, stripe)
-        if x <= 8 { c.px(x - 2, top - 1 + (x - 6), pinkL); c.px(x - 2, bottom + 1 - (x - 6), pinkD) }   // the fan
+        c.rect(x, top, 1, bottom - top + 1, m.hide)
+        c.px(x, bottom, m.hideD)
+        c.px(x, top, m.feather); if x % 2 == 0 { c.px(x, top - 1, m.featherL) }
     }
+    c.pattern(1, 22, [
+        "LL.....",
+        ".LFF...",
+        "..FFFF.",
+        "LLFFFFF",
+        "..FFDD.",
+        ".FDD...",
+        "DD.....",
+    ], ["L": m.featherL, "F": m.feather, "D": m.featherD])
 
-    // 3. The body: pink feathers, lit on top, a scalloped row of feathers along the side, the pale belly, and the red
-    //    stripe running down his back.
-    drawBody(c, Look(body: pink, shade: pinkD, arm: pink, eye: nil))
-    c.rect(18, 26, 20, 1, pinkL); c.rect(18, 26, 1, 11, pinkL)
-    c.rect(18, 25, 12, 2, stripe); c.rect(18, 26, 12, 1, stripeD)
-    for x in stride(from: 19, to: 36, by: 3) { c.px(x, 30, pinkD); c.px(x + 1, 31, pinkD) }   // feathers in scallops
-    c.rect(20, 34, 17, 3, belly); c.rect(20, 36, 17, 1, bellyD)
-    for x in stride(from: 21, to: 36, by: 2) { c.px(x, 34, pinkL) }
+    // 3. The body: scaly hide, lit on top, scales picked out, the pale belly; over it the ruff of feathers along his
+    //    back, scalloped, the red stripe through it.
+    drawBody(c, Look(body: m.hide, shade: m.hideD, arm: m.feather, eye: nil))
+    c.rect(18, 26, 1, 11, m.hideL)
+    for (x, y) in [(21, 31), (25, 32), (29, 31), (33, 32), (23, 29), (31, 29)] { c.px(x, y, m.hideD); c.px(x + 1, y, m.hideL) }
+    c.rect(20, 34, 17, 3, m.belly); c.rect(20, 36, 17, 1, m.bellyD)
+    c.rect(18, 24, 13, 3, m.feather)
+    c.rect(18, 24, 13, 1, m.featherL)
+    for x in stride(from: 18, to: 31, by: 3) { c.px(x, 27, m.feather); c.px(x + 1, 27, m.featherD) }
+    c.rect(19, 25, 11, 1, m.stripe)
 
-    // 4. The head, held up on its neck over the front of the body and bobbing while he screeches: the long snout, its
-    //    teeth, the jaw dropped open, the crest of plumes, the orange eye.
+    // 4. The head, held up on its neck over the front of the body and bobbing while he screeches: the scaly neck with
+    //    its mane of feathers down the back, the long snout, its teeth, the jaw, the crest, the orange eye.
     let sy = 18 - bob - (screech ? 2 : 0)
-    c.rect(30, sy + 4, 8, 27 - sy - 4, pink); c.rect(30, sy + 4, 1, 27 - sy - 4, pinkL)
+    c.rect(30, sy + 4, 8, 27 - sy - 4, m.hide)
+    c.rect(29, sy + 3, 3, 27 - sy - 3, m.feather); c.rect(29, sy + 3, 1, 27 - sy - 3, m.featherL)
+    for y in stride(from: sy + 4, to: 27, by: 2) { c.px(32, y, m.featherD) }
     c.pattern(30, sy, [
         "...sSSSs..........",
         ".sSSSSSSSSs.......",
@@ -310,23 +328,24 @@ private func drawMongo(_ c: PixelCanvas, _ p: Pose) {
         "SSSSSSSSSSSSSSSSSn",
         "SSSSSSSSSSSSSSSSSS",
         "SSSSSSTtTtTtTtTtT.",
-    ], ["S": pink, "s": pinkD, "n": ink, "T": tooth, "t": pink])
+    ], ["S": m.hide, "s": m.hideD, "n": ink, "T": tooth, "t": m.hide])
+    c.rect(33, sy, 12, 1, m.hideL)
     if gape > 0 { c.rect(36, sy + 6, 11, gape, mouth) }
     c.pattern(30, sy + 6 + gape, ["SSSSSStTtTtTtTt...", "SSSSSSSSSSSSSSs...", "SSSSSBBBBBB......."],
-              ["S": pink, "s": pinkD, "t": tooth, "T": pink, "B": belly])
+              ["S": m.hide, "s": m.hideD, "t": tooth, "T": m.hide, "B": m.belly])
     // The collar round the base of the neck, its silver ring at the front.
     c.rect(30, 27, 8, 2, collar); c.rect(30, 27, 8, 1, C(0x3A343A)); c.px(37, 28, ring); c.px(36, 29, ring)
     // The crest: plumes swept back from the brow, red at their roots.
-    c.pattern(26, sy - 4, [
-        "LL.........",
-        ".LLL.L.....",
-        "..LLLLLL...",
-        "...RRLLLLL.",
-        "....RRRRR..",
-    ], ["L": pinkL, "R": stripe])
+    c.pattern(25, sy - 4, [
+        "LL..........",
+        ".LLL.L......",
+        "..LFFFLL....",
+        "...RFFFFFF..",
+        "....RRRRRR..",
+    ], ["L": m.featherL, "F": m.feather, "R": m.stripe])
     // The eye: orange, a black slit, under a heavy brow.
     c.rect(36, sy + 2, 3, 2, C(0xF0901E)); c.px(37, sy + 2, ink); c.px(37, sy + 3, ink)
-    c.rect(35, sy + 1, 5, 1, pinkD)
+    c.rect(35, sy + 1, 5, 1, m.hideD)
     // The screech: sound lines from the open jaws.
     if screech, Int(p.lt * 10) % 3 != 0 {
         for i in 0..<3 {
@@ -336,15 +355,15 @@ private func drawMongo(_ c: PixelCanvas, _ p: Pose) {
         }
     }
 
-    // 5. The little feathered arm, claws out when he slashes.
+    // 5. The little arm, feathered pink, claws out when he slashes.
     if let a = p.melee {
         for (i, ta) in p.trail.enumerated() {
             crawlTalons(c, crawlReach((38, 34), ta, 4), angle: ta, len: 4, C(0xF8E0EC), alpha: 0.35 / Double(i + 1))
         }
-        crawlBar(c, (38, 34), a, from: 0, to: 4, pink, r: 1.1)
+        crawlBar(c, (38, 34), a, from: 0, to: 4, m.feather, r: 1.1)
         crawlTalons(c, crawlReach((38, 34), a, 4), angle: a, len: 3.5, claw)
     } else {
-        c.rect(38, 33, 3, 2, pink); c.px(38, 33, pinkL)
+        c.rect(38, 33, 3, 2, m.feather); c.px(38, 33, m.featherL); c.px(38, 35, m.featherD)
         crawlTalons(c, (40.5, 34.5), angle: 80, len: 2.5, claw)
     }
 }
