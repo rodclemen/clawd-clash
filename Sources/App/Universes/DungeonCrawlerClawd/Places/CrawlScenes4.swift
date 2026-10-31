@@ -909,13 +909,13 @@ extension Scenes {
 extension Scenes {
     /// Where things stand in the circus tent, shared by the still picture and the moving layer: the eave where the
     /// roof meets the wall, the roof's peak (off the top of the window), the king poles, the ring's middle and
-    /// half-width, the top of the vine mound, and (on the screen saver) where the trapezes hang from.
+    /// half-width, the top of the vine mound, and (on the screen saver) the cable between the poles the trapezes hang from.
     static func crawlCircusFrame(_ c: PixelCanvas, _ g: Int) -> (eave: Int, peak: Int, poles: [Int], ring: (x: Int, y: Int, rx: Int),
                                                                 mound: Int, swing: Int) {
         let s = unit(g), tall = isTall(c)
         let ring = (x: c.w / 2, y: g - 9 * s, rx: c.w * 22 / 100)
         return (g - 30 * s, tall ? g - 262 * s : g - 160 * s, [c.w * 24 / 100, c.w * 76 / 100], ring, ring.y - 24 * s,
-                tall ? g - 190 * s : -1)
+                tall ? g - 198 * s : -1)
     }
 
     /// The vine mound's top over column `x`: highest in the ring's middle, lumpy.
@@ -935,7 +935,8 @@ extension Scenes {
     /// droop from the poles, a few of them dead. On the left the bleachers' wooden tiers; on the right the entrance,
     /// its flaps tied back on the dark outside, the show's name over it on a banner (GRIMALDI). The floor is dark
     /// sawdust. On the screen saver the roof climbs to its peak, a crown of bulbs round it, rope ladders up the
-    /// poles to little platforms, and the vines up there too, wound round the trapezes' ropes.
+    /// poles to little platforms, a rigging cable strung between the pole tops, and the vines up there too, wound round
+    /// the trapezes' ropes.
     static func crawlCircus(_ c: PixelCanvas, _ g: Int) {
         let s = unit(g), tall = isTall(c), f = crawlCircusFrame(c, g)
         let red = C(0x7A2228), redD = C(0x5A1A20), cream = C(0xA89878), creamD = C(0x7E715A)
@@ -1023,6 +1024,12 @@ extension Scenes {
                 if (y / s) % 9 == 0 { c.rect(x + wob + (wob > 0 ? s : -2 * s), y, 2 * s, s, vine) }
             }
             if tall { crawlCircusRig(c, g, x, k, f) }
+        }
+        if tall {
+            // The rigging cable the trapezes hang from, strung tight from one pole's top to the other's, a clamp at each.
+            let (x0, x1) = (f.poles[0], f.poles[1])
+            c.rect(x0, f.swing - s, x1 - x0, 2 * s, C(0x2A2020)); c.rect(x0, f.swing - s, x1 - x0, s, C(0x4A3A34))
+            for x in [x0 - 3 * s, x1 - 3 * s] { c.rect(x, f.swing - 2 * s, 7 * s, 4 * s, C(0x3A2A1E)); c.rect(x, f.swing - 2 * s, 7 * s, s, C(0x6A4A2E)) }
         }
 
         // The strings of bulbs, drooping from the poles out to the walls and across the ring, a few dead.
@@ -1176,7 +1183,5 @@ extension Scenes {
                 c.rect(bx - 6 * s, by + 2 * s, s, 3 * s, vine); c.rect(bx - 7 * s, by + 5 * s, 2 * s, s, vineL)
             }
         }
-        // Where the ropes are tied: an iron bar under the canvas.
-        c.rect(r.x - r.rx * 45 / 100 - 10 * s, f.swing - s, r.rx * 90 / 100 + 20 * s, 2 * s, C(0x2A2020))
     }
 }
