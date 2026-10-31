@@ -25,6 +25,17 @@ enum CrawlHero: Int, CaseIterable {
     case rory, lorelai
     // The show's side
     case odette, zev
+    // Phase 3: the rest of the crawlers
+    case tran, liJun, liNa, zhang, sisterInes, tserendolgor, langley, gwendolyn, jurgen, osvaldo, popovs, miriamDom
+    case juiceBox
+    // The rest of the Desperado Club's dancers
+    case gluteusMaxx, dongQuixote, damascusSteel, anaconda, rosemarie
+    // The rest of the NPC allies
+    case paterCoal, edgar, ferdinand
+    // The rest of the show's side
+    case quasar, rosetta, tipid, formidable, orthrus
+    // Tserendolgor's Tummy Acher (agent only)
+    case garret
     case hem   // always last (`Universe.hem`)
 }
 
@@ -37,6 +48,17 @@ enum CrawlVillain: Int, CaseIterable {
     case chaco, cascadia
     // Gods
     case emberus
+    // Phase 3: the rest of the bosses
+    case grimaldi, heather, missQuill, bigTina, goreGore, dismember, imogen, shiMaria, amayon, hydra, mrsGhazi, ruckus
+    case denise, stationMimic
+    // The rest of the player killers and rivals
+    case eva, quanCh, burcu, agatha, tsarina, vrah
+    // The rest of the Syndicate
+    case stalwart, loita, harbinger, astrid
+    // The rest of the gods
+    case grull, eris
+    // Small fry (agents only)
+    case scatterer, goblin, tuskling, pooka, cloneling
 }
 
 extension Universe {
@@ -50,6 +72,9 @@ enum CrawlFacts {
     static let facts = UniverseFacts(
         // The counts come from the enums, never typed by hand.
         villainCount: CrawlVillain.allCases.count, heroCount: CrawlHero.allCases.count,
+        // Garret and the small fry only ever turn up as agents.
+        agentOnly: Set([CrawlVillain.scatterer, .goblin, .tuskling, .pooka, .cloneling].map(\.rawValue)
+                       + [UniverseFacts.heroBase + CrawlHero.garret.rawValue]),
         // Claude plays the crawlers.
         claudeSide: false,
         // The Hoarder never leaves her lair.

@@ -26,7 +26,9 @@ struct CrawlUniverse: UniverseModule {
     /// What Tools/Preview needs: the batch names for the art files (`crawlHeroes1`, `crawlVillains1`, one per
     /// file, in order; add each new file to its list) and the characters by enum case name.
     var preview: PreviewInfo {
-        .of(.crawl, heroes: "crawlHeroes", [crawlHeroes1], villains: "crawlVillains", [crawlVillains1])
+        .of(.crawl, heroes: "crawlHeroes", [crawlHeroes1, crawlHeroes2, crawlHeroes3, crawlHeroes4, crawlHeroes5, crawlHeroes6],
+            villains: "crawlVillains", [crawlVillains1, crawlVillains2, crawlVillains3, crawlVillains4, crawlVillains5,
+                                        crawlVillains6, crawlVillains7])
     }
     /// The trips between places (CrawlWipes.swift): `pick` chooses the next, `every` lists one of each kind for
     /// Tools/Transitions. nil would leave plain edge and clock wipes, as only Star Clawds keeps.

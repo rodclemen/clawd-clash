@@ -19,10 +19,12 @@ extension CrawlVillain {
 
 /// Every hero's persona, from the Art/CrawlHeroes*.swift files (8 to 10 a file), and HEM's, who the engine draws
 /// in this universe's costume (CrawlHem.swift). Add each new art file to the list.
-let crawlHeroPersonas: [CrawlHero: Persona] = [crawlHeroes1, crawlHeroes2, crawlHeroes3]
+let crawlHeroPersonas: [CrawlHero: Persona] = [crawlHeroes1, crawlHeroes2, crawlHeroes3, crawlHeroes4, crawlHeroes5,
+                                                 crawlHeroes6]
     .reduce([.hem: hemPersona(.crawl)]) { $0.merging($1) { a, _ in a } }
 /// Every villain's persona, from the Art/CrawlVillains*.swift files.
-let crawlVillainPersonas: [CrawlVillain: Persona] = [crawlVillains1, crawlVillains2, crawlVillains3]
+let crawlVillainPersonas: [CrawlVillain: Persona] = [crawlVillains1, crawlVillains2, crawlVillains3,
+                                                     crawlVillains4, crawlVillains5, crawlVillains6, crawlVillains7]
     .reduce([:]) { $0.merging($1) { a, _ in a } }
 
 // MARK: - Homes
@@ -32,29 +34,45 @@ extension Location {
     /// Every character's home is one of this universe's places, and a `switch` with no `default` makes the compiler
     /// ask for each new case.
     static func crawlHome(of villain: CrawlVillain) -> Location {
-        // Until their own places come (phase 3), some wait somewhere close: Frank Q, Maggie My and the Krakaren in the
-        // tunnels (Carl's street, Iron Tangle), Lucia and Chaco at the casino (the castle, Death Watch), Hekla at the
-        // gym (Iron Tangle), Emberus in the tunnels (his temple), Maestro in the safe room (Death Watch).
         switch villain {
-        case .maestro: return .crawlSafeRoom
-        case .hoarder: return .crawlHoard
-        case .juicer, .hekla: return .crawlGym
-        case .krakaren, .ballOfSwine, .ralph, .frankQ, .maggieMy, .emberus: return .crawlCorridor
-        case .lucia, .chaco: return .crawlDesperado
-        case .cascadia: return .crawlStudio
+        case .hoarder, .scatterer: return .crawlHoard
+        case .juicer: return .crawlGym
+        case .ballOfSwine, .ralph, .goblin, .tuskling: return .crawlCorridor
+        case .frankQ, .maggieMy: return .crawlSeattle
+        case .astrid: return .crawlDesperado
+        case .missQuill: return .crawlOverCity
+        case .grimaldi, .heather, .tsarina: return .crawlCircus
+        case .goreGore, .krakaren, .dismember, .stationMimic, .hekla, .eva, .quanCh, .grull, .pooka, .cloneling:
+            return .crawlTangle
+        case .mrsGhazi, .ruckus: return .crawlHumpTown
+        case .imogen, .lucia, .vrah: return .crawlCastle
+        case .bigTina, .denise: return .crawlHunting
+        case .cascadia, .loita, .harbinger: return .crawlStudio
+        case .maestro, .stalwart, .chaco: return .crawlDeathWatch
+        case .amayon, .shiMaria, .hydra: return .crawlHavana
+        case .eris, .burcu, .agatha: return .crawlLarracos
+        case .emberus: return .crawlTemple
         }
     }
 
     static func crawlHome(of hero: CrawlHero) -> Location {
-        // Until their own places come (phase 3): Bautista in the tunnels (the Over City), Doctor Bones and Splash Zone
-        // at the casino (the Parade).
         switch hero {
-        case .florin, .ifechi, .hem: return .crawlSafeRoom
-        case .carl, .donut, .mongo, .katia, .samantha, .prepotente, .louis: return .crawlPersonal
-        case .elle, .imani, .brandon, .chris, .rory, .lorelai, .bautista: return .crawlCorridor
+        case .tran, .florin, .ifechi, .langley, .gwendolyn, .jurgen, .osvaldo, .hem: return .crawlSafeRoom
+        case .ferdinand: return .crawlSeattle
+        case .elle, .imani, .brandon, .chris, .rory, .lorelai: return .crawlCorridor
         case .mordecai: return .crawlGuild
-        case .sledge, .bomo, .doctorBones, .splashZone: return .crawlDesperado
-        case .odette, .zev: return .crawlStudio
+        case .carl, .donut, .mongo, .katia, .samantha, .prepotente, .louis, .garret: return .crawlPersonal
+        case .sledge, .bomo, .rosemarie: return .crawlDesperado
+        case .doctorBones, .splashZone, .gluteusMaxx, .dongQuixote, .damascusSteel, .anaconda: return .crawlParade
+        case .bautista: return .crawlOverCity
+        case .liJun, .liNa, .zhang, .tserendolgor: return .crawlTangle
+        case .juiceBox, .popovs: return .crawlHumpTown
+        case .miriamDom: return .crawlHunting
+        case .odette, .zev, .quasar, .rosetta: return .crawlStudio
+        case .formidable: return .crawlDeathWatch
+        case .sisterInes: return .crawlHavana
+        case .tipid, .edgar: return .crawlLarracos
+        case .paterCoal, .orthrus: return .crawlTemple
         }
     }
 }
@@ -77,6 +95,15 @@ private let crawlNemeses: [(CrawlHero, CrawlVillain)] = [
     (.chris, .maggieMy),        // she rode him like a suit
     (.brandon, .ballOfSwine),   // Meadow Lark's First Floor fight
     (.mordecai, .chaco),        // Uzzi
+    (.mongo, .bigTina),         // dinosaur against dinosaur
+    (.florin, .imogen),         // she wore Ifechi's face
+    (.prepotente, .harbinger),  // working to remove him from the crawl
+    (.samantha, .shiMaria),     // "MaeMae"
+    (.zev, .loita),             // the Bloom
+    (.bautista, .grimaldi),     // the circus that killed his family
+    (.sisterInes, .amayon),     // her charm on him
+    (.langley, .vrah),          // the hunter who took him
+    (.formidable, .stalwart),   // the succession
 ]
 
 let crawlTheme = Theme(
@@ -85,8 +112,9 @@ let crawlTheme = Theme(
     heroes: CrawlHero.allCases.map(\.persona),
     // Every place, in menu order. The first is the default: where the crew stands when nobody's home is known. A full
     // universe has about 20.
-    places: [.crawlSafeRoom, .crawlCorridor, .crawlGuild, .crawlHoard, .crawlGym, .crawlPersonal, .crawlDesperado,
-             .crawlStudio],
+    places: [.crawlSafeRoom, .crawlSeattle, .crawlCorridor, .crawlGuild, .crawlHoard, .crawlGym, .crawlPersonal,
+             .crawlDesperado, .crawlParade, .crawlOverCity, .crawlCircus, .crawlTangle, .crawlHumpTown, .crawlCastle,
+             .crawlHunting, .crawlStudio, .crawlDeathWatch, .crawlHavana, .crawlLarracos, .crawlTemple],
     home: { c in
         c.isDark ? .crawlHome(of: CrawlVillain(rawValue: c.index) ?? .maestro)
                  : .crawlHome(of: CrawlHero(rawValue: c.index) ?? .carl)
@@ -116,9 +144,22 @@ extension Location {
     static let crawlPersonal = Location("crawlPersonal")
     static let crawlDesperado = Location("crawlDesperado")
     static let crawlStudio = Location("crawlStudio")
+    static let crawlSeattle = Location("crawlSeattle")
+    static let crawlParade = Location("crawlParade")
+    static let crawlOverCity = Location("crawlOverCity")
+    static let crawlCircus = Location("crawlCircus")
+    static let crawlTangle = Location("crawlTangle")
+    static let crawlHumpTown = Location("crawlHumpTown")
+    static let crawlCastle = Location("crawlCastle")
+    static let crawlHunting = Location("crawlHunting")
+    static let crawlDeathWatch = Location("crawlDeathWatch")
+    static let crawlHavana = Location("crawlHavana")
+    static let crawlLarracos = Location("crawlLarracos")
+    static let crawlTemple = Location("crawlTemple")
 }
 
 /// Every place's drawing, from the Places/CrawlScenes*.swift files (a few places a file). Add each new file to the
 /// list.
-let crawlPlaces: [Location: Place] = [crawlScenes1, crawlScenes2, crawlScenes3]
+let crawlPlaces: [Location: Place] = [crawlScenes1, crawlScenes2, crawlScenes3, crawlScenes4, crawlScenes5,
+                                         crawlScenes6]
     .reduce([:]) { $0.merging($1) { a, _ in a } }
