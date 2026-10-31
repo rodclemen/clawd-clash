@@ -9,6 +9,14 @@ Its first three universes started as separate apps. Their changelogs from before
 
 Doctor Clawd, the fourth, was made for Clawd Clash ([doctor-clawd](https://github.com/rodclemen/doctor-clawd)), so its whole history is below, from 3.1.0.
 
+## Unreleased
+
+### Added
+- **A new universe in the making, Dungeon Crawler Clawd** (a Dungeon Crawler Carl parody, all eight books), number 12, on branch `dungeon-crawler-clawd` in `Sources/App/Universes/DungeonCrawlerClawd/` (prefix `Crawl`, key `crawl`). Not in any build yet: the rides, the New Achievement! compaction, the habits, the drills and the transitions come in later phases.
+  - **The whole cast is drawn, 95 characters:** 51 heroes and 44 villains, everyone with the books' own name. Carl lobbing goblin dynamite, Princess Donut (brown, with a ginger saddle) posing for the cameras, Mongo in pink plumage, the rest of the Royal Court, Meadow Lark, sixteen more crawlers from Sister Ines throwing white bolts like a baseball to Tserendolgor patting a giggling Garret, the Desperado Club's bouncers and dancers, the NPC allies (Ferdinand blinking out of his own turban), and the show's side (Quasar's blinking pineapple tie, Princess Formidable's arm cannon, Orthrus). Against them the bosses (Big Tina's pirouette, Shi Maria, Amayon's column of fire, the Reminiscence Hydra, Denise and her "HONK!", a Station Mimic), the player killers, the Syndicate and the gods, with a Scatterer bug, a goblin, a Tuskling, a Pooka and a Krakaren cloneling as agents. HEM is a crawler fan with a slingshot. 15 arch-enemy pairs, and the Hoarder never leaves her lair.
+  - **All 20 places:** a safe room, Carl's street on the night of the collapse (a building sinks into the earth now and then), the First Floor tunnels, Mordecai's Tutorial Guild, the Hoarder's lair, the Juicer's gym, the Royal Court's personal space, the Desperado Club casino, the Parade, the Over City, Grimaldi's circus tent choked in vines, Iron Tangle station with its trains, Hump Town under a red sun, the High Elf castle ballroom, the Hunting Grounds (a raptor rises from the ferns), Odette's studio, the Death Watch stage, Havana with its FOCSA tower, Larracos in the Faction Wars and Emberus's High Temple.
+- **Tools/Preview lists every one of a universe's art files for Dungeon Crawler Clawd**, not only the first hero and villain file, so its batch sheets cover the whole cast.
+
 ## 4.2.0 (2026-10-29)
 
 ### Added
