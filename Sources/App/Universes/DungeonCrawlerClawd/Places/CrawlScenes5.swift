@@ -997,15 +997,28 @@ extension Scenes {
     /// The volcano far off in the haze: a dusky cone with a glowing crater and a lava run down its side, its plume of
     /// smoke billowing up and leaning away.
     private static func crawlHuntingVolcano(_ c: PixelCanvas, _ g: Int, _ peak: (x: Int, y: Int)) {
-        let s = unit(g), base = g - 60 * s, half = 90 * s
-        for x in (peak.x - half)..<(peak.x + half) {
-            let k = Double(abs(x - peak.x)) / Double(half)
-            let top = peak.y + Int(pow(k, 0.8) * Double(base - peak.y)) + (abs(x - peak.x) < 8 * s ? 2 * s : 0)
-            c.rect(x, top, 1, base - top, x < peak.x ? C(0x6A6070) : C(0x58505E))
+        let s = unit(g), base = g - 60 * s, half = 90 * s, rim = 9 * s
+        // The cone's top over column x: a flat summit as wide as the crater, then the slopes falling away from it.
+        func top(_ x: Int) -> Int {
+            let d = abs(x - peak.x)
+            guard d > rim else { return peak.y }
+            return peak.y + Int(pow(Double(d - rim) / Double(half - rim), 0.8) * Double(base - peak.y))
         }
-        c.rect(peak.x - 8 * s, peak.y, 16 * s, 2 * s, C(0xF07030))
-        c.rect(peak.x - 5 * s, peak.y + 2 * s, 10 * s, s, C(0xC04820))
-        for i in 0..<24 { c.rect(peak.x + 3 * s + i * s / 2, peak.y + 2 * s + i * s, s, s, C(0xE06030, 0.8)) }
+        for x in (peak.x - half)..<(peak.x + half) {
+            let y = top(x)
+            c.rect(x, y, 1, base - y, x < peak.x ? C(0x6A6070) : C(0x58505E))
+        }
+        // The crater sunk into the summit: dark lips either side, the lava pool glowing between them.
+        c.rect(peak.x - rim, peak.y, rim * 2, s, C(0x4A4252))
+        c.rect(peak.x - rim + 2 * s, peak.y + s, rim * 2 - 4 * s, 2 * s, C(0xF07030))
+        c.rect(peak.x - rim + 3 * s, peak.y + s, rim * 2 - 6 * s, s, C(0xFFB050))
+        c.rect(peak.x - rim + 3 * s, peak.y + 3 * s, rim * 2 - 6 * s, s, C(0xC04820))
+        c.ellipse(peak.x, peak.y, rim + 4 * s, 4 * s, C(0xF07030, 0.18))
+        // The lava run spilling over the right lip and down the slope, lying on it.
+        for x in stride(from: peak.x + rim - 3 * s, to: peak.x + rim + 30 * s, by: s) {
+            let w = x < peak.x + rim + 18 * s ? 2 * s : s
+            c.rect(x, top(x) + s, s, w, C(0xE06030, 0.85))
+        }
         for k in 0..<7 {
             let r = (8 + k * 3) * s, y = peak.y - 8 * s - k * 13 * s, x = peak.x + k * k * s
             c.circle(x, y, r, C(0x8A8480, 0.55)); c.circle(x - r / 4, y - r / 4, r * 2 / 3, C(0xA8A29C, 0.45))
