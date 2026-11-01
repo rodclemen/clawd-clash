@@ -119,17 +119,19 @@ struct Fighter {
     let k: Double                        // sprite scale relative to a leader (agents are 2/3)
     let top: Double                      // y of this sprite's canvas top
     let side: Double                     // +1 facing right, -1 facing left
-    let muzzle: (x: Double, y: Double)   // in its own canvas coordinates
+    var muzzle: (x: Double, y: Double)   // in its own canvas coordinates
     var armoured = false                 // bolts ricochet off it
     var pivot = Sprite.hand              // where its weapon swings from (`Cast.weaponPivot`), own canvas coordinates
     var shot: ShotStyle = .energy(core: C(0xFFE0E0), glow: C(0xFF2A2A))   // what its shots look like
     var magic: Magic = .lightning        // what its magic looks like
     var missesEverything = false         // its bolts never land (`Persona.missesEverything`)
+    var shotTurns: [(shot: ShotStyle, muzzle: (x: Double, y: Double))] = []   // `Persona.shotTurns`
 
     /// This fighter with `who`'s shots and magic.
     func dressed(as who: Cast) -> Fighter {
         var f = self
         f.shot = who.persona.shot; f.magic = who.persona.magic; f.missesEverything = who.persona.missesEverything
+        f.shotTurns = who.persona.shotTurns
         return f
     }
 
@@ -268,6 +270,12 @@ func drawFightFX(_ c: PixelCanvas, t: Double, left: Fighter, right: Fighter) {
     for (me, role, foe, foeRole) in [(left, lRole, right, rRole), (right, rRole, left, lRole)] {
         switch role {
         case .shoot(let offset):
+            var me = me
+            if !me.shotTurns.isEmpty {
+                // Whose turn it is to shoot: its look, and where it leaves from.
+                let turn = me.shotTurns[shotTurn(t: t + offset, period: blasterPeriod, count: me.shotTurns.count)]
+                me.shot = turn.shot; me.muzzle = turn.muzzle
+            }
             let f = frac((t + offset) / blasterPeriod)
             let m = me.point(me.muzzle.x + 2, me.muzzle.y + 0.5)
             func bolt(from a: (x: Double, y: Double), to b: (x: Double, y: Double), _ g: Double, alpha: Double = 1) {
