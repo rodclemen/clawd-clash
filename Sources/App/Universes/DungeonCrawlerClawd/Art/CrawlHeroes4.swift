@@ -10,11 +10,11 @@ let crawlHeroes4: [CrawlHero: Persona] = [
                    draw: drawTran),
     .liJun: Persona(name: "Li Jun", weapon: .saber, headTop: 23, signature: 2.6, draw: drawLiJun),
     .liNa: Persona(name: "Li Na", weapon: .saber, headTop: 17, signature: 3.0, draw: drawLiNa),
-    .zhang: Persona(name: "Zhang", weapon: .blaster, shot: .thrown(C(0x8A6238)), muzzle: (42, 33), handGun: false,
+    .zhang: Persona(name: "Zhang", weapon: .blaster, shot: .thrown(C(0x9A8A70)), muzzle: (42, 33), handGun: false,
                     headTop: 20, signature: 3.0, draw: drawZhang),
     .sisterInes: Persona(name: "Sister Ines", weapon: .blaster, shot: .energy(core: C(0xFFFFFF), glow: C(0xD4DCF4)),
                          muzzle: (45, 30), handGun: false, headTop: 19, signature: 3.4, draw: drawSisterInes),
-    .tserendolgor: Persona(name: "Tserendolgor", weapon: .blaster, shot: .fire, muzzle: (44, 32), handGun: false,
+    .tserendolgor: Persona(name: "Tserendolgor", weapon: .blaster, shot: .beam(core: C(0xFFF0B0), glow: C(0xFF6A1A)), muzzle: (49, 31), handGun: false,
                            headTop: 14, signature: 3.8, draw: drawTserendolgor),
     .langley: Persona(name: "Langley", weapon: .blaster, shot: .arrow, muzzle: (51, 34), handGun: false, headTop: 22,
                       signature: 3.2, draw: drawLangley),
@@ -439,7 +439,7 @@ private func drawLiNa(_ c: PixelCanvas, _ p: Pose) {
 
 /// Zhang: a warehouse worker, Clawd in a scuffed white hard hat, a lime hi-vis vest with silver reflective stripes
 /// over a grey T-shirt, work trousers and steel-toed boots, and on his back the Cape of Odds, deep purple trimmed in
-/// gold, a white die on it. He throws Earth Mover rocks, a brown one in his hand. Signature: he lifts a foot and stamps,
+/// gold, a white die on it. He throws Earth Mover rocks, a grey-brown stone in his hand. Signature: he lifts a foot and stamps,
 /// and the ground in front of him heaves up in a wave of rock and dust.
 private func drawZhang(_ c: PixelCanvas, _ p: Pose) {
     let vest = C(0xC8E030), vestD = C(0x98AE20), stripe = C(0xD8DCE4)
@@ -447,7 +447,7 @@ private func drawZhang(_ c: PixelCanvas, _ p: Pose) {
     let hat = C(0xF0EEE6), hatD = C(0xBEBCB2), hatL = C(0xFFFFFF)
     let cape = C(0x5A2E8C), capeD = C(0x3E1E66), gold = C(0xE0B040)
     let trousers = C(0x4A4A40), trousersD = C(0x36362E), boot = C(0x5A3A20)
-    let rock = C(0x8A6238), rockD = C(0x5E4024), rockL = C(0xB08A5A)
+    let rock = C(0x9A8A70), rockD = C(0x6A5E4A), rockL = C(0xBEB098)
     let s = p.signature ?? -1
     let raise = s > 0.1 && s < 0.32
     let slam = s >= 0.32 && s < 0.4
@@ -647,7 +647,8 @@ private func drawSisterInes(_ c: PixelCanvas, _ p: Pose) {
 /// Tserendolgor: a German Shepherd soldier, Clawd in tan fur with a black saddle over her back and a black mask round
 /// her muzzle, which pushes out in front with its black nose. An olive Vietnam-era helmet, her tall ears up through two
 /// holes cut in it, a band round it; olive fatigues with breast pockets, and over them, on a chain, the gold locket
-/// with a paw print. A Crisper's fire flickers in her near paw, ready to throw. Signature: Garret, her meatball Tummy
+/// with a paw print. A Crisper's flamethrower: a tank on her back, a hose round to the wand in her near paw, a pilot
+/// flame at its nozzle, and a jet of flame when she fires. Signature: Garret, her meatball Tummy
 /// Acher, rolls up to her giggling, and she bends to pat him.
 private func drawTserendolgor(_ c: PixelCanvas, _ p: Pose) {
     let fur = C(0xC89A5A), furD = C(0x9A7240), furL = C(0xE4BC7C), black = C(0x221E1C), blackL = C(0x3E3832)
@@ -686,7 +687,14 @@ private func drawTserendolgor(_ c: PixelCanvas, _ p: Pose) {
         "FF.......",
     ], ["B": black, "F": fur])
 
-    // 4. The body in tan fur, the black saddle over the top of her back; the far arm in its olive sleeve.
+    // 4. The flamethrower's tank on her back, steel, strapped, lit on the left, peeking out behind her; the hose
+    //    down and round under her.
+    c.rect(12, 22, 6, 11, C(0x5A5E62)); c.rect(12, 22, 1, 11, C(0x8A9096)); c.rect(17, 22, 1, 11, C(0x3A3C40))
+    c.rect(13, 21, 4, 1, C(0x6E7276)); c.rect(14, 20, 2, 1, C(0x3A3C40))
+    c.rect(12, 25, 6, 1, C(0x2A2A22)); c.rect(12, 30, 6, 1, C(0x2A2A22))
+    c.rect(13, 33, 2, 2, C(0x2A2A2E)); c.rect(14, 35, 4, 1, C(0x2A2A2E))
+
+    //    The body in tan fur, the black saddle over the top of her back; the far arm in its olive sleeve.
     drawBody(c, Look(body: fur, shade: furD, arm: olive, eye: nil))
     c.rect(18, 26, 2, 7, black); c.rect(18, 26, 1, 7, blackL)
 
@@ -728,15 +736,19 @@ private func drawTserendolgor(_ c: PixelCanvas, _ p: Pose) {
     c.px(25, 33, goldD); c.px(26, 34, goldD); c.px(31, 33, goldD); c.px(30, 34, goldD)
     c.pattern(26, 34, [".GGG.", "GgGgG", "GGgGG", ".GGG."], ["G": gold, "g": C(0x7A5A1A)])
 
-    // 9. The near paw: a flame flickering in it, ready (gone a moment as she throws it); bent down patting Garret in
-    //    the signature.
+    // 9. The near paw: holding the flamethrower's wand out in front, a pilot flame at the nozzle (the jet takes its
+    //    place as she fires); bent down patting Garret in the signature.
     if patting {
         crawlBar(c, (39, 33), 45, from: 0, to: 4, olive, r: 1.2)
         c.rect(42, 35 + pat, 3, 2, fur); c.rect(42, 35 + pat, 3, 1, furL)
     } else {
         c.rect(38, 33, 3, 3, olive); c.px(38, 33, oliveL)
         c.rect(41, 33, 4, 2, fur); c.rect(41, 33, 4, 1, furL)
-        if p.recoil == 0 && !garret { crawlH4Flame(c, 43, 32, h: 6, t: p.lt) }
+        // The wand: a steel barrel to the nozzle, a grip down into her paw, the hose coming in at its back.
+        c.rect(39, 31, 9, 2, C(0x5A5E62)); c.rect(39, 31, 9, 1, C(0x8A9096))
+        c.rect(48, 31, 1, 2, C(0x2A2A2E)); c.rect(42, 33, 1, 2, C(0x3A3C40))
+        c.rect(37, 32, 2, 1, C(0x2A2A2E))
+        if p.fire == nil && !garret { crawlH4Flame(c, 49, 31, h: 3, t: p.lt) }
     }
 
     // 10. Garret: rolling in, his face tumbling over; sat still and squashing as he giggles under her paw, little

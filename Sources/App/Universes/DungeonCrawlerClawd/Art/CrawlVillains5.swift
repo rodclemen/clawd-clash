@@ -20,7 +20,7 @@ let crawlVillains5: [CrawlVillain: Persona] = [
     .eva: Persona(name: "Eva", weapon: .saber, headTop: 7,
  signature: 3.0, draw: drawEva),
     .quanCh: Persona(name: "Quan Ch", weapon: .blaster, motion: .fly,
-                     shot: .energy(core: C(0xE0F4FF), glow: C(0x2E96FF)), muzzle: (46, 31), handGun: false,
+                     shot: .energy(core: C(0xE8FCFF), glow: C(0x5AE0FF)), muzzle: (46, 31), handGun: false,
                      headTop: 19, signature: 3.2, draw: drawQuanCh),
 ]
 
@@ -749,9 +749,9 @@ private func evaSword(_ c: PixelCanvas, _ at: (x: Double, y: Double), _ angle: D
 
 /// Eva: green and opalescent, Clawd in jade-green scales with a sheen of violet and sky-blue along them, a cobra's
 /// flared hood behind her head with pale belly scales down its front, a narrow snake's head with a yellow slit eye and
-/// a flicking red tongue, four arms, a plum sash. At rest her twin swords are crossed in an X on her back, their hilts
-/// over her shoulders. She fights with both swords at once. Signature: all four arms draw, the two swords and the
-/// two knives at her sash, the four blades fanned out round her with a glint.
+/// a flicking red tongue, four arms, a plum sash. She carries four swords: two crossed in an X on her back, their hilts
+/// over her shoulders, and two at her sash. She fights with all four, one in each hand. Signature: all four arms draw,
+/// the four blades fanned out round her with a glint.
 private func drawEva(_ c: PixelCanvas, _ p: Pose) {
     let scale = C(0x3E9E78), scaleD = C(0x2A7056), scaleL = C(0x6CCAA0)
     let violet = C(0xB49AF0), sky = C(0x8AE0F0)
@@ -781,10 +781,14 @@ private func drawEva(_ c: PixelCanvas, _ p: Pose) {
         evaSword(c, (9, 18), 65, len: 15)
     }
 
-    // 4. The far arms, in shade: two of them, empty, or drawing the far sword and knife back behind her.
+    // 4. The far arms, in shade: two of them, empty, or holding the far swords raised behind her in a fight and
+    //    fanned out in the signature.
     if drawn {
         evaSword(c, (13.5, 28.5), -128 + wave, len: 11)
-        evaSword(c, (14.5, 33.5), -168 - wave, len: 6)
+        evaSword(c, (14.5, 33.5), -168 - wave, len: 11)
+    } else if let a = p.melee {
+        evaSword(c, (13.5, 28.5), -150 + a / 4, len: 11)
+        evaSword(c, (14.5, 33.5), 165 - a / 4, len: 11)
     }
     c.rect(12, 27, 4, 3, scaleD); c.px(11, 29, scaleD); c.rect(14, 33, 3, 3, scaleD)
     if reach { c.rect(13, 24, 3, 4, scaleD) }
@@ -798,7 +802,7 @@ private func drawEva(_ c: PixelCanvas, _ p: Pose) {
     c.pattern(23, 18, [".pp..pp.", "p..pp..p", ".pp..pp."], ["p": scaleL])   // the spectacle mark on the hood
 
     // 6. The body: jade, lit on the top and left with the opal sheen, scale strokes, the pale belly down the front,
-    //    the plum sash with a knife hilt at either side.
+    //    the plum sash with a sword hilt at either side.
     drawBody(c, Look(body: scale, shade: scaleD, arm: scale, eye: nil))
     c.rect(19, 26, 12, 1, scaleL); c.rect(18, 27, 1, 9, scaleL)
     c.rect(20, 27, 5, 1, violet); c.rect(18, 29, 1, 3, sky)
@@ -806,7 +810,9 @@ private func drawEva(_ c: PixelCanvas, _ p: Pose) {
     c.rect(32, 27, 5, 8, belly)
     for y in [28, 30, 32, 34] { c.rect(32, y, 5, 1, bellyD) }
     c.rect(18, 35, 20, 2, sash); c.rect(18, 35, 20, 1, sashL)
-    if !drawn { c.rect(20, 33, 1, 2, C(0xD8DEE6)); c.rect(35, 33, 1, 2, C(0xD8DEE6)) }
+    if !drawn && p.melee == nil {
+        for x in [20, 35] { c.rect(x, 32, 1, 3, C(0x3A2A4A)); c.rect(x - 1, 34, 3, 1, C(0xD8B040)) }
+    }
 
     // 7. The head: a cobra's, narrow, on the front of the hood: the yellow slit eye, the pale jaw, the red tongue.
     c.pattern(30, 7, [
@@ -819,7 +825,7 @@ private func drawEva(_ c: PixelCanvas, _ p: Pose) {
     c.px(33, 8, violet)
     if Int(p.lt * 1.5) % 3 == 0 { c.rect(39, 10, 2, 1, C(0xD83040)); c.px(41, 9, C(0xD83040)); c.px(41, 11, C(0xD83040)) }
 
-    // 8. The near arms: the upper one and the lower one, holding the twin swords in a fight, the sword and the knife
+    // 8. The near arms: the upper one and the lower one, holding two of the swords in a fight, the near pair
     //    drawn in the signature, reaching back for the hilts as she starts, or resting.
     if let a = p.melee {
         for (i, ta) in p.trail.enumerated() {
@@ -831,7 +837,7 @@ private func drawEva(_ c: PixelCanvas, _ p: Pose) {
         c.rect(38, 33, 4, 3, scale); c.px(38, 33, scaleL)
     } else if drawn {
         evaSword(c, (40.5, 29.5), -55 - wave, len: 12)
-        evaSword(c, Sprite.hand, -12 + wave, len: 7)
+        evaSword(c, Sprite.hand, -12 + wave, len: 12)
         c.rect(38, 28, 3, 3, scale); c.rect(38, 33, 4, 3, scale)
         let glint = s < 0.4
         if glint { for (x, y) in [(47, 19), (50, 33), (5, 18)] { c.px(x, y, white); c.px(x - 1, y, C(0xFFFFFF, 0.5)); c.px(x + 1, y, C(0xFFFFFF, 0.5)) } }
@@ -866,13 +872,13 @@ private func quanWing(_ c: PixelCanvas, _ sh: (Double, Double), _ a: (Double, Do
 
 /// Quan Ch: Clawd in a long glowing robe, pale gold, a high collar and sky-blue trim down the front and round the
 /// hem, a soft glow round it; black hair in strands swept back off a stern brow. Wings of light behind him, see-through
-/// with pale blue ribs, folded up at rest, beating when he flies. His near hand, the left, glows blue: his energy is
-/// blue. Signature: the robe lifts him off the ground, the hem billowing, and the wings flare wide.
+/// with pale blue ribs, folded up at rest, beating when he flies. His near hand, the left, glows pale cyan: his energy is
+/// pale cyan. Signature: the robe lifts him off the ground, the hem billowing, and the wings flare wide.
 private func drawQuanCh(_ c: PixelCanvas, _ p: Pose) {
     let robe = C(0xF0E2B0), robeD = C(0xC8B47A), robeL = C(0xFFF6D8), trim = C(0x4AB4F0)
     let rib = C(0x8AD4FF), edge = C(0xD8F2FF), fill = C(0x9ADCFF)
     let hair = C(0x1E1C24), hairL = C(0x46424E)
-    let blue = C(0x3AA0FF), blueL = C(0xD8F0FF)
+    let blue = C(0x5AE0FF), blueL = C(0xE8FCFF)
     let s = p.signature ?? -1
     let flare = v5Arc(s, 0.08, 0.92, edge: 0.22)
     let rise = Int((flare * 4).rounded())
@@ -929,7 +935,7 @@ private func drawQuanCh(_ c: PixelCanvas, _ p: Pose) {
         "..hhh.................",
     ], ["h": hair, "H": hairL])
 
-    // 8. The near hand, his left, glowing blue: at his side, or forward and blazing as he casts.
+    // 8. The near hand, his left, glowing pale cyan: at his side, or forward and blazing as he casts.
     c.rect(38, 33, 3, 3, robe); c.rect(38, 35, 3, 1, robeD)
     let hx = casting ? 44 : 41, hy = casting ? 31 : 35
     if casting { c.rect(40, 31, 4, 2, robe); c.rect(40, 32, 4, 1, robeD) }
