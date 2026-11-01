@@ -78,7 +78,13 @@ enum CrawlFacts {
         // Claude plays the crawlers.
         claudeSide: false,
         // The Hoarder never leaves her lair.
-        homebound: [CrawlVillain.hoarder.rawValue: "crawlHoard"]
+        homebound: [CrawlVillain.hoarder.rawValue: "crawlHoard"],
+        // New Achievement!: the Earth crawlers among the heroes, compacted, get a System box and a loot box, and
+        // come back the same (`crawlAchievement`).
+        compaction: .away(who: Set([CrawlHero.carl, .donut, .katia, .prepotente, .louis, .elle, .imani, .brandon, .chris,
+                                    .bautista, .tran, .florin, .ifechi, .liJun, .liNa, .zhang, .sisterInes,
+                                    .tserendolgor, .langley, .gwendolyn, .jurgen, .osvaldo, .popovs, .miriamDom]
+                                   .map { UniverseFacts.heroBase + $0.rawValue }))
         // Everything below is optional: uncomment what your universe needs. Ids here are local: a villain's is its
         // rawValue, a hero's `UniverseFacts.heroBase + rawValue`.
         //

@@ -58,7 +58,7 @@ struct CrawlUniverse: UniverseModule {
     var placeCaption: PlaceCaption? { nil }
     /// What a compacted session's leader looks like while it's away (with `compaction: .away` in the facts), `k` (0…1)
     /// through it: The Clawd Files' abduction beam, Stevie Clawdberg's 88 mph. nil: nothing to see.
-    func compactionLook(k: Double, cast: Cast) -> CompactionLook? { nil }
+    func compactionLook(k: Double, cast: Cast) -> CompactionLook? { crawlAchievement(k: k, cast: cast) }   // CrawlAchievement.swift
     /// What a regeneration looks like (with `compaction: .regenerate` in the facts), drawn over the character already
     /// in its next face: Doctor Clawd's.
     var regeneration: (length: Double, draw: (_ c: PixelCanvas, _ k: Double, _ t: Double) -> Void)? { nil }
@@ -71,14 +71,14 @@ struct CrawlUniverse: UniverseModule {
     /// (`unseenMovers`), a jump and a shiver (`jitter`), something drawn beside them (`prop`), a word to someone nearby
     /// (`remark`), nobody has a voice while they're there (`hushers`), their signature once a fight is over
     /// (`afterDuel`). See `StageQuirks`.
-    var quirks: StageQuirks { StageQuirks() }
+    var quirks: StageQuirks { crawlQuirks }   // CrawlHabits.swift
     /// Pairs who face off and now and then end with one bolt getting through (Han shoots first): a `ShootOut` with
     /// the shooter, the target and their lines.
     var shootOuts: [ShootOut] { [] }
     /// Every ride, for Preview's sheet (who takes which is `theme.ride`).
-    var rides: [Ride] { [] }
+    var rides: [Ride] { crawlRides }   // CrawlRides.swift
     /// Characters' own practice sets, done now and then among the general drills (`BespokeDrill`).
-    var drills: [Cast: BespokeDrill] { [:] }
+    var drills: [Cast: BespokeDrill] { crawlBespokeDrills }   // CrawlDrills.swift
     /// Places where, now and then, the whole scene turns over in the window and the screen saver (`SceneFlip`); nil:
     /// never.
     var sceneFlip: SceneFlip? { nil }

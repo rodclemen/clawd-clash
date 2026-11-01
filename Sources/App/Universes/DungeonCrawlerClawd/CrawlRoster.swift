@@ -123,10 +123,7 @@ let crawlTheme = Theme(
     // Who gets picked up when their agent is done, and by what: nil walks off on foot, as everyone does here. A ride is
     // a `Ride` of this universe's own (`static let` in an extension of `Ride`, listed in the module's `rides`), drawn
     // nose to the right; see Slayer/SlayerUniverse.swift and SlayerRides.swift for a bus and two cars that drive in.
-    ride: { c in
-        guard c.universe == .crawl else { return nil }
-        return nil
-    },
+    ride: crawlRide,   // CrawlRides.swift
     menuIcon: crawlMenuIcon,
     // Who stands in for a session in Status Symbols: usually the universe's lead hero.
     legend: .hero(CrawlHero.carl))
