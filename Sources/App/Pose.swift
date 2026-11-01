@@ -192,11 +192,15 @@ func drawPersona(_ c: PixelCanvas, _ who: Cast, t: Double, mode: VaderMode, walk
     switch persona.weapon {
     case .blaster:
         if let fire = p.fire {
-            drawMuzzleShot(c, t: fire.t, period: p.firePeriod, muzzle: persona.muzzle, style: persona.shot, bolt: fire.bolt,
+            var (style, muzzle) = (persona.shot, persona.muzzle)
+            if !persona.shotTurns.isEmpty {
+                (style, muzzle) = persona.shotTurns[shotTurn(t: fire.t, period: p.firePeriod, count: persona.shotTurns.count)]
+            }
+            drawMuzzleShot(c, t: fire.t, period: p.firePeriod, muzzle: muzzle, style: style, bolt: fire.bolt,
                            gunY: classic ? 0 : p.gunY, classic: classic)
             if soloDrill?.kind == .skyShots {
                 drawSkyShot(c, t: fire.t, period: p.firePeriod,
-                            muzzle: (persona.muzzle.x, persona.muzzle.y + Double(classic ? 0 : p.gunY)), style: persona.shot)
+                            muzzle: (muzzle.x, muzzle.y + Double(classic ? 0 : p.gunY)), style: style)
             }
         }
         if let smoke = p.smoke { drawBarrelSmoke(c, x: persona.muzzle.x, y: persona.muzzle.y + Double(classic ? 0 : p.gunY), smoke) }

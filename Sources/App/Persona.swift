@@ -85,6 +85,9 @@ struct Persona {
     var canSit = true
     /// Where shots leave from, canvas pixels, facing right.
     var muzzle: (x: Double, y: Double) = (52, 32)
+    /// More than one way to shoot (the Reminiscence Hydra's heads): each shot takes the next of these in turn, its look
+    /// and where it leaves from, in place of `shot` and `muzzle`. The art can ask which one is firing (`shotTurn`).
+    var shotTurns: [(shot: ShotStyle, muzzle: (x: Double, y: Double))] = []
     /// Where its melee weapon swings from, or where magic leaves its hand.
     var pivot: (x: Double, y: Double) = Sprite.hand
     /// Its ranged weapon is held in the hand (so it raises it to check it, idle). False when it's built in:
@@ -118,3 +121,10 @@ struct Persona {
     }
 }
 
+
+/// Which of `count` shot turns (`Persona.shotTurns`) the shot fired on clock `t` is: the next in turn every period.
+func shotTurn(t: Double, period: Double, count: Int) -> Int {
+    guard count > 1 else { return 0 }
+    let n = Int(floor(t / period)) % count
+    return n < 0 ? n + count : n
+}
