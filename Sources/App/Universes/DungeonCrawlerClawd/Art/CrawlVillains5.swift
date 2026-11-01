@@ -8,9 +8,13 @@ import Foundation
 let crawlVillains5: [CrawlVillain: Persona] = [
     .amayon: Persona(name: "Amayon", weapon: .blaster, shot: .fire, muzzle: (51, 18), handGun: false, bulk: 4,
                      headTop: 4, signature: 3.2, draw: drawAmayon),
-    .hydra: Persona(name: "The Reminiscence Hydra", weapon: .blaster,
-                    shot: .energy(core: C(0xF4FFD8), glow: C(0x9ADC2A)), muzzle: (55, 24), handGun: false, bulk: 4,
-                    headTop: 5, signature: 3.0, draw: drawHydra),
+    .hydra: {
+        var p = Persona(name: "The Reminiscence Hydra", weapon: .blaster, shot: .fire, muzzle: (55, 24), handGun: false,
+                        bulk: 4, headTop: 5, signature: 3.0, draw: drawHydra)
+        // The heads whose powers the books show take turns: Monobrow Sam's death ray, then Bea's mother's fireball.
+        p.shotTurns = [(.beam(core: C(0xFFE0E8), glow: C(0xE0204A)), (47, 11)), (.fire, (55, 24))]
+        return p
+    }(),
     .mrsGhazi: Persona(name: "Mrs. Ghazi", weapon: .blaster, shot: .thrown(C(0xC8A464)), muzzle: (46, 28),
                        handGun: false, headTop: 21, signature: 3.4, draw: drawMrsGhazi),
     .ruckus: Persona(name: "Ruckus", weapon: .saber, motion: .fly, armoured: true, headTop: 13, signature: 3.0,
@@ -200,17 +204,21 @@ private func drawAmayon(_ c: PixelCanvas, _ p: Pose) {
 /// side and a seam across it, dark stitches crossing both, Clawd's two eyes peering out of the middle; it sits on four
 /// short stumpy legs. Out of the top grow nine long necks, each with a little head of its own, swaying, the left four
 /// looking back and the rest forward, every head's eye glowing a different colour and the colours shifting along.
-/// The front head spits its energy, acid green. Signature: a head pops off with a puff, and a new one balloons back
-/// out of the stump.
+/// The top head is the Keymaster's, Judge Lucian's, bigger than the rest, in a white judge's wig. Two heads fight,
+/// taking turns (`Persona.shotTurns`): Monobrow Sam, with his monobrow, fires a crimson death ray, and Bea's mother,
+/// the front head with a red perm, spits fireballs. Signature: a head pops off with a puff, and a new one balloons
+/// back out of the stump.
 private func drawHydra(_ c: PixelCanvas, _ p: Pose) {
     let flesh = C(0xC88E78), fleshD = C(0x9A6252), fleshL = C(0xE6B4A0)
     let patch = C(0x8EA070), patchD = C(0x6E7E54)
     let head = C(0xE8B49C), headL = C(0xFAD4C0), neckC = C(0xA86A58)
-    let stitch = C(0x3A2226), mouth = C(0x5A2A2E), glow = C(0xD8FF7A)
+    let stitch = C(0x3A2226), mouth = C(0x5A2A2E), glow = C(0xFFD060)
+    let wig = C(0xECE8DC), wigD = C(0xB8B2A4), brow = C(0x2A1C18), perm = C(0xA8442A)
+    let keymaster = 4, sam = 6, beasMother = 8
     let eyes: [Px] = [C(0xFF5AA0), C(0xFF9A3A), C(0xFFE04A), C(0x9AF04A), C(0x3AE8D0), C(0x4A9AFF), C(0xB070FF),
                       C(0xFF4AE0), C(0xFFFFFF)]
     let s = p.signature ?? -1
-    let firing = p.fire != nil
+    let shooter = p.fire.map { shotTurn(t: $0.t, period: p.firePeriod, count: 2) == 0 ? sam : beasMother }
 
     // 1. The stumpy legs: flesh, lit down the front, a stitch across each, darker toes.
     drawLegs(c, Look(leg: flesh), step: p.step)
@@ -249,15 +257,15 @@ private func drawHydra(_ c: PixelCanvas, _ p: Pose) {
     c.rect(22, 28, 2, 3, ink); c.rect(31, 28, 2, 3, ink)
     c.px(22, 28, C(0x6A4A44)); c.px(31, 28, C(0x6A4A44))
 
-    // 6. The nine necks and heads, swaying: the left four look back, the rest forward. The top one pops off and
-    //    balloons back in the signature; the front one spits.
+    // 6. The nine necks and heads, swaying: the left four look back, the rest forward. One on the left pops off and
+    //    balloons back in the signature; the Keymaster's on top is bigger, in a wig; Sam and Bea's mother shoot.
     let spots: [(Double, Double)] = [(6, 24), (9, 16), (15, 10), (22, 7), (29, 6.5), (36, 7), (43, 10), (48, 16),
                                      (51, 23)]
     let popping = s > 0.06 && s < 0.9
     for (i, spot) in spots.enumerated() {
         let a = (-165 + Double(i) * 18.75) * .pi / 180
         let base = (28 + 11.5 * cos(a), 29.5 + 8 * sin(a))
-        let still = i == 8 && firing
+        let still = i == shooter
         let wx = still ? 0 : sin(p.lt * 2.3 + Double(i) * 1.7) * 1.0
         let wy = still ? 0 : cos(p.lt * 1.9 + Double(i) * 1.3) * 0.8
         let hx = spot.0 + wx, hy = spot.1 + wy
@@ -271,13 +279,22 @@ private func drawHydra(_ c: PixelCanvas, _ p: Pose) {
         c.px(Int(mid.0.rounded()), Int(mid.1.rounded()), stitch)
 
         let eye = eyes[(i + Int(p.lt * 1.2)) % eyes.count]
-        let open = i == 8 && firing
+        let open = i == shooter
         var rows = ["..LLL.", ".HHHEH", "HHHHHH", ".HHMMM"]
+        var ox = Int(hx.rounded()) - 3, oy = Int(hy.rounded()) - 2
+        switch i {
+        case keymaster:
+            rows = ["..WWWW..", ".WwLLLL.", "WWHHHHEH", "WwHHHHHH", ".WHHHMMH", "..HHHH.."]
+            ox -= 1; oy -= 2
+        case sam: rows = ["..LLL.", ".HKKKK", "HHHHEH", "HHHHHH", ".HHMMM"]; oy -= 1
+        case beasMother: rows = ["..ccc.", ".cHHEH", "ccHHHH", ".cHMMM"]
+        default: break
+        }
         if left { rows = rows.map { String($0.reversed()) } }
-        let pal: [Character: Px] = ["L": headL, "H": head, "E": eye, "M": open ? glow : mouth]
-        let ox = Int(hx.rounded()) - 3, oy = Int(hy.rounded()) - 2
+        let pal: [Character: Px] = ["L": headL, "H": head, "E": eye, "M": open ? (i == sam ? C(0xFF6A8A) : glow) : mouth,
+                                    "W": wig, "w": wigD, "K": brow, "c": perm]
 
-        if i == 4 && popping {
+        if i == 2 && popping {
             if s < 0.3 {
                 // Popped: the head flies up, fading, a puff where it was.
                 let k = (s - 0.06) / 0.24
