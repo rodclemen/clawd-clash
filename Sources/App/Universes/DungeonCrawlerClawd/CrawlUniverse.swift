@@ -6,7 +6,7 @@ import Foundation
 // places, mechanics and transitions, is in-progress/dungeon-crawler-clawd.md in the clawd-plans repo.
 //
 // The folder follows the template's layout (clawdify_guide.md, "Your folder"): CrawlFacts (enums and facts),
-// CrawlRoster (personas, homes, nemeses, the theme, the place keys), CrawlHem, CrawlIcon, CrawlWipes, CrawlKit
+// CrawlRoster (personas, homes, nemeses, the theme, the place keys), CrawlHem, CrawlIcon, CrawlTrips (and a file per trip), CrawlKit
 // (drawing helpers several files share), Art/, Places/ and Promo/.
 
 /// The universe as the app sees it: everything the engine asks of it. Exactly one type in the folder conforms to
@@ -30,11 +30,10 @@ struct CrawlUniverse: UniverseModule {
             villains: "crawlVillains", [crawlVillains1, crawlVillains2, crawlVillains3, crawlVillains4, crawlVillains5,
                                         crawlVillains6, crawlVillains7])
     }
-    /// The trips between places (CrawlWipes.swift): `pick` chooses the next, `every` lists one of each kind for
-    /// Tools/Transitions. nil would leave plain edge and clock wipes, as only Star Clawds keeps.
+    /// The twelve trips between places, each ending in a System box naming the new place: CrawlTrips.swift.
     var transitions: TransitionSet? {
-        TransitionSet(pick: { last, cast, _, to in CrawlTrip.pick(after: (last as? CrawlTrip)?.kind, cast: cast, to: to) },
-                      every: { _, _ in ShownTrip.all(CrawlWipe.allCases) { CrawlTrip(kind: $0) } })
+        TransitionSet(pick: { last, cast, from, to in CrawlTrip.pick(after: (last as? CrawlTrip)?.kind, cast: cast, from: from, to: to) },
+                      every: { from, to in ShownTrip.all(CrawlWipe.allCases) { CrawlTrip(kind: $0, from: from, to: to) } })
     }
 
     // MARK: Have defaults

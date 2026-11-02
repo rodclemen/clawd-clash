@@ -38,7 +38,7 @@ func crawlTalons(_ c: PixelCanvas, _ at: (x: Double, y: Double), angle: Double, 
     }
 }
 
-/// The System's block letters, 3×5 each with a pixel between: the digits, a plus, K and the capitals the boxes use.
+/// The System's block letters, 3×5 each with a pixel between: the digits, the capitals and a little punctuation.
 /// Unknown characters are a space.
 /// `scale` draws each of the letters' pixels as a square that many pixels wide (a place's unit).
 func crawlText(_ c: PixelCanvas, _ x: Int, _ y: Int, _ text: String, _ col: Px, scale: Int = 1) {
@@ -74,4 +74,9 @@ private let crawlGlyphs: [Character: [String]] = [
     "S": [".##", "#..", ".#.", "..#", "##."], "T": ["###", ".#.", ".#.", ".#.", ".#."],
     "U": ["#.#", "#.#", "#.#", "#.#", "###"], "V": ["#.#", "#.#", "#.#", "#.#", ".#."],
     "W": ["#.#", "#.#", "###", "###", "#.#"], "Y": ["#.#", "#.#", ".#.", ".#.", ".#."],
+    "J": ["..#", "..#", "..#", "#.#", ".#."], "Q": [".#.", "#.#", "#.#", "##.", ".##"],
+    "X": ["#.#", "#.#", ".#.", "#.#", "#.#"], "Z": ["###", "..#", ".#.", "#..", "###"],
+    ":": ["...", ".#.", "...", ".#.", "..."], ".": ["...", "...", "...", "...", ".#."],
+    ",": ["...", "...", "...", ".#.", "#.."], "'": [".#.", ".#.", "...", "...", "..."],
+    "-": ["...", "...", "###", "...", "..."], "?": ["##.", "..#", ".#.", "...", ".#."],
 ]

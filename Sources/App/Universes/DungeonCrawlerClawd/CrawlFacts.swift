@@ -68,6 +68,11 @@ extension Universe {
 }
 
 enum CrawlFacts {
+    /// The Earth crawlers among the heroes: New Achievement! is theirs, and the Loot Box trip comes up more with them.
+    static let earthCrawlers: [CrawlHero] = [.carl, .donut, .katia, .prepotente, .louis, .elle, .imani, .brandon, .chris,
+                                             .bautista, .tran, .florin, .ifechi, .liJun, .liNa, .zhang, .sisterInes,
+                                             .tserendolgor, .langley, .gwendolyn, .jurgen, .osvaldo, .popovs, .miriamDom]
+
     static let entry = UniverseEntry(universe: .crawl, key: "crawl", title: "Dungeon Crawler Clawd", facts: facts)
     static let facts = UniverseFacts(
         // The counts come from the enums, never typed by hand.
@@ -81,10 +86,7 @@ enum CrawlFacts {
         homebound: [CrawlVillain.hoarder.rawValue: "crawlHoard"],
         // New Achievement!: the Earth crawlers among the heroes, compacted, get a System box and a loot box, and
         // come back the same (`crawlAchievement`).
-        compaction: .away(who: Set([CrawlHero.carl, .donut, .katia, .prepotente, .louis, .elle, .imani, .brandon, .chris,
-                                    .bautista, .tran, .florin, .ifechi, .liJun, .liNa, .zhang, .sisterInes,
-                                    .tserendolgor, .langley, .gwendolyn, .jurgen, .osvaldo, .popovs, .miriamDom]
-                                   .map { UniverseFacts.heroBase + $0.rawValue }))
+        compaction: .away(who: Set(earthCrawlers.map { UniverseFacts.heroBase + $0.rawValue }))
         // Everything below is optional: uncomment what your universe needs. Ids here are local: a villain's is its
         // rawValue, a hero's `UniverseFacts.heroBase + rawValue`.
         //
