@@ -38,8 +38,8 @@ func crawlTalons(_ c: PixelCanvas, _ at: (x: Double, y: Double), angle: Double, 
     }
 }
 
-/// The System's block letters, 3×5 each with a pixel between: the digits, the capitals and a little punctuation.
-/// Unknown characters are a space.
+/// The System's block letters, 3×5 each with a pixel between (W 5 wide, so it doesn't read as H): the digits, the
+/// capitals and a little punctuation. Unknown characters are a space.
 /// `scale` draws each of the letters' pixels as a square that many pixels wide (a place's unit).
 func crawlText(_ c: PixelCanvas, _ x: Int, _ y: Int, _ text: String, _ col: Px, scale: Int = 1) {
     var cx = x
@@ -49,12 +49,16 @@ func crawlText(_ c: PixelCanvas, _ x: Int, _ y: Int, _ text: String, _ col: Px, 
                 for (dx, bit) in row.enumerated() where bit == "#" { c.rect(cx + dx * scale, y + dy * scale, scale, scale, col) }
             }
         }
-        cx += 4 * scale
+        cx += (crawlGlyphWidth(ch) + 1) * scale
     }
 }
 
 /// How wide `crawlText` draws `text`, in pixels.
-func crawlTextWidth(_ text: String, scale: Int = 1) -> Int { max(0, text.count * 4 - 1) * scale }
+func crawlTextWidth(_ text: String, scale: Int = 1) -> Int {
+    max(0, text.uppercased().reduce(0) { $0 + crawlGlyphWidth($1) + 1 } - 1) * scale
+}
+
+private func crawlGlyphWidth(_ ch: Character) -> Int { crawlGlyphs[ch]?.first?.count ?? 3 }
 
 private let crawlGlyphs: [Character: [String]] = [
     "0": ["###", "#.#", "#.#", "#.#", "###"], "1": [".#.", "##.", ".#.", ".#.", "###"],
@@ -73,7 +77,7 @@ private let crawlGlyphs: [Character: [String]] = [
     "P": ["##.", "#.#", "##.", "#..", "#.."], "R": ["##.", "#.#", "##.", "#.#", "#.#"],
     "S": [".##", "#..", ".#.", "..#", "##."], "T": ["###", ".#.", ".#.", ".#.", ".#."],
     "U": ["#.#", "#.#", "#.#", "#.#", "###"], "V": ["#.#", "#.#", "#.#", "#.#", ".#."],
-    "W": ["#.#", "#.#", "###", "###", "#.#"], "Y": ["#.#", "#.#", ".#.", ".#.", ".#."],
+    "W": ["#...#", "#...#", "#.#.#", "#.#.#", ".#.#."], "Y": ["#.#", "#.#", ".#.", ".#.", ".#."],
     "J": ["..#", "..#", "..#", "#.#", ".#."], "Q": [".#.", "#.#", "#.#", "##.", ".##"],
     "X": ["#.#", "#.#", ".#.", "#.#", "#.#"], "Z": ["###", "..#", ".#.", "#..", "###"],
     ":": ["...", ".#.", "...", ".#.", "..."], ".": ["...", "...", "...", "...", ".#."],
