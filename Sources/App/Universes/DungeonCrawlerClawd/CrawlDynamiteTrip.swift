@@ -10,14 +10,15 @@ extension CrawlTrip {
     /// middle with a green goblin face on it, comes tumbling in end over end from the right along the floor, skidding
     /// to a stop flat on its side a little right of the middle (0–0.3). Its fuse fizzes down, spraying sparks and
     /// puffing smoke, the stick shivering harder as the spark nears it while the old place darkens (0.3–0.6). BOOM: a
-    /// white flash, a chunky fireball of puffs bursting out from the stick, white at its heart, then yellow, orange
-    /// and red as each puff cools to grey smoke, bits of stick and paper flying, the screen shaking, and BOOM in big
-    /// block letters, yellow over orange with a dark red edge (0.6–0.8); the place behind the smoke is the new one
-    /// from 0.74, once it covers everything. Then the smoke thins away, the top-left corner first so the System box
-    /// has a clear corner, the letters crumbling with it (0.76–0.97).
+    /// white flash, a chunky fireball of billows, big and small, bursting out from the stick, white at its heart, then
+    /// yellow, orange and red as each cools to grey smoke, bits of stick and paper flying, the screen shaking, and BOOM
+    /// in big block letters, yellow over orange with a dark red edge (0.6–0.8); the place behind the smoke is the new
+    /// one from 0.74, once it covers everything. Then the cloud opens up in big holes that spread and join, the top-left
+    /// corner first so the System box has a clear corner (0.76–0.95), and each letter breaks in two, the pieces dropping
+    /// away one after another (0.8–0.93).
     func drawDynamite(_ ctx: CGContext, old: CGImage, new: CGImage, k: Double, in r: CGRect) {
         guard k > 0 else { ctx.drawShot(old, in: r); return }
-        guard k < 0.97 else { ctx.drawShot(new, in: r); return }
+        guard k < 0.95 else { ctx.drawShot(new, in: r); return }
         let art = CrawlArt(r)
         let c = art.c, w = art.w, h = art.h
         let frame = Int(k * CrawlWipe.dynamite.effect * 30)          // about 30 a second, for the sparks and the shake
@@ -72,65 +73,77 @@ extension CrawlTrip {
             return
         }
 
-        // BOOM. The fireball and the smoke after it, a field of round puffs on a grid that covers the whole frame,
-        // each bursting out at its own moment (sooner nearer the stick) and cooling through the fire's colours to grey.
-        let sp = Double(art.wide ? 16 : 18)
-        let cols = Int(Double(w) / sp) + 2, rows = Int(Double(h) / sp) + 2
+        // BOOM. The fireball and the smoke after it: the body of the cloud spreading out from the stick, and over it
+        // billows of very different sizes, scattered in a spiral rather than a grid, each bursting out as the front
+        // reaches it and cooling through the fire's colours to grey.
         let far = max(1, hypot(max(restX, Double(w) - restX), max(restY, Double(h) - restY)))
-        struct Puff { let x: Double, y: Double, r: Double, born: Double, corner: Double, late: Double }
-        var puffs: [Puff] = []
-        for j in 0..<rows {
-            for i in 0..<cols {
-                let n = j * 97 + i * 13
-                let x0 = (Double(i) - 0.5 + (noise(n) - 0.5) * 0.6) * sp
-                let y0 = (Double(j) - 0.5 + (noise(n + 1) - 0.5) * 0.6) * sp
-                let d = hypot(x0 - restX, y0 - restY) / far
-                // Drifting a little out from the blast and up as it clears.
-                let drift = Self.span(k, bang, 1) * sp * 0.5
-                let ax = (x0 - restX) / max(1, hypot(x0 - restX, y0 - restY))
-                puffs.append(Puff(x: x0 + ax * drift, y: y0 - drift * 0.8, r: sp * (1.2 + 0.35 * noise(n + 2)),
-                                  born: bang + 0.07 * d, corner: 1 - min(1, x0 / Double(w) * 0.9 + y0 / Double(h) * 0.6), late: noise(n + 3)))
-            }
-        }
         let fire: [Px] = [C(0xFFFFFF), C(0xFFF0A0), C(0xFFC838), C(0xFF8A20), C(0xE04A1C), C(0x9A2A1C)]
         let smoke: [Px] = [C(0x5E585E), C(0x847E86), C(0xA8A2AA), C(0xCCC6CC)]
         let shake = k < 0.72 ? Int((1 - Self.span(k, bang, 0.72)) * 3 + 0.5) : 0
         let sx = shake > 0 ? Int((noise(frame * 3) - 0.5) * Double(shake * 2 + 1)) : 0
         let sy = shake > 0 ? Int((noise(frame * 3 + 1) - 0.5) * Double(shake * 2 + 1)) : 0
+        let cool = 0.07                                               // how long a billow stays fire
+        let cloud = PixelCanvas(w, h)
         for y in 0..<h {
             for x in 0..<w {
                 let fx = Double(x - sx) + 0.5, fy = Double(y - sy) + 0.5
-                var best = -1.0, who = -1
-                // Only the puffs of the grid cells round this one can reach it.
-                let ci = min(cols - 1, max(0, Int(fx / sp + 0.5))), cj = min(rows - 1, max(0, Int(fy / sp + 0.5)))
-                for j in max(0, cj - 2)...min(rows - 1, cj + 2) {
-                    for i in max(0, ci - 2)...min(cols - 1, ci + 2) {
-                        let p = puffs[j * cols + i]
-                        let grow = 1 - pow(1 - Self.span(k, p.born, p.born + 0.045), 2)
-                        guard grow > 0 else { continue }
-                        // Clearing: each puff shrinks away, those toward the top left sooner.
-                        let gone = Self.span(k, 0.76 + 0.06 * p.late * (1 - p.corner), 0.95 - 0.1 * p.corner)
-                        let rad = p.r * grow * (1 - gone * gone * 0.15) * (1 - gone)
-                        guard rad > 0.5 else { continue }
-                        let f = 1 - hypot(fx - p.x, fy - p.y) / rad
-                        if f > best { best = f; who = j * cols + i }
-                    }
-                }
-                guard best > 0, who >= 0 else { continue }
-                let p = puffs[who]
-                let age = k - p.born
-                let col: Px
-                if age < 0.07 {
-                    // Fire: hotter in the puff's middle and the younger it is.
-                    let heat = age / 0.07 * 0.8 + (1 - best) * 0.3
-                    col = fire[min(fire.count - 1, Int(heat * Double(fire.count)))]
-                } else {
-                    // Smoke: a pale lit middle, a darker rim, shaded toward the bottom right.
-                    let lit = best + (fx < p.x - 1 && fy < p.y - 1 ? 0.15 : 0) - (fx > p.x + 2 && fy > p.y + 2 ? 0.15 : 0)
-                    col = smoke[lit > 0.7 ? 3 : lit > 0.42 ? 2 : lit > 0.18 ? 1 : 0]
-                }
-                c.px(x, y, col)
+                // The front's ragged edge; once it has passed everywhere the edge no longer matters.
+                let ragged = k < 0.69 ? 0.02 * (dynamiteField(x, y, seed: 9) - 0.5) : 0
+                let born = bang + 0.07 * hypot(fx - restX, fy - restY) / far + ragged
+                let age = k - born
+                guard age > 0 else { continue }
+                cloud.px(x, y, age < cool ? fire[min(fire.count - 1, 1 + Int(age / cool * 5))] : smoke[1])
             }
+        }
+        // The billows, the farthest first so the ones nearer the blast sit over them.
+        let base = Double(h) * 0.17
+        let count = Int(.pi * far * far / (base * base * 1.3))
+        let rise = Self.span(k, bang, 1)
+        for i in stride(from: count - 1, through: 0, by: -1) {
+            let dist = (Double(i) + 0.5).squareRoot() / Double(count).squareRoot() * far * 1.06
+            let turn = Double(i) * 2.39996 + (noise(i * 7 + 3) - 0.5) * 1.4
+            let x0 = restX + cos(turn) * dist * (0.92 + 0.16 * noise(i * 7 + 4))
+            let y0 = restY + sin(turn) * dist * (0.92 + 0.16 * noise(i * 7 + 5))
+            let size = noise(i * 7 + 6)
+            let full = base * (0.45 + 1.15 * size * size)
+            guard x0 > -full * 1.2, y0 > -full * 1.2, x0 < Double(w) + full * 1.2, y0 < Double(h) + full * 1.2 else { continue }
+            let born = bang + 0.07 * dist / far
+            let grow = 1 - pow(1 - Self.span(k, born, born + 0.05), 2)
+            guard grow > 0 else { continue }
+            let rad = full * grow
+            // Drifting a little out from the blast and up as it clears.
+            let out = rise * base * 0.5, ux = cos(turn)
+            let px = x0 + ux * out + Double(sx), py = y0 - out * 0.8 + Double(sy)
+            let age = k - born
+            let tones: (rim: Px, face: Px, top: Px)
+            if age < cool {
+                let n = Int(age / cool * 4)
+                tones = (fire[min(5, n + 2)], fire[min(5, n + 1)], fire[n])
+            } else {
+                tones = (smoke[0], smoke[2], smoke[3])
+            }
+            // Lit from the top left: a shaded rim, a face set up and left inside it, a bright cap on the bigger ones.
+            cloud.circle(Int(px), Int(py), Int(rad.rounded()), tones.rim)
+            cloud.circle(Int(px - rad * 0.1), Int(py - rad * 0.12), Int((rad * 0.86).rounded()), tones.face)
+            if size > 0.35 {
+                cloud.circle(Int(px - rad * 0.28), Int(py - rad * 0.32), Int((rad * 0.48).rounded()), tones.top)
+            }
+        }
+        // Clearing: holes open where the slow field is lowest and spread until they join, the top left first, so what's
+        // left is always a few big banks of smoke, never specks; a thin soft lip along each edge.
+        let clearing = Self.span(k, 0.76, 0.95) * 1.04
+        if clearing > 0 {
+            for y in 0..<h {
+                for x in 0..<w where cloud.isDrawn(x, y) {
+                    let left = 1 - min(1, Double(x) / Double(w) * 0.9 + Double(y) / Double(h) * 0.6)
+                    let v = dynamiteField(x, y + Int(rise * base), seed: 2) * 0.55 + (1 - left) * 0.45
+                    guard v > clearing else { continue }
+                    let col = unpremultiplied(cloud, (y * w + x) * 4)
+                    c.px(x, y, v - clearing < 0.025 ? col.alpha(0.5) : col)
+                }
+            }
+        } else {
+            c.paste(cloud)
         }
 
         // Bits of the stick and its paper flying out, tumbling down.
@@ -146,11 +159,11 @@ extension CrawlTrip {
 
         // BOOM, popping up big, shaking with the blast, crumbling away as the smoke goes.
         let pop = Self.span(k, 0.605, 0.65)
-        let crumble = Self.span(k, 0.8, 0.9)
+        let crumble = Self.span(k, 0.8, 0.93)
         if pop > 0 && crumble < 1 {
             let full = max(2, min((w * 3 / 5) / 15, (h * 2 / 5) / 5))
             let s = max(1, Int((Double(full) * (pop < 1 ? 0.6 + 0.55 * pop : 1)).rounded()))
-            dynamiteBoom(c, cx: Int(restX * 0.4 + Double(w) * 0.3) + sx, cy: h * 2 / 5 + sy, s: s, crumble: crumble)
+            dynamiteBoom(c, cx: Int(restX * 0.4 + Double(w) * 0.3) + sx, cy: h * 2 / 5 + sy, s: s, crumble: crumble, drop: h)
         }
         art.show(ctx)
 
@@ -211,35 +224,58 @@ private func dynamiteStick(_ c: PixelCanvas, x: Double, y: Double, angle: Double
     return tip
 }
 
+/// The smoke's slow field at (`x`, `y`), 0…1: soft value noise in two sizes, the large one leading, so it rises and
+/// falls in big smooth banks.
+private func dynamiteField(_ x: Int, _ y: Int, seed: Int) -> Double {
+    func layer(_ cell: Double, _ salt: Int) -> Double {
+        let fx = Double(x) / cell, fy = Double(y) / cell
+        let ix = Int(floor(fx)), iy = Int(floor(fy))
+        let tx = fx - floor(fx), ty = fy - floor(fy)
+        let sx = tx * tx * (3 - 2 * tx), sy = ty * ty * (3 - 2 * ty)
+        func at(_ a: Int, _ b: Int) -> Double { noise((a + 40) * 157 + (b + 40) * 311 + salt) }
+        let top = at(ix, iy) + (at(ix + 1, iy) - at(ix, iy)) * sx
+        let bottom = at(ix, iy + 1) + (at(ix + 1, iy + 1) - at(ix, iy + 1)) * sx
+        return top + (bottom - top) * sy
+    }
+    let v = layer(44, seed * 977) * 0.75 + layer(20, seed * 977 + 501) * 0.25
+    return max(0, min(1, (v - 0.15) / 0.7))
+}
+
 /// BOOM in the System's block letters at `s` pixels a dot, centred on `cx`, `cy`: yellow on top fading to orange
-/// below, a dark red edge two pixels round, a deeper red drop under it; `crumble` (0…1) takes it away a dot at a time.
-private func dynamiteBoom(_ c: PixelCanvas, cx: Int, cy: Int, s: Int, crumble: Double) {
+/// below, a dark red edge round it, a deeper red drop under it. It's built from the letters' own dots, so when `crumble`
+/// (0…1) comes each letter breaks cleanly in two, across its middle: the pieces go one after another, bottoms before
+/// tops, each falling whole up to `drop` pixels and thinning out at the end.
+private func dynamiteBoom(_ c: PixelCanvas, cx: Int, cy: Int, s: Int, crumble: Double, drop: Int) {
     let text = "BOOM", tw = crawlTextWidth(text, scale: s), th = 5 * s
     let tmp = PixelCanvas(tw, th)
     crawlText(tmp, 0, 0, text, C(0xFFFFFF), scale: s)
     let x0 = cx - tw / 2, y0 = cy - th / 2
     let edge = max(2, s / 3)
-    func on(_ x: Int, _ y: Int) -> Bool { x >= 0 && y >= 0 && x < tw && y < th && tmp.isDrawn(x, y) }
-    func kept(_ x: Int, _ y: Int) -> Bool {
-        crumble <= 0 || noise((y / max(1, s / 2)) * 977 + (x / max(1, s / 2)) * 13 + 5) >= crumble
+    var blocks: [(x: Int, y: Int, row: Int, alpha: Double)] = []
+    // Which letter each column of dots belongs to: a new one after every empty column.
+    var letterOf: [Int] = [], letter = 0, gapBefore = false
+    for gx in 0..<(tw / s) {
+        let empty = !(0..<5).contains { tmp.isDrawn(gx * s + s / 2, $0 * s + s / 2) }
+        if !empty && gapBefore { letter += 1 }
+        gapBefore = empty
+        letterOf.append(letter)
     }
-    // The drop and the edge first, then the face.
-    for y in -edge..<(th + edge * 2) {
-        for x in -edge..<(tw + edge) where kept(x, y) {
-            if on(x, y - edge) && !on(x, y) { c.px(x0 + x, y0 + y, C(0x5A0A0A)) }
+    for gy in 0..<5 {
+        for gx in 0..<(tw / s) where tmp.isDrawn(gx * s + s / 2, gy * s + s / 2) {
+            let top = gy < 2
+            let start = noise(letterOf[gx] * 13 + (top ? 7 : 0) + 5) * 0.3 + (top ? 0.25 : 0)
+            let f = max(0, min(1, (crumble - start) / 0.42))
+            let alpha = ((1 - max(0, f - 0.7) / 0.3) * 4).rounded(.up) / 4
+            guard alpha > 0 else { continue }
+            blocks.append((x0 + gx * s, y0 + gy * s + Int(f * f * Double(drop) * 0.55), gy, alpha))
         }
     }
-    for y in -edge..<(th + edge) {
-        for x in -edge..<(tw + edge) where kept(x, y) && !on(x, y) {
-            var near = false
-            for dy in -edge...edge where !near { for dx in -edge...edge where on(x + dx, y + dy) { near = true; break } }
-            if near { c.px(x0 + x, y0 + y, C(0x8A1410)) }
-        }
-    }
-    for y in 0..<th {
-        let col = y < th * 2 / 5 ? C(0xFFF07A) : y < th * 3 / 4 ? C(0xFFC030) : C(0xFF8020)
-        for x in 0..<tw where on(x, y) && kept(x, y) {
-            c.px(x0 + x, y0 + y, (y % s == 0 && y < th / 2) ? C(0xFFFFE0) : col)
-        }
+    // The drop and the edge first, under all the blocks, then the faces.
+    for b in blocks { c.rect(b.x, b.y + edge, s, s + edge, C(0x5A0A0A, b.alpha)) }
+    for b in blocks { c.rect(b.x - edge, b.y - edge, s + 2 * edge, s + 2 * edge, C(0x8A1410, b.alpha)) }
+    for b in blocks {
+        let col = b.row < 2 ? C(0xFFF07A) : b.row < 4 ? C(0xFFC030) : C(0xFF8020)
+        c.rect(b.x, b.y, s, s, col.alpha(b.alpha))
+        if b.row < 2 { c.rect(b.x, b.y, s, 1, C(0xFFFFE0, b.alpha)) }
     }
 }
