@@ -11,7 +11,7 @@ import Foundation
 //    to him jump, then shiver till he stops, the nearest one complaining (his signature's own beat, about once a
 //    minute while he idles);
 //  - the AI's petty achievements: now and then a small blue System toast pops up over a session that's idling,
-//    "ACHIEVEMENT" over something like "STOOD THERE": no loot box, a third of a sprite wide, three seconds (the
+//    "ACHIEVEMENT" over something like "STOOD THERE": no loot box, about 50 pixels wide at most, three seconds (the
 //    stage's beat: once every 110 seconds, to one idler at a time, taking turns).
 //
 // How it's done: the stage asks each character for its `remark` (only while it stands about, out of a fight), then
@@ -50,12 +50,14 @@ private let crawlToastLength = 3.2, crawlToastPeriod = 110.0
 private let crawlIdleWindow = 30.0
 
 /// Mongo and Donut's habit being played: by which of them, `e` seconds in, how far it moves them (sprite pixels),
-/// and, for Donut, how far (0…1) into a swat she is.
+/// and, for Donut, how far (0…1) into a swat she is, and how far (0…1) into the bite on her tail, at which row of her
+/// art.
 private struct CrawlTurn {
     let cast: Cast
     let e: Double
     var dx = 0, up = 0
     var swat: Double?
+    var bite: (k: Double, row: Int)?
 }
 
 /// The nip, for whoever is being drawn now: noted by `crawlStageRemark`, cleared by `crawlStageProp`.
@@ -127,9 +129,10 @@ private func crawlNip(_ a: OnStage, others: [OnStage], t: Double) -> (facing: CG
     guard e < crawlNipLength else { return nil }
     var turn = CrawlTurn(cast: a.cast, e: e)
 
-    // Her tail's plume is round column 10 of her art, his snout's tip column 47: the snout ends 3 pixels into the
-    // plume.
-    let target = donut.x - f * ((Sprite.bodyCenterX - 10) * donut.scale + (44 - Sprite.bodyCenterX) * mongo.scale)
+    // Her tail's plume is round column 10 of her art, its outer edge column 6, his snout's tip column 47. He's as
+    // likely as not drawn before her (an agent always is), so his teeth stop at the plume's edge, where they still
+    // show, and the bite itself is drawn on her (`crawlDrawBite`).
+    let target = donut.x - f * ((Sprite.bodyCenterX - 6) * donut.scale + (47 - Sprite.bodyCenterX) * mongo.scale)
     let reach = Double((target - mongo.x) / mongo.scale)
     let swats: [(from: Double, to: Double)] = [(2.2, 2.5), (2.75, 3.05)]
 
@@ -153,6 +156,12 @@ private func crawlNip(_ a: OnStage, others: [OnStage], t: Double) -> (facing: CG
     }
     // Donut: a hop when she's bitten, then round on him, a step in with each swat.
     if e > 1.5 && e < 1.9 { turn.up = Int((sin((e - 1.5) / 0.4 * .pi) * 3).rounded()) }
+    if e >= 1.4 && e < 1.9 {
+        // His snout's row (22 of his art), in the rows of hers: an agent is smaller, and stands on a raised ground.
+        let ratio = Double(mongo.scale / donut.scale)
+        let row = Double(Sprite.height) - (Double(Sprite.height) - 22) * ratio - (1 - ratio) * 8
+        turn.bite = ((e - 1.4) / 0.5, Int(row.rounded()))
+    }
     for s in swats where e >= s.from && e < s.to {
         let k = (e - s.from) / (s.to - s.from)
         turn.swat = k
@@ -226,16 +235,19 @@ func crawlStageJitter(_ a: OnStage, others: [OnStage], place: Location?, t: Doub
 
 // MARK: - The prop: what's drawn over and round them
 
-/// The achievements the System hands out for standing about, in its block letters (no J, Q, X or Z), a line or two
-/// each.
+/// The achievements the System hands out for standing about, in its block letters, a line or two each, a word of
+/// twelve letters at most so the toast stays small.
 private let crawlAchievements: [[String]] = [
     ["STOOD THERE"], ["PROFESSIONAL", "LOITERER"], ["BREATHED IN", "AND OUT"], ["NOT DEAD YET"],
-    ["IDLE HANDS"], ["PARTICIPATION", "TROPHY"], ["STILL HERE"], ["SPECTACULARLY", "AVERAGE"],
+    ["IDLE HANDS"], ["TAKING PART", "TROPHY"], ["STILL HERE"], ["VERY VERY", "AVERAGE"],
 ]
 
 /// The prop's canvas: art pixels wide (centred on the character), and rows over a sprite's for what goes over its
 /// name tag.
 private let crawlPropWidth = 120, crawlHeadroom = 48
+/// The toast's bottom edge, in rows over the head: clear of a name tag wrapped onto two lines. And the highest its top
+/// goes, in rows of their art, so it stays in the window's scene over the tallest of them.
+private let crawlToastRoom = 17, crawlToastCeiling = -31
 
 /// A picture over and round `a`, on a canvas centred on it: the fans' flashes and ticker over Donut, her swat, the
 /// System's toast over an idler. Nothing (no canvas at all) for anyone else, most of the time. Also notes who was
@@ -260,7 +272,7 @@ func crawlStageProp(_ a: OnStage, ground y: CGFloat, scale: CGFloat, t: Double) 
             if e < crawlFansLength { fans = (e, Int(floor(lt))) }
         }
     }
-    guard fans != nil || turn?.swat != nil || toast != nil else { return nil }
+    guard fans != nil || turn?.swat != nil || turn?.bite != nil || toast != nil else { return nil }
 
     let c = PixelCanvas(crawlPropWidth, Sprite.height + crawlHeadroom)
     let f = a.facing
@@ -273,7 +285,11 @@ func crawlStageProp(_ a: OnStage, ground y: CGFloat, scale: CGFloat, t: Double) 
 
     if let fans { crawlDrawFans(c, e: fans.e, cycle: fans.cycle, over: over, cx: cx, cy: cy) }
     if let k = turn?.swat { crawlDrawSwat(c, k: k, cx: cx, cy: cy) }
-    if let toast { crawlDrawToast(c, e: toast.e, lines: crawlAchievements[toast.which], bottom: over) }
+    if let bite = turn?.bite { crawlDrawBite(c, k: bite.k, row: bite.row, cx: cx, cy: cy) }
+    if let toast {
+        crawlDrawToast(c, e: toast.e, lines: crawlAchievements[toast.which], bottom: cy(a.cast.drawnTop() - crawlToastRoom),
+                       ceiling: cy(crawlToastCeiling))
+    }
 
     guard let img = c.makeImage() else { return nil }
     let x = a.x + CGFloat(moved?.dx ?? 0) * scale - CGFloat(crawlPropWidth / 2) * scale
@@ -345,17 +361,27 @@ private func crawlDrawSwat(_ c: PixelCanvas, k: Double, cx: (Double) -> Int, cy:
     }
 }
 
+/// The bite on Donut's tail, `k` 0…1 through it, on the plume's edge at `row` of her art: a white and yellow smack star,
+/// shrinking, drawn on her so it shows whichever of them the stage drew last.
+private func crawlDrawBite(_ c: PixelCanvas, k: Double, row: Int, cx: (Double) -> Int, cy: (Int) -> Int) {
+    let x = cx(8), y = cy(row)
+    let r = k < 0.5 ? 3 : 2
+    for d in 1...r { for (dx, dy) in [(d, 0), (-d, 0), (0, d), (0, -d)] { c.px(x + dx, y + dy, C(0xFFFFFF)) } }
+    for (dx, dy) in [(2, 2), (-2, 2), (2, -2), (-2, -2)] { c.px(x + dx, y + dy, C(0xFFE860)) }
+}
+
 /// The System's toast: a small blue box over the idler's name tag, a bright blue title bar with "ACHIEVEMENT" in white,
 /// under it the achievement, a line or two, in pale blue on deep navy, a light blue rim. It pops in (opening from its
-/// middle row out), sits there and fades. No loot box: that's New Achievement!'s.
-private func crawlDrawToast(_ c: PixelCanvas, e: Double, lines: [String], bottom: Int) {
+/// middle row out), sits there and fades. No loot box: that's New Achievement!'s. It sits on `bottom` and rises a little,
+/// but never over `ceiling`.
+private func crawlDrawToast(_ c: PixelCanvas, e: Double, lines: [String], bottom: Int, ceiling: Int) {
     let k = e / crawlToastLength
     let a = min(1, (1 - k) / 0.15)
     guard a > 0 else { return }
     let title = "ACHIEVEMENT"
     let inner = max(crawlTextWidth(title), lines.map { crawlTextWidth($0) }.max() ?? 0)
-    let w = inner + 6, h = 1 + 7 + 2 + lines.count * 6 - 1 + 2 + 1
-    let x = crawlPropWidth / 2 - w / 2, top = bottom - h - Int((crawlSmooth(k / 0.1) * 2).rounded())
+    let w = inner + 4, h = 1 + 7 + 2 + lines.count * 6 - 1 + 2 + 1
+    let x = crawlPropWidth / 2 - w / 2, top = max(ceiling, bottom - h - Int((crawlSmooth(k / 0.1) * 2).rounded()))
     let rim = C(0x8ACCFF, a), body = C(0x0C1E4A, a * 0.94), bar = C(0x2A6AE0, a), ink = C(0xFFFFFF, a), text = C(0xB8E2FF, a)
     // Opening from its middle row out: the empty box first, the words once it's open.
     let open = crawlSmooth(e / 0.18)
@@ -367,7 +393,7 @@ private func crawlDrawToast(_ c: PixelCanvas, e: Double, lines: [String], bottom
     c.rect(x, top, w, h, rim)
     c.rect(x + 1, top + 1, w - 2, h - 2, body)
     c.rect(x + 1, top + 1, w - 2, 7, bar)
-    crawlText(c, x + 3, top + 2, title, ink)
+    crawlText(c, x + w / 2 - crawlTextWidth(title) / 2, top + 2, title, ink)
     for (i, line) in lines.enumerated() {
         crawlText(c, x + w / 2 - crawlTextWidth(line) / 2, top + 10 + i * 6, line, text)
     }
