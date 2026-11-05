@@ -659,7 +659,7 @@ private func drawRory(_ c: PixelCanvas, _ p: Pose) {
 private func drawLorelai(_ c: PixelCanvas, _ p: Pose) {
     let skin = C(0x86A84C), skinD = C(0x627E34), skinL = C(0xA6C66A)
     let robe = C(0x5E3A82), robeD = C(0x40265C), robeL = C(0x7E58A6)
-    let hair = C(0x1E1A20), hairL = C(0x3A343C), silver = C(0xD8DCE4), bone = C(0xF0ECE0), boneD = C(0xBCB6A8)
+    let hair = C(0x1E1A20), hairL = C(0x5A5262), silver = C(0xD8DCE4), bone = C(0xF0ECE0), boneD = C(0xBCB6A8)
     let s = p.signature ?? -1
     let rattle = s > 0.1 && s < 0.9
 
@@ -682,20 +682,23 @@ private func drawLorelai(_ c: PixelCanvas, _ p: Pose) {
     // 4. The long violet robe.
     crawlH3Robe(c, robe, robeD, robeL, from: 32)
 
-    // 5. Her hair: cropped close and black over the top of her head, and a tall spiky topknot tied with a bone.
+    // 5. Her hair: black, close over her head and ragged at the fringe (a clean edge reads as a hat), gathered into a
+    //    tall solid topknot that splits into three points. The bone tying it stays inside the black: at the edge of her
+    //    outline, white on white, it grows into a pair of ears.
     c.pattern(19, 15, [
-        "........h.h.......",
-        ".......hHhHh......",
-        "........HlHH......",
-        ".......HHHHH......",
-        "........HHH.......",
-        "......wWWWWw......",
-        "...HHHHHHHHHHHH...",
-        ".HHHlHHHHHlHHHHH..",
+        "........HH........",
+        ".....HH.HH.HH.....",
+        ".....HHHHHHHH.....",
+        "......HHlHHH......",
+        "......HHlHHH......",
+        "......HWWWWH......",
+        ".......HHHH.......",
+        "....HHHHHHHHHH....",
+        "..HHHllHHHHHHHHH..",
+        ".HHHHHHHHlllHHHHH.",
         "HHHHHHHHHHHHHHHHHH",
-        "HHHHHHHHHHHHHHHHHH",
-        "HH..............HH",
-    ], ["H": hair, "h": hair, "l": hairL, "w": boneD, "W": bone])
+        "HH.HH.HH..HH.HH.HH",
+    ], ["H": hair, "l": hairL, "W": bone])
 
     // 6. The ears, ringed with silver.
     crawlH3Ears(c, skin, skinD, skinL)
@@ -706,18 +709,24 @@ private func drawLorelai(_ c: PixelCanvas, _ p: Pose) {
     c.rect(25, 31, 7, 1, skin); c.rect(29, 31, 3, 1, C(0x2A1A1A)); c.px(32, 30, C(0x2A1A1A))   // a smirk
     c.px(27, 31, silver)
 
-    // 8. The bone necklace across her chest: small white bones on a cord, jiggling when she rattles it, little
-    //    rattle marks either side.
+    // 8. The bone necklace: two long bones slung from her shoulders down to a little skull on her chest, a few big
+    //    shapes that read at 1x, jiggling when she rattles it, little rattle marks either side.
     let j = rattle && Int(s * 20) % 2 == 0 ? 1 : 0
-    let cord = C(0x3A2A20)
-    for x in 20...36 {
-        let y = 32 + min(5, min(x - 20, 36 - x) / 2 + 1)
-        c.px(x, y, cord)
-    }
-    for (i, at) in [(21, 34), (25, 36), (30, 36), (34, 34)].enumerated() {
-        let dy = rattle ? (i % 2 == 0 ? j : -j) : 0
-        c.pattern(at.0 - 1, at.1 - 1 + dy, ["W.W", "WWW", "w.w"], ["W": bone, "w": boneD])
-    }
+    c.pattern(19, 32 - j, [
+        "WW..............WW",
+        "WWw............wWW",
+        "..Ww..........wW..",
+        "...Ww........wW...",
+        "....WW......WW....",
+        "....WW......WW....",
+    ], ["W": bone, "w": boneD])
+    c.pattern(25, (seatedPose ? 34 : 36) + j, [   // seated, the hem rises, so the skull sits higher
+        ".WWWW.",
+        "WWWWWW",
+        "WkkWkk",
+        "WWWWWW",
+        ".WdWd.",
+    ], ["W": bone, "k": ink, "d": boneD])
     if rattle && j == 1 {
         c.pattern(17, 33, ["l.", ".l", "l."], ["l": C(0xFFFFFF, 0.8)])
         c.pattern(37, 33, [".l", "l.", ".l"], ["l": C(0xFFFFFF, 0.8)])
