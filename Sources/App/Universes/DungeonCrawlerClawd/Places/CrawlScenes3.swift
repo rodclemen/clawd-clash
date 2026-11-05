@@ -429,30 +429,36 @@ extension Scenes {
 
 // MARK: - Odette's After Hours studio
 
-/// The mantis in the middle of Odette's set, front on: the triangle head with its big eyes and feelers, the folded
-/// forelegs raised, the long body.
+/// The mantis in the middle of Odette's set, side on and praying: the triangle head with its big eye and feelers
+/// looking left, the long neck, the folded forelegs held up in front, the long body sweeping away to the right on
+/// two thin legs.
 private let crawlMantis = [
-    ".d.................d.",
-    "..d...............d..",
-    "...d.............d...",
-    "....eegggggggggee....",
-    ".....ggggggggggg.....",
-    "......ggggggggg......",
-    ".......ggdddgg.......",
-    "........ggggg........",
-    ".........ggg.........",
-    "..........g..........",
-    "..l.......g.......l..",
-    "..ll......g......ll..",
-    "...ll.....g.....ll...",
-    "....lll..ggg..lll....",
-    "......llgggggll......",
-    ".........ggg.........",
-    "........ggggg........",
-    "........ggggg........",
-    "........ggggg........",
-    ".........ggg.........",
-    "..........d..........",
+    "..f.......f...................",
+    "...f.....f....................",
+    "....f...f.....................",
+    ".....f.f......................",
+    "...eeegggl....................",
+    "..eeeEgggggl..................",
+    "..eeeEggggg...................",
+    "...eeeggg.....................",
+    "....dggg......................",
+    ".....dggll....................",
+    "......ggggl...................",
+    "..ll...ggggl..................",
+    ".lllll..ggggl.................",
+    "lll.lll.ggggl.................",
+    "ll...llllgggggll..............",
+    "ll.d..lllggggggggll...........",
+    ".ll.d...ddgggggggggggll.......",
+    ".lll.......dggggggggggggll....",
+    "..ll.........dggggggggggggl...",
+    "..............ddggggggggggggl.",
+    ".............d..f.ddggggggggg.",
+    "............d...f....dddddgg..",
+    "...........d....f.......f.....",
+    "..........d......f.......f....",
+    ".........d.......f........f...",
+    ".........d.......f.........f..",
 ]
 
 extension Scenes {
@@ -475,7 +481,7 @@ extension Scenes {
     /// host on the right; a studio lamp on a stand at each side, its light falling on the set; the ON AIR sign lit red
     /// on the left and the APPLAUSE sign on the right. The floor is dark and glossy. On the screen saver the set's top
     /// carries the show's name (AFTER HOURS) and above it hangs the lighting gantry: two lattice trusses across, lamps
-    /// on them pointing down, towers at the sides and a catwalk at the top.
+    /// on them pointing down, towers at the sides, a catwalk at the top and the roof's steel beams over it.
     static func crawlStudio(_ c: PixelCanvas, _ g: Int) {
         let s = unit(g), tall = isTall(c), f = crawlStudioFrame(c, g)
         let cream = C(0xE6D8BC), creamD = C(0xC8B898), creamL = C(0xF6ECD8)
@@ -484,18 +490,28 @@ extension Scenes {
         // The studio around the set: black, its far wall a little lighter at the bottom.
         c.rect(0, 0, c.w, g, C(0x16141A)); c.rect(0, g - 40 * s, c.w, 40 * s, C(0x1C1A20))
 
-        // On the screen saver: the gantry. The catwalk at the top, two trusses across (top and bottom chords, a
-        // zigzag between), lamps hung under them, towers up the sides, cables drooping, and soft cones of light.
+        // On the screen saver: the gantry. The roof and the catwalk at the top, two trusses across (top and bottom
+        // chords, a zigzag between), lamps hung under them, towers up the sides, cables drooping, and soft cones of light.
         let trusses = f.trusses
         if tall {
-            let catwalk = (trusses.last ?? g) - 52 * s
-            if catwalk > 0 {
-                c.rect(0, catwalk, c.w, 3 * s, steel); c.rect(0, catwalk - 9 * s, c.w, s, steel)
-                for x in stride(from: 0, to: c.w, by: 8 * s) { c.rect(x, catwalk - 9 * s, s, 9 * s, steelD) }
-                c.rect(0, 0, c.w, catwalk - 9 * s, C(0x111015))
+            // The catwalk sits a fixed step above the top truss, so it's there on every screen, and the studio's roof
+            // fills whatever is left up to the top of the picture.
+            let upper = trusses.last ?? g, catwalk = upper - 21 * s
+            crawlStudioRoof(c, g, above: catwalk - 9 * s)
+            // The hangers the trusses and the walkway drop from: stout rods with a hoist block halfway down.
+            for x in stride(from: c.w / 2 - 144 * s, through: c.w / 2 + 144 * s, by: 96 * s) {
+                c.rect(x, 0, 3 * s, upper, steelD); c.rect(x, 0, s, upper, steel)
+                c.rect(x - 2 * s, catwalk + 8 * s, 7 * s, 6 * s, C(0x8A7040)); c.rect(x - 2 * s, catwalk + 8 * s, 7 * s, s, C(0xC8A858))
+            }
+            // The walkway: a steel deck, a handrail on posts, a work light under it here and there.
+            c.rect(0, catwalk, c.w, 3 * s, steel); c.rect(0, catwalk, c.w, s, C(0x7A7E88)); c.rect(0, catwalk - 9 * s, c.w, s, C(0x7A7E88))
+            c.rect(0, catwalk - 5 * s, c.w, s, steelD)
+            for x in stride(from: 0, to: c.w, by: 16 * s) { c.rect(x, catwalk - 9 * s, s, 9 * s, steel) }
+            for x in stride(from: c.w / 2 - 192 * s, through: c.w / 2 + 192 * s, by: 96 * s) {
+                c.rect(x - 2 * s, catwalk + 3 * s, 6 * s, s, C(0xFFE8B0))
             }
             for tx in [2 * s, c.w - 10 * s] {
-                let ty = trusses.last ?? 0
+                let ty = catwalk
                 c.rect(tx, ty, s, g - ty, steel); c.rect(tx + 7 * s, ty, s, g - ty, steel)
                 for y in stride(from: ty, to: g - 8 * s, by: 8 * s) {
                     c.glowLine(Double(tx), Double(y), Double(tx + 7 * s), Double(y + 8 * s), core: steelD, glow: C(0, 0),
@@ -547,11 +563,10 @@ extension Scenes {
             crawlText(c, c.w / 2 - tw / 2, top - 12 * s, title, C(0x4A6A50), scale: 2 * s)
         }
         // The mantis medallion: a cream ring, a sage disc, the mantis on it.
-        let mx = c.w / 2, my = g - 42 * s
-        c.circle(mx, my, 16 * s, creamD); c.circle(mx, my, 15 * s, cream); c.circle(mx, my, 13 * s, C(0x22342A))
-        c.circle(mx - 2 * s, my - 2 * s, 9 * s, C(0x2A3E32))
-        crawlGrid(c, mx - 10 * s, my - 10 * s, crawlMantis, ["d": C(0xA8D07A), "e": C(0xF0F4A8), "g": C(0x84B860),
-                                                           "l": C(0xB8E08A)], cell: s)
+        let mx = c.w / 2, my = g - 40 * s
+        c.circle(mx, my, 21 * s, creamD); c.circle(mx, my, 20 * s, cream); c.circle(mx, my, 18 * s, C(0x22342A))
+        crawlGrid(c, mx - 15 * s, my - 13 * s, crawlMantis, ["d": C(0x5E9048), "e": C(0xF0F4A8), "E": C(0x1A2A20), "f": C(0x9AC070),
+                                                           "g": C(0x84B860), "l": C(0xC4EC94)], cell: s)
         // The set's base: a dark walnut skirting with a cream line along its top.
         c.rect(x0, g - 10 * s, x1 - x0, 10 * s, C(0x3A2E26)); c.rect(x0, g - 10 * s, x1 - x0, s, cream)
 
@@ -599,6 +614,22 @@ extension Scenes {
         // The floor: dark and glossy, a faint sheen of the set's light across it.
         c.ground(g, C(0x2A2630), edge: C(0x4A4450), speck: C(0x24202A), seed: 79)
         c.rect(x0, g + 2 * s, x1 - x0, s, C(0xE6D8BC, 0.06))
+    }
+
+    /// The roof of the studio, from the top of the picture down to row `above`: dark panels between big steel roof
+    /// beams, each a bold girder with a lit top edge and a row of bolts.
+    private static func crawlStudioRoof(_ c: PixelCanvas, _ g: Int, above: Int) {
+        let s = unit(g), steel = C(0x5A5E68), steelD = C(0x3A3C44)
+        guard above > 0 else { return }
+        c.rect(0, 0, c.w, above, C(0x1C1B23))
+        for x in stride(from: c.w / 2 - 240 * s, through: c.w / 2 + 240 * s, by: 48 * s) {
+            c.rect(x, 0, 2 * s, above, C(0x26252E))
+        }
+        // The girders, working up from the walkway every so far.
+        for y in stride(from: above - 8 * s, to: -8 * s, by: -30 * s) {
+            c.rect(0, y, c.w, 6 * s, steelD); c.rect(0, y, c.w, s, C(0x6A6E78)); c.rect(0, y + 5 * s, c.w, s, C(0x2A2A32))
+            for x in stride(from: 0, to: c.w, by: 24 * s) { c.rect(x, y + 2 * s, 2 * s, 2 * s, steel) }
+        }
     }
 
     /// The studio's life: ON AIR's glow pulsing slowly, and the APPLAUSE sign blinking on and off when it's time
