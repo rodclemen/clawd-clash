@@ -104,9 +104,9 @@ private func crawlTruckSuspension(_ c: PixelCanvas, dy: Int) {
         c.rect(Int(bx) - 1, Int(by), 3, 1, crawlTruckSteelDark)   // the shock's foot on the link
     }
     // The frame rail, riveted, high over the tyres.
-    c.rect(4, 12 + dy, 58, 2, crawlTruckIron)
-    c.rect(4, 12 + dy, 58, 1, C(0x5A606C))
-    for x in stride(from: 7, through: 59, by: 6) { c.px(x, 13 + dy, crawlTruckSteel) }
+    c.rect(4, 12 + dy, 53, 2, crawlTruckIron)
+    c.rect(4, 12 + dy, 53, 1, C(0x5A606C))
+    for x in stride(from: 7, through: 55, by: 6) { c.px(x, 13 + dy, crawlTruckSteel) }
 }
 
 /// One huge tyre centred at (`wx`, 21), 15 px tall from the frame's underside to the ground: a black tread ringed with
@@ -145,10 +145,11 @@ private func crawlTruckTyre(_ c: PixelCanvas, wx: Int, spin: Double) {
 private func crawlTruckBody(_ c: PixelCanvas, lit: Bool) {
     let body = crawlTruckPurple, light = crawlTruckLight, dark = crawlTruckDark
     let glass = C(0x2A3A4C), shine = C(0x9AB8D0), rust = C(0xA0603A), scrape = C(0xA894C0)
-    // The roll bar, behind the cab: two tubes up from the bed, a crossbar and its light bar on top, a dark steel
-    // grate welded in between (an open hoop fills with the outline and reads as a white box).
-    c.rect(23, 3, 5, 3, C(0x26262C))
-    for (x, y) in [(24, 3), (26, 3), (25, 4), (24, 5), (26, 5)] { c.px(x, y, crawlTruckSteelDark) }
+    // The roll bar, behind the cab: two tubes up from the bed, a crossbar and its light bar on top, and two bright
+    // upright bars welded in between on a mid steel backing (an open hoop fills with the outline and reads as a white
+    // box; a dark one reads as a black block).
+    c.rect(23, 3, 5, 3, crawlTruckSteelDark)
+    c.rect(24, 3, 1, 3, crawlTruckSteelLight); c.rect(26, 3, 1, 3, crawlTruckSteelLight)
     c.rect(22, 2, 1, 5, crawlTruckSteel); c.rect(28, 2, 1, 5, crawlTruckSteel)
     c.rect(22, 2, 7, 1, crawlTruckSteelLight)
     c.rect(22, 1, 7, 1, C(0x26262C))
@@ -183,18 +184,20 @@ private func crawlTruckBody(_ c: PixelCanvas, lit: Bool) {
     // The door: its seams and handle.
     c.rect(32, 3, 1, 9, dark); c.rect(42, 3, 1, 9, dark)
     c.rect(39, 8, 2, 1, crawlTruckSteelLight)
-    // The bonnet, a step down from the windscreen, out to the grille.
-    c.rect(46, 6, 16, 6, body)
-    c.rect(46, 6, 16, 1, light)
-    c.rect(46, 11, 16, 1, dark)
-    // Katia's pink flames licking back along the bonnet and onto the door.
-    c.pattern(34, 8, [
-        "..........P..P...P..P.....",
-        "....P..PPPPPPPPPPPPPPPPPP.",
-        "..PPPPPPPPpppppppppppppPPP",
+    // The bonnet, a step down from the windscreen, out to the grille: short, so the front tyre stands proud of the nose.
+    c.rect(46, 6, 11, 6, body)
+    c.rect(46, 6, 11, 1, light)
+    c.rect(46, 11, 11, 1, dark)
+    // Katia's pink flames: a solid mass round the nose, splitting into three fat licks that run back along the bonnet
+    // and onto the door, each with its own rounded tip and purple showing between them.
+    c.pattern(34, 7, [
+        "................PPPPPPP",
+        ".......PPPP..PPPpppppPP",
+        "...PPPPPpppPPPPppppppPP",
+        "...........PP..PPPPPPPP",
     ], ["P": crawlTruckPink, "p": crawlTruckPinkLight])
     // The supercharger out of the bonnet: a chrome blower with its black intake scoop on top.
-    c.pattern(49, 1, [
+    c.pattern(46, 1, [
         "..KKKKK.",
         "..KKKKMM",
         ".LLLLLL.",
@@ -202,20 +205,19 @@ private func crawlTruckBody(_ c: PixelCanvas, lit: Bool) {
         ".SSSSSS.",
     ], ["K": C(0x26262C), "M": C(0x0C0C0E), "L": crawlTruckSteelLight, "S": crawlTruckSteel, "d": crawlTruckSteelDark])
     // The grille, the headlight and its beam.
-    c.rect(61, 7, 2, 4, crawlTruckIron)
-    for y in stride(from: 8, through: 10, by: 2) { c.px(62, y, crawlTruckSteel) }
-    c.rect(61, 6, 2, 1, lit ? C(0xFFF6C8) : C(0xC8C8B8))
-    if lit { c.rect(63, 5, 2, 2, C(0xFFF6C8, 0.5)) }
+    c.rect(56, 7, 2, 4, crawlTruckIron)
+    for y in stride(from: 8, through: 10, by: 2) { c.px(57, y, crawlTruckSteel) }
+    c.rect(56, 6, 2, 1, lit ? C(0xFFF6C8) : C(0xC8C8B8))
+    if lit { c.rect(58, 5, 2, 2, C(0xFFF6C8, 0.5)) }
     // The ram bar across the nose, with three steel spikes pointing forward.
-    c.rect(60, 11, 4, 2, crawlTruckSteelDark); c.rect(60, 11, 4, 1, crawlTruckSteel)
-    for y in [8, 10, 12] { c.px(63, y, crawlTruckSteel); c.px(64, y, crawlTruckSteelLight) }
-    c.px(63, 9, crawlTruckSteelDark); c.px(63, 11, crawlTruckSteelDark)
+    c.rect(55, 11, 4, 2, crawlTruckSteelDark); c.rect(55, 11, 4, 1, crawlTruckSteel)
+    for y in [8, 10, 12] { c.px(58, y, crawlTruckSteel); c.px(59, y, crawlTruckSteelLight) }
+    c.px(58, 9, crawlTruckSteelDark); c.px(58, 11, crawlTruckSteelDark)
     // The back end: the tail light, the bumper.
     c.rect(4, 11, 3, 2, crawlTruckSteelDark); c.rect(4, 11, 3, 1, crawlTruckSteel)
-    // The dungeon's wear: a caved-in panel on the bonnet, scrapes down the bed, rust round the arches.
-    c.rect(56, 8, 3, 1, dark); c.rect(56, 9, 3, 1, light)
-    for (x, y) in [(24, 9), (25, 9), (26, 10), (27, 10), (44, 9), (45, 10)] { c.px(x, y, scrape) }
-    for (x, y) in [(7, 10), (8, 11), (21, 11), (47, 10), (48, 11), (58, 11)] { c.px(x, y, rust) }
+    // The dungeon's wear: scrapes down the bed, rust round the arches.
+    for (x, y) in [(24, 9), (25, 9), (26, 10), (27, 10)] { c.px(x, y, scrape) }
+    for (x, y) in [(7, 10), (8, 11), (21, 11), (48, 11), (53, 11)] { c.px(x, y, rust) }
 }
 
 /// The tailgate at the bed's back end, hinged at its foot: closed, an upright panel with the red tail light; opening
