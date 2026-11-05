@@ -196,7 +196,7 @@ private func drawKatia(_ c: PixelCanvas, _ p: Pose) {
 private func drawMordecai(_ c: PixelCanvas, _ p: Pose) {
     let feather = C(0xA8742E), featherD = C(0x7C5220), featherL = C(0xCC9A4E)
     let cream = C(0xE6CC98), creamD = C(0xC4A874)
-    let beak = C(0xF2C232), beakD = C(0xB8881A), amber = C(0xFFC828)
+    let beak = C(0xF2C232), beakD = C(0xB8881A), amber = C(0xFFC828), primary = C(0x4A3016), tip = C(0x2A2018)
     let vest = C(0x1C1A20), vestL = C(0x3A3640)
     let blue = C(0x3A5CAA), blueD = C(0x284482), sole = C(0x6E4628), strap = C(0x8E5E34)
     let glass = C(0x5ED65A), glassD = C(0x2E9A3A), glassL = C(0xC8FFB8), cork = C(0x9A6A3A)
@@ -222,31 +222,51 @@ private func drawMordecai(_ c: PixelCanvas, _ p: Pose) {
     c.rect(18, 26, 20, 1, featherL); c.rect(18, 26, 1, 6, featherL)
     c.px(15, 33, featherL)
 
-    // 4. The crest: feathers swept back off the top of his head.
-    c.pattern(13, 22, [
-        "..LL.........",
-        ".LFFL........",
-        "LFFFFFL..L...",
-        ".dFFFFFFFFFFF",
+    // 4. The crest: three sharp hackles swept back off his nape, and a folded wing down his back, its dark primaries
+    //    fanned at the tip: the raptor's outline, where a rounded crest made him any brown bird.
+    c.pattern(11, 22, [
+        "LL.............",
+        ".LFFL..........",
+        "..dFFFL....L...",
+        "LLLFFFFFFFFFFFF",
+        ".dFFFFFFF......",
+        "...dFFFF.......",
+        "LLLFFFFF.......",
+        ".dFFFFFF.......",
+        "...dFFFF.......",
     ], ["F": feather, "L": featherL, "d": featherD])
+    c.pattern(11, 31, [
+        "..FFFFF",
+        ".FFdFFF",
+        "kFdFFdF",
+        "kkFdFFd",
+        ".kkFdFF",
+        "..kkdF.",
+        "...kk..",
+    ], ["F": feather, "d": featherD, "k": primary])
 
     // 5. The open black vest over his cream chest, blue trousers at the waist.
     c.rect(18, 32, 20, 4, vest)
     c.rect(18, 32, 1, 4, vestL); c.rect(19, 32, 3, 1, vestL)
-    c.rect(24, 31, 8, 1, cream)
     c.pattern(23, 32, ["CCCCCCCCC", ".CCcCCcC.", "..CCcCC..", "...CCC..."], ["C": cream, "c": creamD])
     c.px(22, 32, vestL); c.px(32, 32, vestL)
     c.rect(18, 36, 20, 2, blue); c.rect(18, 37, 20, 1, blueD)
 
-    // 6. The face: a stern brow, amber eyes, the hooked beak.
-    c.rect(20, 28, 5, 1, featherD); c.rect(30, 28, 5, 1, featherD)
-    for x in [22, 32] { c.rect(x, 29, 2, 3, amber); c.rect(x + 1, 29, 1, 2, ink) }
-    c.pattern(35, 29, [
-        "BBB...",
-        "BBBBB.",
-        "bbbBBB",
-        "....bB",
-    ], ["B": beak, "b": beakD])
+    // 6. The face: a heavy brow slanting down to the beak in a glare, small fierce amber eyes set close to it, and the
+    //    big beak, deep at the root and hooked hard over at a dark tip.
+    c.pattern(20, 26, ["dddd......", "..dddddd..", "......dddd"], ["d": featherD])
+    c.pattern(28, 26, ["...dd", ".ddd.", "dd..."], ["d": featherD])
+    c.rect(22, 29, 3, 2, amber); c.px(24, 29, ink); c.px(24, 30, ink)
+    c.rect(29, 29, 3, 2, amber); c.px(31, 29, ink); c.px(31, 30, ink)
+    c.pattern(33, 27, [
+        ".BBBB...",
+        "BBBBBBB.",
+        "BBnBBBBB",
+        "BBBBBBBB",
+        "bbbbbBBB",
+        ".....bBB",
+        "......bT",
+    ], ["B": beak, "b": beakD, "n": beakD, "T": tip])
 
     // 7. The flask: at rest a small green one in his hand (gone a moment as he throws it); in the signature a big
     //    round one held up and stirred, bubbles rising off it, then a puff of green cloud.
@@ -1003,27 +1023,29 @@ private func drawBautista(_ c: PixelCanvas, _ p: Pose) {
     ], ["W": white, "N": nose, "k": stripe])
     c.px(23, 31, stripe); c.px(32, 31, stripe)   // whisker spots
 
-    // 6. The sword: a curved blade glowing orange-hot, a dark hilt; held up at rest, or swung. Put away while his
+    // 6. The sword: a curved blade glowing orange-hot, a dark hilt; held out at rest, or swung. Put away while his
     //    plushie is out, the near hand up with a twinkle as he conjures it.
     if !sheathed {
-        let ang = p.melee ?? -60
+        let ang = p.melee ?? -38   // at rest it leans out in front of him, so it can't pass for a second tail
         let hand = Sprite.hand
+        // A scimitar: narrow at the guard, its belly swelling towards the tip, then a sharp point.
         func blade(_ a: Double, _ col: Px, _ g: Px, _ r: Double) {
             var prev = crawlReach(hand, a, 2.5)
             for i in 1...6 {
                 let l = 2.5 + Double(i) * 1.9
                 let bend = -15 * pow(Double(i) / 6, 2)
                 let q = crawlReach(hand, a + bend, l)
-                c.glowLine(prev.x, prev.y, q.x, q.y, core: col, glow: g, coreR: r, glowR: r + 1.4)
+                let belly = i == 6 ? 0.45 : 0.8 + 0.16 * Double(i)
+                c.glowLine(prev.x, prev.y, q.x, q.y, core: col, glow: g, coreR: r * belly, glowR: r * belly + 1.4)
                 prev = q
             }
         }
         for (i, t) in p.trail.enumerated() { blade(t, hot.alpha(0.3 / Double(i + 1)), C(0, 0), 0.7) }
-        blade(ang, hot, glow, 0.95)
-        blade(ang, hotL, C(0, 0), 0.45)
+        blade(ang, hot, glow, 1.1)
+        blade(ang, hotL, C(0, 0), 0.6)
         crawlBar(c, hand, ang, from: -1.5, to: 2.2, C(0x2A1E16), r: 0.6)
         let gp = crawlReach(hand, ang, 2.4)
-        crawlBar(c, gp, ang + 90, from: -1.6, to: 1.6, C(0xC8A040), r: 0.5)
+        crawlBar(c, gp, ang + 90, from: -2.6, to: 2.6, C(0xE8C040), r: 0.7)   // the guard, broad and bright
         c.rect(39, 33, 3, 3, fur); c.px(39, 33, furL)
     } else if summon {
         let k = (s - 0.06) / 0.18
