@@ -11,7 +11,7 @@ let crawlVillains2: [CrawlVillain: Persona] = [
     .krakaren: Persona(name: "Krakaren clone", weapon: .lightning,
                        magic: Magic(core: C(0xE4FFD0), glow: C(0x4CC23A), jagged: false, waves: true), pivot: (45, 30),
                        bulk: 3, headTop: 16, signature: 2.8, callout: "Let me talk to your manager.", draw: drawKrakaren),
-    .ballOfSwine: Persona(name: "Ball of Swine", weapon: .saber, bulk: 4, headTop: 14, signature: 3.6, draw: drawBallOfSwine),
+    .ballOfSwine: Persona(name: "Ball of Swine", weapon: .saber, bulk: 4, headTop: 10, signature: 3.6, draw: drawBallOfSwine),
     .ralph: Persona(name: "Ralph", weapon: .saber, headTop: 20, signature: 3.0, draw: drawRalph),
 ]
 
@@ -42,10 +42,9 @@ private func tentacle(_ c: PixelCanvas, _ pts: [(Double, Double)], r0: Double, r
 
 /// The Hoarder: a huge Clawd sunk in a heap of junk in her lair: a great mat of grey-brown hair hanging in clumps over
 /// her brow and down past her shoulders, sad heavy brows, a small downturned mouth, a faded grey-lilac T-shirt
-/// stretched over her, and pink sweatpants down to her bare feet. Behind her a black bin bag, a split cardboard box
-/// and an old broom sticking up out of the pile; in front two pizza boxes with a can on them. She throws Scatterer
-/// bugs. Signature: she rummages in the pile
-/// behind her, a tin can, an old boot and a teddy bear tossed up out of it and dropping back in.
+/// stretched over her, and pink sweatpants down to her bare feet. Behind her a black bin bag and a split cardboard box;
+/// in front two pizza boxes. She throws Scatterer bugs. Signature: she rummages in the pile behind her, a tin can, an
+/// old boot and a teddy bear tossed up out of it and dropping back in.
 private func drawHoarder(_ c: PixelCanvas, _ p: Pose) {
     let pants = C(0xEC8CBC), pantsD = C(0xC4668F), pantsL = C(0xFAB6D6)
     let tee = C(0x8E889A), teeD = C(0x6C667A), teeL = C(0xACA6B8)
@@ -69,21 +68,17 @@ private func drawHoarder(_ c: PixelCanvas, _ p: Pose) {
         }
     }
 
-    // 2. The heap, planted on the ground whatever she does: behind her the black bin bag, tied at the top, the split
-    //    cardboard box leaning on it and a broom sticking up out of the back; in front two pizza boxes and a can.
+    // 2. The heap, planted on the ground whatever she does, kept to a few big shapes so its edge stays clean: behind
+    //    her the black bin bag, tied at the top, and the split cardboard box leaning on it; in front two pizza boxes.
     c.oy -= p.hop
-    c.glowLine(3, 21, 9, 34, core: C(0x8A6A4A), glow: C(0, 0), coreR: 0.6, glowR: 0.7)   // a broom handle
-    c.pattern(1, 17, ["bbbbb", "bBbBb", "bBbBb", ".rrr."], ["b": C(0xC8A858), "B": C(0x8A7038), "r": C(0xA83A32)])
     blob(c, 9, 36 - Double(jiggle), 7.5, 8, bag)
     blob(c, 11, 39 - Double(jiggle), 5, 5, bagD)
     c.rect(5, 31 - jiggle, 3, 1, bagL); c.rect(4, 32 - jiggle, 1, 3, bagL)   // the shine
     c.pattern(7, 26 - jiggle, ["B.B", ".B.", "BBB"], ["B": bag])             // the knot
-    c.rect(10, 35, 9, 9, box); c.rect(10, 35, 1, 9, boxL); c.rect(17, 35, 2, 9, boxD)
-    c.pattern(9, 32, ["LL.......", ".LLL...DD", "..LLL.DD."], ["L": boxL, "D": boxD])   // the flaps, open
+    c.rect(10, 35, 9, 9, box); c.rect(10, 35, 9, 1, boxL); c.rect(10, 35, 1, 9, boxL); c.rect(17, 36, 2, 8, boxD)
     c.rect(11, 39, 6, 1, boxD)                                                   // a split
-    c.rect(40, 38, 11, 3, box); c.rect(40, 38, 11, 1, boxL); c.rect(40, 40, 11, 1, boxD)
+    c.rect(41, 38, 11, 3, box); c.rect(41, 38, 11, 1, boxL); c.rect(41, 40, 11, 1, boxD)
     c.rect(41, 41, 11, 3, box); c.rect(41, 41, 11, 1, boxL); c.rect(41, 43, 11, 1, boxD)
-    c.rect(47, 34, 3, 4, C(0xA83A32)); c.rect(47, 34, 3, 1, C(0xD0D4DA)); c.rect(49, 35, 1, 3, C(0x7A2420))
     c.oy += p.hop
 
     // 3. The breath.
@@ -371,8 +366,9 @@ private func drawKrakaren(_ c: PixelCanvas, _ p: Pose) {
 
 // MARK: - Ball of Swine
 
-/// Ball of Swine: a big rolling ball of pale pink warthog aristocrats clinging together, each a tusked face over a
-/// black tuxedo front, white shirt and bow tie; the front one in a gold monocle; a curly tail sticking out at the back.
+/// Ball of Swine: a big rolling ball of pale pink warthog aristocrats clinging together, three of them, each a round
+/// lit head with its own ears and tusks, a dark edge keeping it apart from the ball, over a solid black tuxedo front
+/// with a white shirt and bow tie; one in a gold monocle; a curly tail sticking out at the back.
 /// Under the ball Clawd's four legs peek out in tuxedo trousers, pink trotters on the ground. He crushes, rolling into
 /// you. Signature: the ball bursts apart into little Tusklings that scatter, hop about, and roll back together.
 private func drawBallOfSwine(_ c: PixelCanvas, _ p: Pose) {
@@ -406,7 +402,7 @@ private func drawBallOfSwine(_ c: PixelCanvas, _ p: Pose) {
         roll += a * 1.5
         push = max(0, cos(a * .pi / 180)) * 4
     }
-    let r = 12 - burst * 5.5 + quiver
+    let r = 14 - burst * 7.5 + quiver
     let cx = 28 + push, cy = 38 - r
 
     // 4. The ball: pale pink, lit along its upper left, shaded along its lower right.
@@ -428,29 +424,29 @@ private func drawBallOfSwine(_ c: PixelCanvas, _ p: Pose) {
     let tx = Int((cx + cos(ta) * (r + 0.5)).rounded()), ty = Int((cy + sin(ta) * (r + 0.5)).rounded())
     c.pattern(tx - 2, ty - 2, [".pp.", "p..p", "..pp", ".p.."], ["p": pigD])
 
-    // 6. The aristocrats: tusked faces over tuxedo fronts, set round the ball and turning with it (just the monocled
-    //    one at its core when it's burst).
+    // 6. The aristocrats: three big ones set round the ball and turning with it, each a round head with a dark edge
+    //    over a solid tuxedo front (just the monocled one at its core when it's burst).
     func aristocrat(_ ux: Int, _ uy: Int, monocle: Bool) {
-        c.pattern(ux - 4, uy - 5, [
-            ".D.....D.",
-            ".........",
-            "..k...k..",
-            "T..SSS..T",
-            "T.SnSnS.T",
-            ".T.SSS.T.",
-            ".........",
-            "BLWbbbWLB",
-            "BBLWWWLBB",
-            ".BBLWLBB.",
-        ], ["D": pigD, "k": ink, "T": tusk, "S": snout, "n": nostril, "B": tux, "L": tuxL, "W": shirt, "b": ink])
-        if monocle { c.pattern(ux + 1, uy - 4, ["ggg", "g.g", "ggg"], ["g": gold]); c.px(ux + 3, uy, gold) }
+        c.pattern(ux - 5, uy - 6, [
+            ".DD.....DD.",
+            ".DPPPPPPPD.",
+            "DPPkPPPkPPD",
+            "DPPPSSSPPPD",
+            "TPPSnSnSPPT",
+            "TDPPSSSPPDT",
+            ".DDPPPPPDD.",
+            "..BWbWbWB..",
+            ".BBBWWWBBB.",
+            "BBBBBWBBBBB",
+        ], ["D": pigD, "P": pigL, "k": ink, "T": tusk, "S": snout, "n": nostril, "B": tux, "W": shirt, "b": ink])
+        if monocle { c.pattern(ux + 1, uy - 5, ["ggg", "g.g", "ggg"], ["g": gold]); c.px(ux + 3, uy - 2, gold) }
     }
     if burst > 0.5 {
         aristocrat(Int(cx.rounded()), Int(cy.rounded()) + 1, monocle: true)
     } else {
         for (i, base) in [-90.0, 30, 150].enumerated() {
             let a = (base + roll) * .pi / 180
-            let ux = Int((cx + cos(a) * 6).rounded()), uy = Int((cy + sin(a) * 6.4).rounded())
+            let ux = Int((cx + cos(a) * 7.5).rounded()), uy = Int((cy + 1 + sin(a) * 7).rounded())
             aristocrat(ux, uy, monocle: i == 1)
         }
     }
