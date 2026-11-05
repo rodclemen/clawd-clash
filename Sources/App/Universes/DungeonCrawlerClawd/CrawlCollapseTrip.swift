@@ -20,8 +20,9 @@ extension CrawlTrip {
     /// purple game-show plate ringed with chasing bulbs, purple rays turning behind it. It glitters, a shine running
     /// across the letters and stars twinkling on them (0.58–0.76), while the cracks blaze wider (0.66–0.74). Then the
     /// floor gives way: the whole street, title and all, shoots up out of the top, its broken earth and the blue
-    /// cracks running through it going past (0.74–0.84), into a deep blue fall, streaks of System blue rushing up;
-    /// the new place comes up from below (0.8–0.9), lands with a bump (0.9–0.95) and the dust settles (to 0.99).
+    /// cracks running through it going past (0.74–0.84), into a fall lit in System blue, brightest at the bottom where
+    /// the new place's light comes from, thick pale streaks rushing up; the new place comes up from below with that
+    /// light along its top edge (0.8–0.9), lands with a bump (0.9–0.95) and the dust settles (to 0.99).
     func drawCollapse(_ ctx: CGContext, old: CGImage, new: CGImage, k: Double, in r: CGRect) {
         guard k > 0 else { ctx.drawShot(old, in: r); return }
         let art = CrawlArt(r)
@@ -46,6 +47,10 @@ extension CrawlTrip {
             if rise > 0 {
                 let off = land > 0 ? -sin(land * .pi) * 3 : (1 - pow(rise, 1.3)) * Double(h)
                 ctx.drawShot(new, in: r.offsetBy(dx: 0, dy: -CGFloat(Int(off.rounded())) * art.px))
+                if land == 0 {
+                    let top = Int(off.rounded())
+                    art.c.rect(0, top - 3, w, 1, C(0x9CD8FF)); art.c.rect(0, top - 2, w, 2, C(0xE8F4FF))
+                }
             }
         }
         // The street, with the box and the title over it, on a canvas a little wider than the frame (for the shake)
@@ -91,19 +96,24 @@ extension CrawlTrip {
 /// A 4×4 ordered dither, thresholds in 0…1.
 private let crawlCollapseBayer: [Double] = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5].map { ($0 + 0.5) / 16 }
 
-/// The fall under the street, `t` seconds in: deep System blue, streaks of brighter blue rushing up past.
+/// The fall under the street, `t` seconds in: System blue in six flat bands, deep at the top and bright at the bottom,
+/// where the light of the new place comes from, and thick pale streaks rushing up past.
 private func crawlCollapseFall(_ c: PixelCanvas, t: Double) {
-    c.rect(0, 0, c.w, c.h, C(0x081430))
-    let count = max(20, c.w * c.h / 900)
+    let bands: [UInt32] = [0x0E2A6A, 0x143A8C, 0x1A4AA8, 0x2A64C8, 0x3A8CFF, 0x6AB4FF]
+    for (i, hex) in bands.enumerated() {
+        let y0 = c.h * i / bands.count
+        c.rect(0, y0, c.w, c.h * (i + 1) / bands.count - y0, C(hex))
+    }
+    let count = max(30, c.w * c.h / 600)
     for i in 0..<count {
-        let len = 6 + Int(noise(i * 5 + 2) * 12)
+        let len = 12 + Int(noise(i * 5 + 2) * 20)
         let loop = Double(c.h + len + 8)
         let y = Int((noise(i * 5 + 1) * loop - t * Double(c.h) * (2.4 + noise(i * 5 + 3))).truncatingRemainder(dividingBy: loop) + loop)
             % Int(loop) - len
         let x = Int(noise(i * 5) * Double(c.w))
-        let thick = noise(i * 5 + 4) > 0.6 ? 2 : 1
-        c.rect(x, y, thick, len, C(0x2A64C8))
-        c.rect(x, y, thick, 2, C(0x9CD8FF))
+        let thick = noise(i * 5 + 4) > 0.6 ? 3 : 2
+        c.rect(x, y, thick, len, C(0x9CD8FF))
+        c.rect(x, y, thick, 3, C(0xE8F4FF))
     }
 }
 
@@ -118,7 +128,7 @@ private func crawlCollapseStreet(_ c: PixelCanvas, w: Int, h: Int, earth: Int, k
     let flash = (k > 0.13 && k < 0.15) || (k > 0.163 && k < 0.178)
     let bands = 6, bandH = (gb + bands - 1) / bands
     for i in 0..<bands {
-        let col = CrawlTrip.mix(0x0C101C, 0x2E2A38, Double(i) / Double(bands - 1))
+        let col = CrawlTrip.mix(0x1C2438, 0x54485C, Double(i) / Double(bands - 1))
         c.rect(-3, i * bandH, w + 6, bandH, flash ? lerp(col, C(0xB8C0E0), 0.55) : col)
     }
 
@@ -131,7 +141,7 @@ private func crawlCollapseStreet(_ c: PixelCanvas, w: Int, h: Int, earth: Int, k
         let tall = Int(Double(h) * (0.16 + noise(n * 13 + 7) * 0.22))
         let top = gb - tall + farDrop
         if top < gb {
-            c.rect(fx, top, bw, gb - top, C(0x1A1E2A)); c.rect(fx, top, bw, 1, C(0x2C3242))
+            c.rect(fx, top, bw, gb - top, C(0x2C3244)); c.rect(fx, top, bw, 1, C(0x465068))
             for wy in stride(from: top + 3, to: gb - 3, by: 5) {
                 for wx in stride(from: fx + 2, to: fx + bw - 3, by: 4) where noise(n * 97 + wx * 3 + wy * 7) > 0.8 {
                     c.rect(wx, wy, 2, 2, C(0x9A7A48))
@@ -182,10 +192,10 @@ private func crawlCollapseStreet(_ c: PixelCanvas, w: Int, h: Int, earth: Int, k
 
     // The pavement: concrete slabs, their joints dark, the kerb's lip; then the wet street, the lamp and the lit
     // windows broken up in it, a faded line down the middle.
-    c.rect(-3, gb, w + 6, 5, C(0x363A44)); c.rect(-3, gb, w + 6, 1, C(0x464A56))
-    for x in stride(from: 4, to: w, by: 18) { c.rect(x, gb + 1, 1, 4, C(0x2A2E36)) }
-    c.rect(-3, gb + 5, w + 6, 2, C(0x4A4E5A))
-    c.rect(-3, gb + 7, w + 6, h - gb - 7, C(0x1C2028))
+    c.rect(-3, gb, w + 6, 5, C(0x4C505C)); c.rect(-3, gb, w + 6, 1, C(0x646876))
+    for x in stride(from: 4, to: w, by: 18) { c.rect(x, gb + 1, 1, 4, C(0x3A3E48)) }
+    c.rect(-3, gb + 5, w + 6, 2, C(0x6A6E7A))
+    c.rect(-3, gb + 7, w + 6, h - gb - 7, C(0x2C303A))
     for y in stride(from: gb + 9, to: h, by: 2) {
         if lit { c.rect(lx - 3 + Int(noise(y) * 4), y, 3, 1, C(0xFFA040, 0.3)) }
         if aSink < 0.5 { c.rect(w * 12 / 100 + Int(noise(y + 9) * 3), y, 2, 1, C(0xF0C878, 0.18)) }
@@ -247,14 +257,15 @@ private func crawlCollapseStreet(_ c: PixelCanvas, w: Int, h: Int, earth: Int, k
         crawlCollapseCrack(c, down, part: g, blaze: blaze)
     }
 
-    // The rain, thin pale streaks falling slantwise over everything, and splashes on the street.
-    let count = w * h / 70
+    // The rain, pale streaks falling slantwise over everything, few enough for the street to show through, and
+    // splashes on the street.
+    let count = w * h / 170
     let loop = Double(h + 12)
     for i in 0..<count {
         let speed = 1.6 + noise(i * 7 + 2) * 0.5
         let y = Int((noise(i * 7 + 1) * loop + t * Double(h) * speed).truncatingRemainder(dividingBy: loop)) - 6
         let x = Int(noise(i * 7) * Double(w + 30)) - y / 4
-        for j in 0..<5 where y + j < gb + 7 || noise(i) > 0.4 { c.px(x - j / 4, y + j, C(0xB8C8E8, 0.45)) }
+        for j in 0..<6 where y + j < gb + 7 || noise(i) > 0.4 { c.px(x - j / 4, y + j, C(0xB8C8E8, 0.4)) }
     }
     for j in 0..<10 {
         let sx = Int(noise(tick * 11 + j) * Double(w)), sy = gb + 8 + Int(noise(tick * 13 + j) * Double(max(1, h - gb - 9)))
@@ -308,12 +319,9 @@ private func crawlCollapseCrack(_ c: PixelCanvas, _ pts: [(Int, Int)], part: Dou
 /// escape down its right side, its edge in shadow, and the door with a lamp over it.
 private func crawlCollapseBlock(_ w: Int, _ h: Int) -> PixelCanvas {
     let c = PixelCanvas(w, h)
-    let brick = C(0x4E2E2E), brickD = C(0x3C2224), brickL = C(0x60383A), frame = C(0x2A1A1A), sill = C(0x6A5A52)
+    let brick = C(0x6E403C), brickD = C(0x583234), frame = C(0x3A2424), sill = C(0x8A7A70)
     c.rect(0, 0, w, h, brick)
-    for y in stride(from: h - 3, to: 3, by: -3) {
-        c.rect(0, y, w, 1, brickD)
-        for x in stride(from: (y / 3) % 2 * 3, to: w, by: 6) where noise(x * 3 + y) > 0.6 { c.rect(x, y + 1, 2, 1, brickL) }
-    }
+    for y in stride(from: h - 6, to: 3, by: -6) { c.rect(0, y, w, 1, brickD) }
     c.rect(0, 0, w, 3, C(0x5A4A44)); c.rect(0, 0, w, 1, C(0x7A6A62))
     var row = 0
     var wy = 7
@@ -322,7 +330,7 @@ private func crawlCollapseBlock(_ w: Int, _ h: Int) -> PixelCanvas {
         for x in stride(from: 5, to: w - 14, by: 13) {
             let carl = wy + 10 + 15 >= h - 12 && col == 1
             let n = noise(row * 41 + col * 17 + 5)
-            let pane = carl ? C(0xF0C878) : n > 0.78 ? C(0xE0B868) : n > 0.7 ? C(0x7A9AD8) : C(0x141A26)
+            let pane = carl ? C(0xF0C878) : n > 0.78 ? C(0xE0B868) : n > 0.7 ? C(0x7A9AD8) : C(0x202838)
             c.rect(x - 1, wy - 1, 10, 12, frame); c.rect(x, wy, 8, 10, pane)
             c.rect(x + 4, wy, 1, 10, frame); c.rect(x, wy + 5, 8, 1, frame)
             if carl { c.rect(x, wy, 2, 10, C(0xA85838)); c.rect(x + 6, wy, 2, 10, C(0xA85838)) }
@@ -338,7 +346,7 @@ private func crawlCollapseBlock(_ w: Int, _ h: Int) -> PixelCanvas {
         for x in stride(from: fe, through: fe + 14, by: 4) { c.rect(x, base - 4, 1, 4, C(0x121318)) }
         for s in 0..<12 where base + 1 + s < h - 12 { c.rect(fe + 12 - s, base + 1 + s, 1, 1, C(0x121318)) }
     }
-    c.rect(w - 3, 3, 3, h - 3, C(0x2E1A1C))
+    c.rect(w - 3, 3, 3, h - 3, C(0x4A2A2C))
     // The door, a recess with a lamp over it.
     c.rect(6, h - 15, 14, 15, C(0x3A2A26)); c.rect(8, h - 13, 10, 13, C(0x241818)); c.rect(9, h - 12, 8, 4, C(0x8A7050))
     c.rect(11, h - 18, 4, 2, C(0xF0D090))
@@ -374,15 +382,15 @@ private func crawlCollapseCorner(_ w: Int, _ h: Int) -> PixelCanvas {
 private func crawlCollapseTower(_ w: Int, _ h: Int, tick: Int) -> PixelCanvas {
     let c = PixelCanvas(w, h)
     let top = 10
-    c.rect(0, top, w, h - top, C(0x2A2830)); c.rect(0, top, 2, h - top, C(0x3A3842)); c.rect(w - 3, top, 3, h - top, C(0x201E26))
-    c.rect(0, top, w, 2, C(0x3A3842))
-    for (ry, wy) in stride(from: top + 5, to: h - 6, by: 7).enumerated() {
-        for (rx, x) in stride(from: 4, to: w - 6, by: 6).enumerated() {
-            c.rect(x, wy, 3, 4, noise(ry * 53 + rx * 11 + 3) > 0.72 ? C(0xD8B068) : C(0x141820))
+    c.rect(0, top, w, h - top, C(0x423F4C)); c.rect(0, top, 2, h - top, C(0x585462)); c.rect(w - 3, top, 3, h - top, C(0x302E38))
+    c.rect(0, top, w, 2, C(0x585462))
+    for (ry, wy) in stride(from: top + 5, to: h - 7, by: 9).enumerated() {
+        for (rx, x) in stride(from: 5, to: w - 8, by: 9).enumerated() {
+            c.rect(x, wy, 5, 5, noise(ry * 53 + rx * 11 + 3) > 0.72 ? C(0xD8B068) : C(0x1E2430))
         }
     }
     let ax = w / 2
-    c.rect(ax, 1, 1, top, C(0x3A3842)); c.rect(ax - 3, 5, 7, 1, C(0x3A3842))
+    c.rect(ax, 1, 1, top, C(0x585462)); c.rect(ax - 3, 5, 7, 1, C(0x585462))
     c.rect(ax - 1, 0, 3, 2, tick % 12 < 6 ? C(0xFF3A3A) : C(0x5A1A1A))
     return c
 }
@@ -390,12 +398,12 @@ private func crawlCollapseTower(_ w: Int, _ h: Int, tick: Int) -> PixelCanvas {
 /// The next block along on the right, `w` by `h`: brown, a cornice, windows lit warm here and there.
 private func crawlCollapseRight(_ w: Int, _ h: Int) -> PixelCanvas {
     let c = PixelCanvas(w, h)
-    c.rect(0, 0, w, h, C(0x3E3438)); c.rect(0, 0, 2, h, C(0x4E4448))
-    c.rect(0, 0, w, 3, C(0x2E2628)); c.rect(0, 0, w, 1, C(0x5A5054))
+    c.rect(0, 0, w, h, C(0x5A4C50)); c.rect(0, 0, 2, h, C(0x6C5E62))
+    c.rect(0, 0, w, 3, C(0x443A3E)); c.rect(0, 0, w, 1, C(0x7A6C70))
     for (ry, wy) in stride(from: 7, to: h - 9, by: 13).enumerated() {
         for (rx, x) in stride(from: 6, to: w - 6, by: 12).enumerated() {
-            c.rect(x, wy, 6, 8, noise(ry * 31 + rx * 7 + 1) > 0.66 ? C(0xD8B068) : C(0x141820))
-            c.rect(x + 3, wy, 1, 8, C(0x2E2628))
+            c.rect(x, wy, 6, 8, noise(ry * 31 + rx * 7 + 1) > 0.66 ? C(0xD8B068) : C(0x1E2430))
+            c.rect(x + 3, wy, 1, 8, C(0x443A3E))
         }
     }
     return c
