@@ -85,7 +85,7 @@ extension CrawlTrip {
             let show = "ODETTE'S AFTER HOURS"
             let ts = crawlTextWidth(show, scale: 2) <= w * 82 / 100 ? 2 : 1, showH = 5 * ts
             // Stacked and centred: the medallion, its foot over the strip's top edge, then the strip with both lines.
-            let cell = art.wide ? 1 : 2, disc = 16 * cell
+            let cell = art.wide ? 1 : 2, disc = 21 * cell
             let pad = 2 * s, gap = s + 2, stripH = pad + th + gap + showH + pad, over = pad - 2
             let top = (h - (2 * disc + stripH - over)) / 2
             let stripY = top + 2 * disc - over
@@ -116,40 +116,46 @@ extension CrawlTrip {
     }
 }
 
-/// The mantis of Odette's set, front on (the medallion in her studio, Scenes.crawlStudio).
+/// The mantis of Odette's set, side on and praying: a copy of the one on the medallion in her studio
+/// (`crawlMantis` in CrawlScenes3.swift, private to its file). Change one, change both.
 private let recapMantis = [
-    ".d.................d.",
-    "..d...............d..",
-    "...d.............d...",
-    "....eegggggggggee....",
-    ".....ggggggggggg.....",
-    "......ggggggggg......",
-    ".......ggdddgg.......",
-    "........ggggg........",
-    ".........ggg.........",
-    "..........g..........",
-    "..l.......g.......l..",
-    "..ll......g......ll..",
-    "...ll.....g.....ll...",
-    "....lll..ggg..lll....",
-    "......llgggggll......",
-    ".........ggg.........",
-    "........ggggg........",
-    "........ggggg........",
-    "........ggggg........",
-    ".........ggg.........",
-    "..........d..........",
+    "..f.......f...................",
+    "...f.....f....................",
+    "....f...f.....................",
+    ".....f.f......................",
+    "...eeegggl....................",
+    "..eeeEgggggl..................",
+    "..eeeEggggg...................",
+    "...eeeggg.....................",
+    "....dggg......................",
+    ".....dggll....................",
+    "......ggggl...................",
+    "..ll...ggggl..................",
+    ".lllll..ggggl.................",
+    "lll.lll.ggggl.................",
+    "ll...llllgggggll..............",
+    "ll.d..lllggggggggll...........",
+    ".ll.d...ddgggggggggggll.......",
+    ".lll.......dggggggggggggll....",
+    "..ll.........dggggggggggggl...",
+    "..............ddggggggggggggl.",
+    ".............d..f.ddggggggggg.",
+    "............d...f....dddddgg..",
+    "...........d....f.......f.....",
+    "..........d......f.......f....",
+    ".........d.......f........f...",
+    ".........d.......f.........f..",
 ]
 
 /// The show's medallion centred on (`x`, `y`), `cell` art pixels to one of the mantis's: a cream ring, a dark sage
 /// disc, the mantis on it, as it hangs on the studio's set.
 private func recapMedallion(_ c: PixelCanvas, _ x: Int, _ y: Int, cell: Int) {
-    c.circle(x, y, 16 * cell, C(0xC8B898)); c.circle(x, y, 15 * cell, C(0xE6D8BC)); c.circle(x, y, 13 * cell, C(0x22342A))
-    c.circle(x - 2 * cell, y - 2 * cell, 9 * cell, C(0x2A3E32))
-    let palette: [Character: Px] = ["d": C(0xA8D07A), "e": C(0xF0F4A8), "g": C(0x84B860), "l": C(0xB8E08A)]
+    c.circle(x, y, 21 * cell, C(0xC8B898)); c.circle(x, y, 20 * cell, C(0xE6D8BC)); c.circle(x, y, 18 * cell, C(0x22342A))
+    let palette: [Character: Px] = ["d": C(0x5E9048), "e": C(0xF0F4A8), "E": C(0x1A2A20), "f": C(0x9AC070),
+                                    "g": C(0x84B860), "l": C(0xC4EC94)]
     for (row, line) in recapMantis.enumerated() {
         for (col, ch) in line.enumerated() {
-            if let p = palette[ch] { c.rect(x + (col - 10) * cell - cell / 2, y + (row - 10) * cell - cell / 2, cell, cell, p) }
+            if let p = palette[ch] { c.rect(x + (col - 15) * cell, y + (row - 13) * cell, cell, cell, p) }
         }
     }
 }
