@@ -23,7 +23,7 @@ extension Scenes {
                                                                      sign: (x: Int, y: Int, w: Int, h: Int),
                                                                      bar: (x: Int, top: Int), vault: Int, lanterns: [(Int, Int)]) {
         let s = unit(g), tall = isTall(c)
-        let tv = (x: c.w * 30 / 100, y: g - 36 * s, w: 24 * s, h: 15 * s)
+        let tv = (x: c.w * 30 / 100, y: g - 39 * s, w: 30 * s, h: 19 * s)
         let label = "SAFE ROOM", sw = crawlTextWidth(label, scale: s) + 6 * s
         let sign = (x: c.w * 52 / 100 - sw / 2, y: g - 38 * s, w: sw, h: 11 * s)
         let vault = tall ? g * 30 / 100 : -1
@@ -145,8 +145,8 @@ extension Scenes {
         c.ellipse(c.w / 2, g + 3 * s, c.w / 3, 4 * s, C(0xFFB060, 0.06))
     }
 
-    /// The safe room's life: the TV playing the recap episode (a bright scene that cuts every few seconds, a
-    /// PREVIOUSLY ON caption in its corner now and then, a flicker of static at each cut), the System sign's glow
+    /// The safe room's life: the TV playing the recap episode (a bright scene that cuts every few seconds, a RECAP
+    /// caption on a black bar along the bottom of the picture now and then, a flicker of static at each cut), the System sign's glow
     /// breathing, and on the screen saver the lanterns' flames flickering.
     static func crawlSafeRoomLife(_ c: PixelCanvas, _ g: Int, _ t: Double) {
         let s = unit(g), f = crawlSafeRoomFrame(c, g), tv = f.tv
@@ -162,13 +162,18 @@ extension Scenes {
             let skies = [C(0x6A3A8A), C(0xC85A2A), C(0x2A6A9A), C(0x8A2A3A)]
             let grounds = [C(0x3A2A4A), C(0x6A3A1A), C(0x2A4A3A), C(0x3A1A1A)]
             let k = cut % 4
-            c.rect(tv.x, tv.y, tv.w, tv.h * 2 / 3, skies[k]); c.rect(tv.x, tv.y + tv.h * 2 / 3, tv.w, tv.h - tv.h * 2 / 3, grounds[k])
+            c.rect(tv.x, tv.y, tv.w, 10 * s, skies[k]); c.rect(tv.x, tv.y + 10 * s, tv.w, tv.h - 10 * s, grounds[k])
             let bob = Int(t * 4) % 2 * s
-            c.rect(tv.x + 6 * s, tv.y + 6 * s + bob, 3 * s, 4 * s, C(0xD97757)); c.rect(tv.x + 6 * s, tv.y + 5 * s + bob, 3 * s, s, C(0x5A3A22))
-            c.rect(tv.x + 15 * s, tv.y + 5 * s, 4 * s, 5 * s, C(0x7A8A62))
-            if cut % 3 == 0 { crawlText(c, tv.x + s, tv.y + s, "PREV", C(0xFFFFFF, 0.9), scale: s) }
+            c.rect(tv.x + 7 * s, tv.y + 6 * s + bob, 4 * s, 5 * s, C(0xD97757)); c.rect(tv.x + 7 * s, tv.y + 5 * s + bob, 4 * s, s, C(0x5A3A22))
+            c.rect(tv.x + 19 * s, tv.y + 5 * s, 5 * s, 6 * s, C(0x7A8A62))
             // Scan lines.
             for y in stride(from: tv.y, to: tv.y + tv.h, by: 2 * s) { c.rect(tv.x, y, tv.w, max(1, s / 2), C(0x000000, 0.15)) }
+            // The caption: its own black bar under the fight, the word in the middle with room all round it.
+            if cut % 3 == 0 {
+                let label = "RECAP", bar = tv.y + 12 * s
+                c.rect(tv.x, bar, tv.w, tv.y + tv.h - bar, C(0x0A0C12))
+                crawlText(c, tv.x + (tv.w - crawlTextWidth(label, scale: s)) / 2, bar + s, label, C(0xFFFFFF), scale: s)
+            }
         }
         // The sign's glow, breathing.
         let sg = f.sign, glow = 0.12 + 0.1 * sin(t * 1.6)
