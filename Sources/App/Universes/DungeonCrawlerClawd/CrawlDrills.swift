@@ -42,12 +42,15 @@ private func line(_ c: PixelCanvas, _ x0: Double, _ y0: Double, _ x1: Double, _ 
     c.glowLine(x0, y0, x1, y1, core: col, glow: C(0, 0), coreR: r, glowR: r + 0.1)
 }
 
-/// A little puff of dust on the ground at `x`, `k` 0…1 through it.
-private func dustPuff(_ c: PixelCanvas, x: Double, y: Double = 43, k: Double, spread: Double = 4) {
+/// A puff of dust on the ground at `x`, `k` 0…1 through it: three chunky clods of bright dust, one thrown out each side
+/// and one up, shrinking as they go. Bright, so it reads against a dark desktop, and a touch see-through, so the outline
+/// leaves it alone and they stay separate clods rather than one ribbon.
+private func dustPuff(_ c: PixelCanvas, x: Double, y: Double = 42, k: Double, spread: Double = 4) {
     guard k >= 0, k < 1 else { return }
-    for (dx, dy) in [(-1.0, 0.0), (1.0, 0.0), (-0.6, -1.0), (0.6, -1.0)] {
-        let px = x + dx * spread * (0.5 + k), py = y + dy * (1 + 2 * k)
-        c.glowLine(px, py, px, py, core: C(0xE8DCC0, 0.75 * (1 - k)), glow: C(0xE8DCC0, 0), coreR: 0.7, glowR: 0.8)
+    let al = min(0.9, (1 - k) * 2.5), size = k < 0.6 ? 3 : 2
+    for (dx, dy) in [(-1.6, 0.0), (1.6, 0.0), (0, -3.0)] {
+        let px = Int((x + dx * spread * (0.5 + k)).rounded()), py = Int((y + dy * (0.6 + 1.4 * k)).rounded())
+        c.rect(px - 1, py - 1, size, size - 1, C(0xF0E2BC, al))
     }
 }
 
@@ -153,9 +156,9 @@ private func drawDummyDrill(_ c: PixelCanvas, _ who: Cast, _ d: DrillPlay, _ t: 
     }
     // The Smush's landing: dust up round his feet and the dummy's base, the ground's shock lines, and the box.
     if since >= 0 {
-        dustPuff(c, x: 21, k: since / 0.5, spread: 3)
-        dustPuff(c, x: 36, k: since / 0.5, spread: 3)
-        dustPuff(c, x: 54, k: (since - 0.08) / 0.5, spread: 5)
+        dustPuff(c, x: 15, k: since / 0.6, spread: 3)
+        dustPuff(c, x: 41, k: since / 0.6, spread: 3)
+        dustPuff(c, x: 54, k: (since - 0.08) / 0.6, spread: 4)
         if since < 0.2 {
             let a = 1 - since / 0.2
             for x in [12, 14, 42, 44] { c.px(x, 41 - (x % 4 == 0 ? 1 : 0), C(0xFFF2C8, a)) }
@@ -301,16 +304,28 @@ private func drawSwellDrill(_ c: PixelCanvas, _ who: Cast, _ d: DrillPlay, _ t: 
             c.px(Int(q.x.rounded()), Int(q.y.rounded()), C(0xFFFFFF, 1 - k))
         }
     }
-    // Catching her breath after the shrink: a little puff from her mouth now and then.
+    // Catching her breath after the shrink: a small round puff from her mouth now and then, drifting up and out and
+    // swelling as it goes.
     if u >= 4.5 {
         let k = frac((u - 4.5) / 0.45)
-        if k < 0.6 { c.px(37 + Int(k * 4), 31 - Int(k * 3), C(0xF0F4FF, 0.7 * (1 - k / 0.6))) }
+        if k < 0.8 {
+            // Bright to the last: it breaks up rather than fading, as a fading puff goes grey on a dark desktop.
+            let x = 39 + Int(k * 6), y = 29 - Int(k * 5)
+            let puff = C(0xF4F8FF, 0.9), shade = C(0xC4D4EC, 0.9)
+            if k < 0.25 {
+                c.rect(x, y, 2, 2, puff)
+            } else if k < 0.6 {
+                c.rect(x, y - 1, 3, 1, puff); c.rect(x - 1, y, 5, 2, puff); c.rect(x, y + 2, 3, 1, shade)
+            } else {
+                c.rect(x - 1, y, 2, 1, puff); c.rect(x + 2, y - 1, 2, 1, puff); c.rect(x + 1, y + 2, 2, 1, shade)
+            }
+        }
     }
 }
 
 // MARK: - Bautista
 
-/// Bautista at the sword post: a thick wooden post in front of him with two pegs sticking out for arms, and his
+/// Bautista at the sword post: a thick wooden post in front of him with two pegs out of its far side for arms, and his
 /// orange-hot blade worked through a set at it: a cut down from overhead, a cut across, a thrust, back on guard.
 /// Each blow lands with a spray of embers and leaves a glowing scorch on the wood that cools and fades.
 private func drawPostDrill(_ c: PixelCanvas, _ who: Cast, _ d: DrillPlay, _ t: Double) {
@@ -334,15 +349,16 @@ private func drawPostDrill(_ c: PixelCanvas, _ who: Cast, _ d: DrillPlay, _ t: D
     var since: [Double] = blows.map { u >= $0.at ? u - $0.at : u + period - $0.at }
     if !working || e < 0.5 { since = since.map { _ in 9 } }
 
-    // The post: a squared timber on a broad foot, lit on the left, its grain and old notches; two pegs at the front.
+    // The post: a squared timber on a broad foot, lit on the left, its grain and old notches; two pegs on the far side,
+    // so his blade comes down on clean wood.
     if r > 0.15 {
         let wood = C(0x9A6A3C), woodD = C(0x6A4424), woodL = C(0xC08C58), peg = C(0x7A5230)
         c.rect(51, 16, 5, 27, wood)
         c.rect(51, 16, 1, 27, woodL); c.rect(55, 16, 1, 27, woodD); c.rect(51, 15, 5, 1, woodL)
         for (x, y) in [(53, 20), (52, 27), (54, 31), (53, 38)] { c.px(x, y, woodD) }
         c.rect(48, 43, 11, 1, woodD); c.rect(49, 42, 9, 1, wood)
-        c.rect(47, 26, 4, 2, peg); c.rect(47, 27, 4, 1, woodD)
-        c.rect(47, 35, 4, 2, peg); c.rect(47, 36, 4, 1, woodD)
+        c.rect(56, 26, 4, 2, peg); c.rect(56, 27, 4, 1, woodD)
+        c.rect(56, 35, 4, 2, peg); c.rect(56, 36, 4, 1, woodD)
         // The scorches: orange-hot where the blade's just been, cooling to a dark char that fades out.
         for (i, b) in blows.enumerated() {
             let s = since[i]
@@ -412,10 +428,23 @@ private func drawQuintainDrill(_ c: PixelCanvas, _ who: Cast, _ d: DrillPlay, _ 
             let ix = Int(x.rounded())
             let fade = behind ? 0.75 : 1
             if shield {
-                // A kite shield on a chain: a steel rim round a red and white checker.
-                c.px(ix, Int(top) + 1, C(0xB0B4BC, fade))
-                c.pattern(ix - 2, Int(top) + 2, ["GGGGG", "GRWRG", "GWRWG", "GRWRG", ".GWG.", "..G.."],
-                          ["R": C(0xC83A32, fade), "W": C(0xF0ECE0, fade), "G": C(0xA8AEB8, fade)])
+                // A kite shield on a chain: a steel rim, lit along the top, round four big red and white quarters. Kept
+                // a pixel inside the frame at the far end of its swing.
+                let sx = min(ix, 66)
+                c.px(sx, Int(top) + 1, C(0xB0B4BC, fade))
+                c.pattern(sx - 4, Int(top) + 2, [
+                    "LLLLLLLLL",
+                    "GRRRGWWWG",
+                    "GRRRGWWWG",
+                    "GRRRGWWWG",
+                    "GGGGGGGGG",
+                    "GWWWGRRRG",
+                    ".GWWGRRG.",
+                    ".GWWGRRG.",
+                    "..GWGRG..",
+                    "...GGG...",
+                    "....G....",
+                ], ["R": C(0xC83A32, fade), "W": C(0xF0ECE0, fade), "G": C(0xA8AEB8, fade), "L": C(0xDCE0E6, fade)])
             } else {
                 // The sandbag on its rope, swinging out the way it's going.
                 let swing = Int((sin(phi) * 2).rounded())
