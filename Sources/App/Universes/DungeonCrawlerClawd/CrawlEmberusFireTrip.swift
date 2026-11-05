@@ -18,7 +18,9 @@ extension CrawlTrip {
         let art = CrawlArt(r)
         let c = art.c, w = art.w, h = art.h
         let t = k * CrawlWipe.emberusFire.effect
-        let tick = Int(t / 0.06)
+        // The flames take a new shape every 0.14 s and ease into it, so they lick rather than flicker.
+        let tick = Int(t / 0.14), blend = Self.ease(frac(t / 0.14))
+        func flicker(_ seed: (Int) -> Int) -> Double { noise(seed(tick)) * (1 - blend) + noise(seed(tick + 1)) * blend }
         let u = 2                                            // the flames' blocks, two pixels square
         let wall = art.wide ? Double(max(70, h)) : Double(h) * 0.75
         let lean = Double(h) * 0.3                           // how far the foot runs ahead of the top
@@ -39,8 +41,9 @@ extension CrawlTrip {
         let afterglow = 1 - Self.span(k, 0.7, 0.9)
         for by in stride(from: 0, to: h, by: u) {
             let row = by / u
-            // The tongues along the leading edge: one every two rows of blocks, a new length each flicker.
-            let tongue = noise(row / 2 * 7 + tick * 13 + 5) * 12 - 4
+            // The tongues along the leading edge: one every two rows of blocks, easing to a new length each flicker.
+            let tongue = flicker { row / 2 * 7 + $0 * 13 + 5 } * 12 - 4
+            let burnout = 0.66 + 0.5 * flicker { row / 2 * 37 + $0 * 11 + 3 }
             let lead = edge(by) + tongue
             for bx in stride(from: 0, to: w, by: u) {
                 let x = Double(bx) + 1
@@ -58,13 +61,13 @@ extension CrawlTrip {
                     continue
                 }
                 // The heat: from the orange-red tongues at the front up to the core, cooling toward the back; flames
-                // streaming up through it in columns two blocks wide, a wave running up each; the back ragged in
-                // tongues trailing behind, two rows of blocks each, every one burning out at its own length.
-                let col = bx / (2 * u), climb = (row + tick) / 2
-                if p > 0.66 + 0.5 * noise(row / 2 * 37 + (tick / 2) * 11 + 3) { continue }
+                // streaming up through it in columns three blocks wide, a slow wave running up each; the back ragged
+                // in tongues trailing behind, two rows of blocks each, every one burning out at its own length.
+                let col = bx / (3 * u), climb = Int((Double(by) + t * 40) / Double(3 * u))
+                if p > burnout { continue }
                 var heat = p < 0.3 ? 0.35 + p / 0.3 * 0.65 : 1 - (p - 0.3) / 0.9
-                heat += sin((Double(by) + t * Double(h) * 1.4) / 5 + Double(col) * 1.7) * 0.16
-                heat += (noise(col * 131 + climb * 977 + 17) - 0.5) * 0.3
+                heat += sin((Double(by) + t * Double(h) * 0.5) / 7 + Double(col) * 1.7) * 0.16
+                heat += (noise(col * 131 + climb * 977 + 17) - 0.5) * 0.22
                 if p <= 0.5 { heat = max(heat, 0.25) }          // solid at the front, so the old place never shows
                 let colour = heat > 0.9 ? C(0xFFF0A0) : heat > 0.72 ? C(0xFFC040) : heat > 0.44 ? C(0xFF6A1A)
                     : heat > 0.22 ? C(0xD8341A) : C(0x8A1A10)
