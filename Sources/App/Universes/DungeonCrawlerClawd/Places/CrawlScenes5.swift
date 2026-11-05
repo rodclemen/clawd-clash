@@ -58,7 +58,9 @@ extension Scenes {
     /// poster on the right. Two riveted iron columns stand along the track, a signal lamp on one. The track bed is dark
     /// ballast with sleepers, two rails and the third rail on its insulators under a yellow cover board, and the crew
     /// stands on the concrete platform behind its yellow safety edge. On the screen saver the walls rise into a roof
-    /// of riveted girders braced in crosses, cables slung between them, strip lights and two hanging signs.
+    /// of riveted girders braced in crosses, cables slung between them, strip lights and two hanging signs; higher
+    /// up a train stands on the network's upper deck, the four lines' pipes knot across the bays, and over it all is
+    /// a dirty glass roof.
     static func crawlTangle(_ c: PixelCanvas, _ g: Int) {
         let s = unit(g), tall = isTall(c), f = crawlTangleFrame(c, g)
         let grout = C(0x24302C)
@@ -198,12 +200,24 @@ extension Scenes {
 
     /// The screen saver's roof over the platform: a dark void crossed by riveted iron girders, a beam every so high,
     /// the columns carried up through them and braced in crosses between; cables sagging from column to column; a
-    /// green WAY OUT sign and a TRAINS sign hanging off the beams, and three strip lights on wires.
+    /// green WAY OUT sign and a TRAINS sign hanging off the beams, and three strip lights on wires. Above them the
+    /// tangle itself: thick pipes in the map's four colours knotting across the upper bays, a train in shadow on the
+    /// upper deck, its windows lit, and a dirty glass roof over the top beam.
     private static func crawlTangleGirders(_ c: PixelCanvas, _ g: Int, _ low: Int, _ cols: [Int]) {
         let s = unit(g), iron = C(0x4A2E26), ironL = C(0x6A4434), ironD = C(0x2E1C16)
         c.gradient(0, low, C(0x0E1012), C(0x1E2224), bands: 5)
         let posts = [0] + cols + [c.w]
         let beams = Array(stride(from: low - 6 * s, to: 0, by: -46 * s))
+        // The glass roof over the top beam: dirty panes in iron bars, a few a little brighter.
+        let glass = beams.last ?? 0
+        c.rect(0, 0, c.w, glass, C(0x16191B))
+        for (row, y) in stride(from: glass - 12 * s, to: -12 * s, by: -12 * s).enumerated() {
+            for (k, x) in stride(from: 0, to: c.w, by: 18 * s).enumerated() {
+                let n = noise(row * 37 + k * 5 + 950)
+                c.rect(x + s, y + s, 16 * s, 10 * s, n > 0.75 ? C(0x6A8A82) : n > 0.3 ? C(0x4A6A64) : C(0x3A5450))
+                c.rect(x + s, y + s, 16 * s, s, n > 0.75 ? C(0x8AA89E) : C(0x5A7A72))
+            }
+        }
         // The bracing first, behind the beams: a cross in every bay between two beams.
         for (k, y) in beams.enumerated() where k + 1 < beams.count {
             let y2 = beams[k + 1] + 6 * s
@@ -230,6 +244,7 @@ extension Scenes {
             c.rect(0, y, c.w, 6 * s, iron); c.rect(0, y, c.w, s, ironL); c.rect(0, y + 5 * s, c.w, s, ironD)
             for x in stride(from: 3 * s, to: c.w, by: 9 * s) { c.rect(x, y + 2 * s, s, s, C(0x8A5A44)) }
         }
+        if beams.count > 3 { crawlTangleUpper(c, g, deck: beams[2], below: beams[1], roof: glass) }
         // The hanging signs, off the second beam: WAY OUT on green with an arrow, TRAINS on blue.
         let hang = beams.count > 1 ? beams[1] + 6 * s : 0
         for (k, sign) in [("WAY OUT", C(0x1E6A3A), 26), ("TRAINS", C(0x1E3A7A), 66)].enumerated() {
@@ -252,6 +267,47 @@ extension Scenes {
             c.rect(x - 10 * s, y, 20 * s, 3 * s, C(0x3A3E42)); c.rect(x - 10 * s, y, 20 * s, s, C(0x5A5E62))
             c.rect(x - 9 * s, y + 3 * s, 18 * s, s, C(0xB8C8B8))
         }
+    }
+
+    /// The upper bays, from the roof down to the `deck` beam: the four lines' pipes knotting across them, an iron
+    /// collar at each bend, and a train standing on the upper deck in shadow, its windows lit, running off the left
+    /// edge. Iron stairs climb to it from the beam `below`, and an UPPER LINE sign hangs under it.
+    private static func crawlTangleUpper(_ c: PixelCanvas, _ g: Int, deck: Int, below: Int, roof: Int) {
+        let s = unit(g)
+        func p(_ u: Int, _ v: Int) -> (Int, Int) { (c.w * u / 100, roof + (deck - roof) * v / 100) }
+        let pipes: [([(Int, Int)], Px, Px)] = [
+            ([(0, 20), (30, 20), (42, 35), (62, 35), (74, 75), (88, 75), (100, 40)], C(0xA8302A), C(0xD0584C)),
+            ([(0, 35), (22, 35), (34, 15), (58, 15), (68, 55), (82, 55), (90, 20), (100, 20)], C(0x2A7838), C(0x4EA862)),
+            ([(52, 0), (52, 30), (70, 30), (80, 90), (100, 90)], C(0x2A54A8), C(0x4E80D8)),
+            ([(18, 0), (18, 25), (46, 25), (60, 60), (76, 60), (84, 30), (100, 60)], C(0xB88A20), C(0xE8B840)),
+        ]
+        for (points, col, light) in pipes {
+            let pts = points.map { p($0.0, $0.1) }
+            crawlPath(c, pts, col, r: 2.2 * Double(s))
+            crawlPath(c, pts.map { ($0.0, $0.1 - s) }, light, r: 0.5 * Double(s))
+            for q in pts.dropFirst().dropLast() {
+                c.rect(q.0 - 3 * s, q.1 - 3 * s, 6 * s, 6 * s, C(0x2A2C2E)); c.rect(q.0 - 3 * s, q.1 - 3 * s, 6 * s, s, C(0x5A5E62))
+            }
+        }
+        // The upper deck's rail, and the train standing on it, a shade darker than the one down at the platform.
+        c.rect(0, deck - s, c.w, s, C(0x8A8E96))
+        let carW = 72 * s, x0 = -30 * s, cars = (c.w * 54 / 100 - x0) / carW
+        for k in 0..<cars { crawlTangleCar(c, deck, s, x: x0 + k * carW, w: carW - 2 * s, front: false) }
+        c.rect(0, deck - 36 * s, x0 + cars * carW, 36 * s, C(0x0E1012, 0.38))
+        // The iron stairs up to it from the beam below, and the sign hanging under the deck.
+        let foot = below, steps = (foot - deck) / (5 * s), x1 = c.w * 60 / 100
+        for k in 0..<steps {
+            let y = foot - (k + 1) * 5 * s
+            c.rect(x1 + k * 8 * s, y, 10 * s, 2 * s, C(0x6A4434)); c.rect(x1 + k * 8 * s, y, 10 * s, s, C(0x9A6A50))
+            c.rect(x1 + k * 8 * s, y + 2 * s, 2 * s, foot - y - 2 * s, C(0x3E2620))
+        }
+        crawlPath(c, [(x1, foot - 8 * s), (x1 + steps * 8 * s, foot - (steps * 5 + 8) * s)], C(0xA87050), r: 0.7 * Double(s))
+        let label = "UPPER LINE", w = crawlTextWidth(label, scale: 2 * s) + 8 * s, h = 16 * s
+        let sx = c.w * 28 / 100 - w / 2, sy = deck + 18 * s
+        for rx in [sx + 4 * s, sx + w - 5 * s] { c.rect(rx, deck + 6 * s, s, sy - deck - 6 * s, C(0x2A2C2E)) }
+        c.rect(sx - s, sy - s, w + 2 * s, h + 2 * s, C(0x101214)); c.rect(sx, sy, w, h, C(0x8A5A14))
+        c.rect(sx, sy, w, s, C(0xC89030))
+        crawlText(c, sx + 4 * s, sy + 3 * s, label, C(0xF4F4EE), scale: 2 * s)
     }
 
     /// The station's life: every eleven seconds a train rushes through right to left, silver cars with a red stripe
@@ -298,7 +354,12 @@ extension Scenes {
     /// roof, a row of warm windows with a passenger or two, a pair of doors, a red stripe along its side and the
     /// bogies underneath. The front car has a sloped cab, its headlight blazing.
     private static func crawlTangleCar(_ c: PixelCanvas, _ g: Int, x: Int, w: Int, front: Bool) {
-        let s = unit(g), top = g - 36 * s, bot = g - 4 * s
+        crawlTangleCar(c, g, unit(g), x: x, w: w, front: front)
+    }
+
+    /// The same car on the line `g`, at the unit `s` (the upper deck's line is higher than the place's floor).
+    private static func crawlTangleCar(_ c: PixelCanvas, _ g: Int, _ s: Int, x: Int, w: Int, front: Bool) {
+        let top = g - 36 * s, bot = g - 4 * s
         guard x < c.w, x + w > 0 else { return }
         let body = C(0x8A8E98), bodyL = C(0xB0B4BE), bodyD = C(0x60646E)
         c.rect(x, top + 3 * s, w, bot - top - 3 * s, body)
@@ -572,7 +633,7 @@ private let crawlCastleChandelier = [
 ]
 
 /// The masks on the walls, in double units: a gold half-mask with three feathers, a white Venetian face with gold
-/// trim, a black one edged in silver, a violet one with a gold swirl.
+/// trim, a black full face edged in silver with three silver feathers, a violet one with a gold swirl.
 private let crawlCastleMasks: [([String], [Character: Px])] = [
     ([".....r.p.r.....", "......rpr......", ".mmmmmmmmmmmmm.", "mMMMMMmmmMMMMMm", "mM..MMmmmM..MMm", "mMM.MMm.mMM.MMm",
       ".mMMMmm.mmMMMm.", "...mmm...mmm..."],
@@ -580,8 +641,9 @@ private let crawlCastleMasks: [([String], [Character: Px])] = [
     (["..ggggggggg..", ".gWWWWWWWWWg.", "gWWWWWWWWWWWg", "gWW..WWW..WWg", "gWWWWWWWWWWWg", ".gWWWWdWWWWg.",
       "..gWWW.WWWg..", "...gWWWWWg...", "....ggggg...."],
      ["g": C(0xD8A838), "W": C(0xEEEAE0), "d": C(0xB8B0A4)]),
-    ([".sssssssssssss.", "sKKKKKKKKKKKKKs", "sKK..KKsKK..KKs", "sKK..KKsKK..KKs", ".sKKKKs.sKKKKs.", "..ssss...ssss.."],
-     ["s": C(0xC8CCD8), "K": C(0x18141E)]),
+    ([".....s.s.s...", "......sss....", "..sssssssss..", ".sKKKKKKKKKs.", "sKKKKKKKKKKKs", "sKK..KKK..KKs",
+      "sKK..KKK..KKs", ".sKKKKdKKKKs.", "..sKKK.KKKs..", "...sKKKKKs...", "....sssss...."],
+     ["s": C(0xC8CCD8), "K": C(0x18141E), "d": C(0x5A5A68)]),
     (["..y.........y..", ".vVVVVVVVVVVVv.", "vVV..VVyVV..VVv", "vVV..VyVyV..VVv", ".vVVVVv.vVVVVv.", "..vvvv...vvvv.."],
      ["v": C(0x5A2A7A), "V": C(0x8A4AB0), "y": C(0xF0C850)]),
 ]
