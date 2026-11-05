@@ -11,10 +11,12 @@ extension CrawlTrip {
     /// the old place while the wheel drops in from above with a bounce, already spinning (0–0.14); it spins down,
     /// wedge after wedge flicking the two gold pointers either side of the front as they tick past, slowing and
     /// going a hair too far (to 0.68), then rocks back onto the winning wedge, the new place's name (to 0.73); the
-    /// wedge flashes, the bulbs down the wheel's gold rails all blinking (to 0.8); then the camera dives into it, the
-    /// wheel and its frame flying off the edges, the wedge's face opening onto the new place and the name crumbling
-    /// away (0.8–0.92). Names up to about 32 letters fit: a long one goes on two lines, or in smaller letters where
-    /// the wedge is short.
+    /// wedge flashes, the bulbs down the wheel's gold rails all blinking (to 0.8); then the camera dives into it: the
+    /// other wedges go dark as the wheel and its frame fly off the edges, until the gold of the winning wedge fills
+    /// the frame, the name growing with it but always whole and inside the frame (0.8–0.87); the name goes in quarters
+    /// (0.845–0.865) and the gold opens from the middle, a clean window with a lit edge, onto the new place
+    /// (0.855–0.915). Names up to about 32 letters fit: a long one goes on two lines, or in smaller letters where the
+    /// wedge is short.
     func drawWheel(_ ctx: CGContext, old: CGImage, new: CGImage, k: Double, in r: CGRect) {
         guard k > 0 else { ctx.drawShot(old, in: r); return }
         guard k < 0.92 else { ctx.drawShot(new, in: r); return }
@@ -41,24 +43,18 @@ extension CrawlTrip {
         let flap = k < 0.73 ? max(0, 1 - tick / 0.35) : 0
 
         // The zoom into the winning wedge at the end.
-        let dive = Self.ease(Self.span(k, 0.8, 0.9))
-        let open = Self.span(k, 0.8, 0.85)                           // the wedge's face giving way to the new place
-        let crumble = Self.span(k, 0.83, 0.88)
+        let dive = Self.ease(Self.span(k, 0.8, 0.87))
+        let dark = (Self.span(k, 0.8, 0.83) * 4).rounded() / 4       // the other wedges, going out
+        let nameGone = Self.span(k, 0.845, 0.865)
+        let open = Self.ease(Self.span(k, 0.855, 0.915))             // the gold opening onto the new place
 
         // The sunburst behind it all, dithering in over the old place.
         let come = Self.span(k, 0, 0.1)
         let bx = Double(w) / 2, by = cy + fall
         let turn = k * 0.6
-        // Where the winning wedge's face has given way, nothing is drawn, so the new place shows through.
-        func opened(_ x: Int, _ y: Int) -> Bool {
-            guard open > 0, x >= dx, x < dx + dw, wheelBayer[(y % 4) * 4 + x % 4] < open else { return false }
-            let sn = (Double(y) + 0.5 - cy) / rad
-            return abs(sn) < 1 && abs(asin(sn) - angle) < step / 2
-        }
         for y in 0..<h {
             for x in 0..<w {
                 if come < 1 && wheelBayer[(y % 4) * 4 + x % 4] >= come { continue }
-                if opened(x, y) { continue }
                 let a = atan2(Double(y) - by, (Double(x) - bx) * 0.8) + turn
                 let ray = Int(floor(a / (Double.pi / 10) + 20)) % 2 == 0
                 let d = hypot(Double(x) - bx, Double(y) - by) / Double(h)
@@ -68,7 +64,8 @@ extension CrawlTrip {
 
         // The wedges, round the drum.
         let labels = wheelLabels(to: to)
-        let faces = (0..<n).map { wheelFace(labels[$0], index: $0, w: dw, h: face) }
+        // In the dive the winning name comes off its wedge and is drawn on its own, so it can stay whole.
+        let faces = (0..<n).map { wheelFace(dive > 0 && $0 == 0 ? "" : labels[$0], index: $0, w: dw, h: face) }
         let lit = k >= 0.73 && k < 0.8 && frame % 4 < 2
         let top = Int((cy - rad).rounded()), bottom = Int((cy + rad).rounded())
         for y in max(0, top)..<max(0, min(h, bottom)) {
@@ -83,14 +80,10 @@ extension CrawlTrip {
             let dim = abs(sn) > 0.9 ? 0.55 : abs(sn) > 0.72 ? 0.32 : abs(sn) > 0.45 ? 0.14 : 0
             for x in 0..<dw {
                 guard src.isDrawn(x, row) else { continue }
-                if i == 0 && opened(dx + x, y) {
-                    // Opening onto the new place: a hole here, but the name stays a little longer.
-                    if !(words.isDrawn(x, row) && crumble < 1 &&
-                         noise(row / 2 * 977 + x / 2 * 13) >= crumble) { continue }
-                }
                 var col = unpremultiplied(src, (row * dw + x) * 4)
                 if lit && i == 0 && !words.isDrawn(x, row) { col = lerp(col, C(0xFFF4C0), 0.5) }
                 if dim > 0 { col = lerp(col, C(0x1A0608), dim) }
+                if dark > 0 && i != 0 { col = lerp(col, C(0x1A0608), dark) }
                 c.px(dx + x, y, col)
             }
         }
@@ -148,6 +141,36 @@ extension CrawlTrip {
         ctx.clip(to: r)
         ctx.interpolationQuality = .none
         ctx.draw(img, in: target)
+        // The name on its own: growing with the dive, but only as far as it stays whole inside the frame.
+        if dive > 0 && nameGone < 1 {
+            let (src, words) = wheelFace(labels[0], index: 0, w: dw, h: face)
+            let name = PixelCanvas(w, h)
+            let y0 = mid - face / 2
+            var wide = 0, tall = 0
+            for row in 0..<face {
+                for x in 0..<dw where words.isDrawn(x, row) {
+                    name.px(dx + x, y0 + row, unpremultiplied(src, (row * dw + x) * 4))
+                    wide = max(wide, abs(x - dw / 2)); tall = max(tall, abs(row - face / 2))
+                }
+            }
+            let fit = min(Double(w) * 0.46 / Double(max(1, wide)), Double(h) * 0.4 / Double(max(1, tall)))
+            let zn = CGFloat(min(Double(z), max(1, fit)))
+            if let text = name.makeImage() {
+                ctx.setAlpha(CGFloat(((1 - nameGone) * 4).rounded(.up) / 4))
+                ctx.draw(text, in: CGRect(x: p.x + (full.minX - p.x) * zn, y: p.y + (full.minY - p.y) * zn,
+                                          width: full.width * zn, height: full.height * zn))
+                ctx.setAlpha(1)
+            }
+        }
+        // The gold opening from the middle: the new place in a growing window, a lit edge round it.
+        if open > 0 {
+            let hw = Int(Double(w / 2 + 5) * open), hh = Int(Double(h / 2 + 5) * open)
+            let hole = art.frame(w / 2 - hw, h / 2 - hh, hw * 2, hh * 2)
+            ctx.setFillColor(crawlTripRGB(0x9A6A18)); ctx.fill(hole.insetBy(dx: -3 * art.px, dy: -3 * art.px))
+            ctx.setFillColor(crawlTripRGB(0xFFF0B0)); ctx.fill(hole.insetBy(dx: -2 * art.px, dy: -2 * art.px))
+            ctx.clip(to: hole)
+            ctx.drawShot(new, in: r)
+        }
         ctx.restoreGState()
     }
 }
