@@ -8,7 +8,7 @@ import Foundation
 let crawlHeroes4: [CrawlHero: Persona] = [
     .tran: Persona(name: "Tran", weapon: .saber, headTop: 22, signature: 3.2, callout: "Do you own a red shirt?",
                    draw: drawTran),
-    .liJun: Persona(name: "Li Jun", weapon: .saber, headTop: 23, signature: 2.6, draw: drawLiJun),
+    .liJun: Persona(name: "Li Jun", weapon: .saber, headTop: 21, signature: 2.6, draw: drawLiJun),
     .liNa: Persona(name: "Li Na", weapon: .saber, headTop: 17, signature: 3.0, draw: drawLiNa),
     .zhang: Persona(name: "Zhang", weapon: .blaster, shot: .thrown(C(0x9A8A70)), muzzle: (42, 33), handGun: false,
                     headTop: 20, signature: 3.0, draw: drawZhang),
@@ -38,14 +38,16 @@ private func crawlH4Fist(_ c: PixelCanvas, _ x: Int, _ y: Int, _ a: Double, _ co
 
 /// A recurve or long bow held out at arm's length, its grip at (`x`, 34) plus `lift`: limbs bowing back towards the
 /// tips over `half` pixels each way, the string drawn back `pull` pixels, and, `nocked`, an arrow on the string, its
-/// point at `tip`. The near hand on the grip.
+/// point at `tip`. The near hand on the grip. The limbs are two pixels thick, lit on the inside. The string is
+/// part see-through on purpose: a solid one gets its own outline, which fills the gap to the limb with a pale slab.
 private func crawlH4Bow(_ c: PixelCanvas, x: Int, half: Int, pull: Int, nocked: Bool, tip: Int,
                         limb: Px, limbD: Px, grip: Px, hand: Px) {
-    let string = C(0xF0F0F4)
+    let string = C(0xF0F0F4, 0.6)
     for y in (34 - half)...(34 + half) where y + c.oy <= 43 {
         let d = abs(y - 34)
         let off = d <= 2 ? 0 : d <= half / 2 ? -1 : d <= half - 2 ? -2 : -3
-        c.px(x + off, y, d <= 1 ? grip : d % 3 == 0 ? limbD : limb)
+        c.px(x + off, y, d <= 1 ? grip : limb)
+        if d < half - 1 { c.px(x + off + 1, y, d <= 1 ? grip : limbD) }
     }
     for y in (35 - half)...(33 + half) where y + c.oy <= 43 {
         let d = Double(abs(y - 34)) / Double(half - 1)
@@ -69,8 +71,8 @@ private func crawlH4BackCape(_ c: PixelCanvas, t: Double, speed: Double, _ col: 
     for y in 26...last {
         let k = Double(y - 26) / Double(max(1, hem - 26))
         let sway = sin(t * speed + k * 2.2) * k * 1.6
-        let l = Int((16.5 - k * 6 + sway).rounded())
-        c.rect(l, y, 22 - l, 1, col)
+        let l = Int((16.5 - k * 10 + sway).rounded())
+        c.rect(l, y, 19 - l, 1, col)
         c.px(l, y, edge)
         if y > 29 { c.px(l + 3, y, fold) }
     }
@@ -145,7 +147,7 @@ private func drawTran(_ c: PixelCanvas, _ p: Pose) {
     let s = p.signature ?? -1
     let tug = s > 0.12 && s < 0.86
     let pull = tug ? min(1, (s - 0.12) / 0.12, (0.86 - s) / 0.12) : 0
-    let flap = Int((pull * 2).rounded())
+    let look = pull > 0.5 ? 1 : 0
 
     // 1. Dark jeans, a lit crease down each leg, scuffed brown shoes.
     drawLegs(c, Look(leg: jeans), step: p.step)
@@ -166,9 +168,23 @@ private func drawTran(_ c: PixelCanvas, _ p: Pose) {
     c.rect(21, 35, 1, 2, shirtD); c.rect(33, 35, 1, 2, shirtD)
     c.rect(18, 37, 20, 1, shirtD)
     c.rect(15, 33, 3, 1, shirtL)
-    if flap > 0 {
-        c.rect(33, 36, 5 + flap, 2 + flap / 2, shirtL); c.rect(33, 37 + flap / 2, 5 + flap, 1, shirtD)
-        c.rect(33, 36, 1, 2, shirtD)
+    // The tug: his hand lifted out in front with the hem in it, a big sheet of shirt pulled out of his waist and
+    // hanging from his fist, lit along the top, its hem dark along the bottom, the creases running down from the fist.
+    let hand = (x: Sprite.hand.x + pull * 6, y: Sprite.hand.y - pull * 2.5)
+    if pull > 0 {
+        let tipX = Int(hand.x.rounded()) - 2, tipY = Int(hand.y.rounded())
+        for x in 34...tipX {
+            let f = Double(x - 34) / Double(max(1, tipX - 34))
+            let top = Int((33 + f * Double(tipY - 33)).rounded())
+            let hem = f < 0.7 ? 37 + f * 3 * pull : 37 + 2.1 * pull - (f - 0.7) / 0.3 * (39 - Double(tipY)) * pull
+            let bottom = max(top, Int(hem.rounded()))
+            c.rect(x, top, 1, bottom - top + 1, shirt)
+            c.px(x, top, shirtL); c.px(x, bottom, shirtD)
+        }
+        for (x, y) in [(38, 37), (41, 37)] {
+            crawlBar(c, (Double(tipX), Double(tipY) + 1), atan2(Double(y - tipY - 1), Double(x - tipX)) * 180 / .pi, from: 1,
+                     to: hypot(Double(x - tipX), Double(y - tipY - 1)), shirtD, r: 0.4)
+        }
     }
 
     // 4. The face: heavy lids over the top of his eyes, the bags under them; looking down at the shirt in the
@@ -176,7 +192,7 @@ private func drawTran(_ c: PixelCanvas, _ p: Pose) {
     let down = pull > 0.5 ? 1 : 0
     for x in [22, 32] {
         c.rect(x, 29, 2, 1, clawdShade)
-        c.rect(x, 30 + down, 2, 2 - down, ink)
+        c.rect(x + look, 30 + down, 2, 2 - down, ink)
         c.rect(x, 32, 2, 1, bags)
     }
     c.rect(21, 28, 4, 1, hair); c.rect(31, 28, 4, 1, hair)
@@ -193,9 +209,8 @@ private func drawTran(_ c: PixelCanvas, _ p: Pose) {
     c.rect(18, 25, 20, 1, hair)
 
     // 6. The sabre: a curved steel blade, a brass knuckle-bow round the dark grip; drooping to the ground at rest,
-    //    or swung. In the signature the same hand is down at his hem, the sabre hanging from it.
-    let hand = (x: Sprite.hand.x, y: Sprite.hand.y + (flap > 0 ? 2 : 0))
-    let ang = p.melee ?? 55
+    //    or swung. In the signature the same hand is out at his hem, the sabre hanging straight down from it.
+    let ang = p.melee ?? 55 + 30 * pull
     func blade(_ a: Double, _ col: Px, _ r: Double) {
         var prev = crawlReach(hand, a, 2.5)
         for i in 1...5 {
@@ -225,9 +240,9 @@ private func drawTran(_ c: PixelCanvas, _ p: Pose) {
 
 // MARK: - Li Jun
 
-/// Li Jun: a street monk, Clawd with his head shaved, a shine on top, a calm brow. A maroon robe over his far
-/// shoulder with a saffron sash at the waist, loose maroon trousers and black cloth shoes, his hands bound in white
-/// wraps. He fights with his fists. Signature: a flying spin
+/// Li Jun: a street monk, Clawd with his head shaved to a tall round dome, a big shine on top, a calm brow. A maroon
+/// robe slung over his far shoulder, leaving the near one bare, with a saffron sash at the waist, its ends hanging at
+/// the front, loose maroon trousers and black cloth shoes, his hands bound in white wraps. He fights with his fists. Signature: a flying spin
 /// kick, leaping up, his front legs snapping out together in a kick as a white swoosh whips round him.
 private func drawLiJun(_ c: PixelCanvas, _ p: Pose) {
     let robe = C(0x8C2A30), robeD = C(0x641C22), robeL = C(0xB04450)
@@ -274,33 +289,31 @@ private func drawLiJun(_ c: PixelCanvas, _ p: Pose) {
         }
     }
 
-    // 4. The body, his round shaved head with a shine on it, a calm brow, a small smile; the far arm wrapped.
+    // 4. The body, his shaved head rising in a round dome with a big shine on it, shaded down the far side; a calm
+    //    brow; the far arm wrapped.
     drawBody(c, Look(arm: wrap))
-    c.rect(20, 25, 16, 1, clawdOrange); c.rect(23, 24, 10, 1, clawdOrange)
-    c.rect(24, 24, 3, 1, shine); c.rect(21, 25, 3, 1, shine); c.px(20, 26, shine)
+    for (y, x, w) in [(22, 24, 8), (23, 22, 12), (24, 20, 16), (25, 19, 18)] {
+        c.rect(x, y, w, 1, clawdOrange); c.px(x + w - 1, y, clawdShade)
+    }
+    c.rect(23, 23, 4, 1, shine); c.rect(21, 24, 3, 1, shine); c.rect(20, 25, 2, 1, shine)
     c.rect(21, 27, 3, 1, clawdShade); c.rect(32, 27, 3, 1, clawdShade)
     c.rect(15, 35, 3, 1, wrapD)
 
-    // 5. The robe: up over his far shoulder and wrapped round him from the chest down, lit along its edges; the
-    //    saffron sash at the waist with its knot.
-    c.pattern(18, 26, [
-        "RL..................",
-        "RL..................",
-        "RRL.................",
-        "RRL.................",
-        "RdL.................",
-        "RRL.................",
-        "RRRRRRRRRRRRRRRRRRRR",
-        "RRdRRRRRRRRRRRRRRRRR",
-        "RRRRRRdRRRRRRRRdRRRR",
-        "RRRRRRRRRRRRRRRRRRRR",
-        "SSSSSSSSSSSSSSSSSSSS",
-        "RRRRRRRRRRRRRRRRRRRR",
-    ], ["R": robe, "L": robeL, "d": robeD, "S": sash])
-    c.rect(21, 32, 17, 1, robeL)
-    c.rect(37, 36, 1, 2, robeD); c.rect(18, 37, 20, 1, robeD)
-    c.rect(33, 36, 2, 2, sashD); c.px(34, 38, sash)
+    // 5. The robe: from high on his far shoulder, sweeping down under his far eye and across his chest to under his
+    //    near arm, which it leaves bare; lit along that edge, a fold or two following it, the far side in shade.
+    let drape = [26, 27, 29, 31, 32, 32, 33, 33, 33, 33, 33, 34, 34, 34, 34, 34, 34, 35, 35, 35]
+    for (i, top) in drape.enumerated() {
+        c.rect(18 + i, top, 1, 36 - top, robe)
+        c.px(18 + i, top, robeL)
+    }
+    c.rect(19, 31, 1, 2, robeD); c.rect(20, 33, 3, 1, robeD); c.rect(24, 35, 5, 1, robeD); c.rect(32, 35, 3, 1, robeD)
 
+    // 6. The saffron sash, two rows deep, knotted at the front, its ends hanging down between his legs.
+    c.rect(18, 36, 20, 1, sash); c.rect(18, 37, 20, 1, sashD)
+    c.rect(26, 35, 4, 3, sash); c.rect(26, 37, 4, 1, sashD)
+    if !seatedPose && !kicking {
+        c.rect(26, 38, 2, 3, sash); c.rect(28, 38, 2, 2, sashD)
+    }
 
     // 7. The near fist, wrapped, up in his guard; punching.
     if let a = p.melee {
@@ -439,7 +452,7 @@ private func drawLiNa(_ c: PixelCanvas, _ p: Pose) {
 
 /// Zhang: a warehouse worker, Clawd in a scuffed white hard hat, a lime hi-vis vest with silver reflective stripes
 /// over a grey T-shirt, work trousers and steel-toed boots, and on his back the Cape of Odds, deep purple trimmed in
-/// gold, a white die on it. He throws Earth Mover rocks, a grey-brown stone in his hand. Signature: he lifts a foot and stamps,
+/// gold, a big white die on it, showing a six. He throws Earth Mover rocks, a grey-brown stone in his hand. Signature: he lifts a foot and stamps,
 /// and the ground in front of him heaves up in a wave of rock and dust.
 private func drawZhang(_ c: PixelCanvas, _ p: Pose) {
     let vest = C(0xC8E030), vestD = C(0x98AE20), stripe = C(0xD8DCE4)
@@ -454,8 +467,17 @@ private func drawZhang(_ c: PixelCanvas, _ p: Pose) {
     let heave = s >= 0.32 && s < 0.92
 
     // 1. The cape behind him, deep purple with a gold edge and a white die on it.
-    crawlH4BackCape(c, t: p.t, speed: p.capeSpeed, cape, gold, capeD, hem: 41)
-    c.pattern(11, 31, ["WWWWW", "Wk.kW", "W.k.W", "Wk.kW", "WWWWW"], ["W": C(0xF4F2EC), "k": ink, ".": C(0xF4F2EC)])
+    crawlH4BackCape(c, t: p.t, speed: p.capeSpeed, cape, gold, capeD, hem: 43)
+    let dieY = min(36, 37 - c.oy), dieX = 11 + Int((sin(p.t * p.capeSpeed + 1.5) * 0.9).rounded())
+    c.pattern(dieX, dieY, [
+        ".WWWWW.",
+        "WkWWWkD",
+        "WWWWWWD",
+        "WkWWWkD",
+        "WWWWWWD",
+        "WkWWWkD",
+        ".DDDDD.",
+    ], ["W": C(0xF4F2EC), "D": C(0xB8B4C4), "k": ink])
 
     // 2. Work trousers, boots with a lit steel toe. Raising a front foot for the stamp, then bringing it down.
     if raise && !seatedPose {
@@ -850,7 +872,7 @@ private func drawLangley(_ c: PixelCanvas, _ p: Pose) {
     }
     let lift = -Int((up * 4).rounded()) + (seatedPose ? -3 : 0)
     c.oy += p.gunY + lift
-    c.rect(38, 33, 6, 2, coat); c.px(38, 33, coatL)
+    c.rect(38, 33, 8, 2, coat); c.px(38, 33, coatL)
     crawlH4Bow(c, x: 46, half: 10, pull: pull, nocked: nocked, tip: 51, limb: limb, limbD: limbD, grip: grip,
                hand: clawdOrange)
     if sighting && up > 0.9 && s > 0.45 && s < 0.75 {
@@ -969,7 +991,8 @@ private func drawGwendolyn(_ c: PixelCanvas, _ p: Pose) {
 // MARK: - Jurgen
 
 /// Jurgen: a huge blond barbarian, Clawd grown taller and broader, his head four rows higher, long golden hair down
-/// his back and a great blond beard, braided to a point, on a bare chest. A shaggy brown fur pelt over each shoulder,
+/// his back and in a lock either side of his face, and a darker blond beard, full on the jaw and then a single plait
+/// bound in leather, down a bare, muscled chest. A big shaggy brown fur pelt over each shoulder,
 /// a leather belt with a brass buckle, a fur kilt and fur boots, his fists bound in leather. He fights with his fists.
 /// Signature: he looks up and talks to his absent wife, his beard moving, and a little pink heart floats up.
 private func drawJurgen(_ c: PixelCanvas, _ p: Pose) {
@@ -998,16 +1021,16 @@ private func drawJurgen(_ c: PixelCanvas, _ p: Pose) {
     // 3. His long hair down his back, golden strands.
     c.pattern(11, 22, [
         "....hhh",
-        "...hhLh",
-        "..hhhhh",
-        "..hLhdh",
-        ".hhhhhh",
-        ".hdhLh.",
-        "hhhhhh.",
-        "hLhdh..",
-        "h.hh...",
+        "...hhdh",
+        "..hhdhh",
+        "..hdhhd",
+        ".hhdhhd",
+        ".hdhhd.",
+        "hhdhhd.",
+        "hdhhd..",
+        "h.hd...",
         "h.h....",
-    ], ["h": hair, "L": hairL, "d": hairD])
+    ], ["h": hair, "d": hairD])
 
     // 4. The big body, a pixel broader each side and four rows taller than Clawd, lit along the left, the far side
     //    in shade; the far arm and its bound fist.
@@ -1016,52 +1039,40 @@ private func drawJurgen(_ c: PixelCanvas, _ p: Pose) {
     c.rect(13, 32, 4, 3, clawdOrange)
     crawlH4Fist(c, 14, 35, 1, wrap, wrapD, wrapL)
 
-    // 5. His hair over the top of his head, parted in the middle and falling to his shoulders either side.
+    // 5. His hair over the top of his head, parted in the middle, falling in a lock either side of his face to his
+    //    shoulders, each lock edged dark so the face stands clear of it.
     c.pattern(16, 17, [
         ".....hhhhhhhhhhhh.....",
         "...hhhLLhhhdhhLLhhh...",
         "..hhLhhhhhhdhhhhhLhh..",
-        ".hhhhhhhhhhdhhhhhhhhh.",
-        "hhhhhdhhhh..hhhhdhhhhh",
-        "hhh..............hhhh.",
-        "hh................hh..",
-        "hh....................",
-        "h.....................",
+        ".hhhhhhhhhddhhhhhhhhh.",
+        "hhhhhdhhhd..dhhhhdhhhh",
+        "hhhdd............ddhhh",
+        "hhhd..............dhhh",
+        ".hhd..............dhh.",
+        ".hhd..............dhh.",
+        ".hhd..............dhh.",
+        "..hd..............dh..",
+        "..hd..............dh..",
     ], ["h": hair, "L": hairL, "d": hairD])
 
     // 6. The face: a heavy brow, his eyes (looking up and away as he talks to her).
     c.rect(21, 23, 4, 1, hairD); c.rect(31, 23, 4, 1, hairD)
     c.rect(22, 24 - look, 2, 3, ink); c.rect(32, 24 - look, 2, 3, ink)
 
-    // 7. The fur pelts over his shoulders, shaggy at the edges.
-    c.pattern(15, 28, [
-        ".FLF.",
-        "FFFFL",
-        "FdFFF",
-        "FFFdF",
-        "F.F.F",
-    ], ["F": furC, "L": furL, "d": furD])
-    c.pattern(35, 28, [
-        ".FLF.",
-        "LFFFF",
-        "FFdFF",
-        "FdFFF",
-        "F.F.F",
-    ], ["F": furC, "L": furL, "d": furD])
+    // 7. The bare chest, two big pecs shaded under, lit along the top.
+    c.rect(21, 32, 6, 1, C(0xE89070)); c.rect(30, 32, 6, 1, C(0xE89070))
+    c.rect(21, 34, 6, 1, clawdShade); c.rect(30, 34, 6, 1, clawdShade)
 
-    // 8. The beard: blond and full from cheek to cheek, braided to a point; his mouth showing in it, moving as he
-    //    talks.
+    // 8. The beard: a darker gold than his hair, full along the jaw and tapering to the chin, a dark edge under it;
+    //    his mouth showing in it, moving as he talks.
     c.pattern(19, 27, [
-        "h..................h",
-        "hhhhhhhhhhhhhhhhhhhh",
-        ".hhhLhhhhmmhhhhLhhh.",
-        ".hhhhhLhhhhhhLhhhhh.",
+        "..hh............hh..",
         "..hhhhhhhhhhhhhhhh..",
-        "....hhhhdhhhdhhh....",
-        "......hhhdhhhh......",
-        ".......dhhhhd.......",
-        "........hddh........",
-        ".........hh.........",
+        "..hhLhhhhmmhhhhLhh..",
+        "...hhhLhhhhhhLhhh...",
+        "....hhhdhhhhdhhh....",
+        ".....dddhhhhddd.....",
     ], ["h": beard, "L": beardL, "d": beardD, "m": beardD])
     if talking && Int(p.lt * 6) % 2 == 0 { c.rect(28, 29, 2, 1, C(0x5A2A1A)) }
 
@@ -1072,13 +1083,34 @@ private func drawJurgen(_ c: PixelCanvas, _ p: Pose) {
         "FdF.FdFFF.FdFFF.dFF.FF",
     ], ["F": furC, "L": furL, "d": furD])
 
+    //    The plait down his chest, bound in leather at the top and the tip.
+    c.pattern(27, 33, ["SSSS", "hdhh", "hhdh", "hdhh", ".SS."], ["h": beard, "d": beardD, "S": strap])
+
+    //    The big fur pelts over his shoulders, shaggy along the hem.
+    c.pattern(14, 28, [
+        "..FLFF..",
+        ".FFFFLF.",
+        "FLFFdFFF",
+        "FFdFFFLF",
+        "FFFFdFFd",
+        "dF.Fd.F.",
+    ], ["F": furC, "L": furL, "d": furD])
+    c.pattern(34, 28, [
+        "..FFLF..",
+        ".FLFFFF.",
+        "FFFdFFLF",
+        "FLFFFdFF",
+        "dFFdFFFF",
+        ".F.dF.Fd",
+    ], ["F": furC, "L": furL, "d": furD])
+
     // 10. The near fist, bound in leather: down at his side, or punching.
     if let a = p.melee {
         crawlPunch(c, angle: a, trail: p.trail, arm: clawdOrange, reach: 6) { x, y, al in
             crawlH4Fist(c, x, y, al, wrap, wrapD, wrapL)
         }
     } else {
-        c.rect(39, 30, 3, 4, clawdOrange); c.rect(41, 30, 1, 4, clawdShade)
+        c.rect(39, 33, 3, 2, clawdOrange); c.rect(41, 33, 1, 2, clawdShade)
         crawlH4Fist(c, 41, 35, 1, wrap, wrapD, wrapL)
     }
 
