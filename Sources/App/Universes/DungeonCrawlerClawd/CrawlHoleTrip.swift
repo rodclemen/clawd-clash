@@ -10,9 +10,10 @@ extension CrawlTrip {
     /// band of hot pink with a pale pink lip and a glow round it, so it reads on the darkest place, the pink light
     /// catching the top of its far wall, sparkles running round it. It widens until it's past both sides of the
     /// frame, deepening a little as it comes (0.06–0.36). Then everything drops in: the view falls into the pit, the
-    /// old place and the pit's near rim going up past and away (0.26–0.46); down through the dark, pink streaks
-    /// rushing up past (0.24–0.7); the new place comes up from below, faster and faster (0.58–0.84), and lands with
-    /// a bump (0.84–0.92), a puff of dust and pink sparks on its floor settling away (to 0.98).
+    /// old place and the pit's near rim going up past and away (0.26–0.46); the black lights up with her magic as we
+    /// go in, deep purple overhead and hot pink below, thick pale streaks rushing up past (0.24–0.84); the new place
+    /// comes up from below with that light along its top edge, faster and faster (0.5–0.84), and lands with a bump
+    /// (0.84–0.92), a puff of dust and pink sparks on its floor settling away (to 0.98).
     func drawHole(_ ctx: CGContext, old: CGImage, new: CGImage, k: Double, in r: CGRect) {
         guard k > 0 else { ctx.drawShot(old, in: r); return }
         let art = CrawlArt(r)
@@ -21,7 +22,7 @@ extension CrawlTrip {
         let tick = Int(t / 0.05)
         let open = Self.ease(Self.span(k, 0.06, 0.36))
         let fall = Self.span(k, 0.26, 0.46)
-        let rise = Self.span(k, 0.58, 0.84), land = Self.span(k, 0.84, 0.92)
+        let rise = Self.span(k, 0.5, 0.84), land = Self.span(k, 0.84, 0.92)
 
         // The pit: an oval lying on the floor, widening until it's past both sides and deepening a little as it comes
         // nearer; then the view drops into it, and the old place and the pit's near rim go up past and away.
@@ -39,24 +40,32 @@ extension CrawlTrip {
             return (1 - f) / max(0.0001, 2 * (gx * gx + gy * gy).squareRoot())
         }
 
-        // Down the hole: the dark, and pink streaks rushing up past.
+        // Down the hole: the black lighting up in six flat bands, and thick pale streaks rushing up past. It's painted
+        // on a canvas of its own, as the inside of the pit shows it too.
         let dark = C(0x140820)
+        let shaft = PixelCanvas(w, h)
         if fall > 0 {
-            c.rect(0, 0, w, h, dark)
-            let streaks = Self.span(k, 0.24, 0.7)
+            let lit = (min(1, fall * 2) * 4).rounded() / 4
+            let bands: [UInt32] = [0x2A0E40, 0x4A1258, 0x701868, 0x981E78, 0xC02880, 0xE84098]
+            for (i, hex) in bands.enumerated() {
+                let y0 = h * i / bands.count
+                shaft.rect(0, y0, w, h * (i + 1) / bands.count - y0, Self.mix(0x140820, hex, lit))
+            }
+            let streaks = Self.span(k, 0.24, 0.84)
             if streaks > 0 && streaks < 1 {
-                let count = max(20, w * h / 900)
+                let count = max(30, w * h / 600)
                 for i in 0..<count {
-                    let len = 5 + Int(noise(i * 5 + 2) * 10)
+                    let len = 10 + Int(noise(i * 5 + 2) * 16)
                     let loop = h + len + 8
                     let y0 = Int(noise(i * 5 + 1) * Double(loop)) - Int(t * Double(h) * (2.2 + noise(i * 5 + 3)))
                     let y = ((y0 % loop) + loop) % loop - len
                     let x = Int(noise(i * 5) * Double(w))
-                    let thick = i % 4 == 0 ? 2 : 1
-                    c.rect(x, y, thick, len, i % 3 == 0 ? C(0xFFB0DC) : C(0xE0409A))
-                    c.rect(x, y, thick, 2, C(0xFFE0F2))
+                    let thick = i % 4 == 0 ? 3 : 2
+                    shaft.rect(x, y, thick, len, C(0xFFB0DC))
+                    shaft.rect(x, y, thick, 3, C(0xFFE0F2))
                 }
             }
+            c.paste(shaft, x: 0, y: 0)
             art.show(ctx)
             c.clear()
         }
@@ -64,6 +73,10 @@ extension CrawlTrip {
         if rise > 0 {
             let off = land > 0 ? -sin(land * .pi) * 3 : (1 - pow(rise, 1.3)) * Double(h)
             ctx.drawShot(new, in: r.offsetBy(dx: 0, dy: -CGFloat(Int(off.rounded())) * art.px))
+            if land == 0 {
+                let top = Int(off.rounded())
+                c.rect(0, top - 3, w, 1, C(0xFF4FB0)); c.rect(0, top - 2, w, 2, C(0xFFE0F2))
+            }
             let settle = Self.span(k, 0.84, 0.98)
             if settle > 0 && settle < 1 {
                 let a = ((1 - settle) * 4).rounded() / 4
@@ -105,9 +118,9 @@ extension CrawlTrip {
                         if d < 0 { c.px(x, y, C(0xFFB0DC)); continue }           // the pale lip
                         if d < 2 { c.px(x, y, C(0xFF4FB0)); continue }           // the rim
                         if d < 3 { c.px(x, y, C(0xC02880)); continue }
-                        // Inside: the pink light on the top of the far wall, then black.
+                        // Inside: the pink light on the top of the far wall, then black, or the shaft once we fall.
                         let far = Double(y) + 0.5 < cy
-                        c.px(x, y, far && d < 6 ? C(0x5A1440) : dark)
+                        c.px(x, y, far && d < 6 ? C(0x5A1440) : fall > 0 ? unpremultiplied(shaft, (y * w + x) * 4) : dark)
                     }
                 }
             }
