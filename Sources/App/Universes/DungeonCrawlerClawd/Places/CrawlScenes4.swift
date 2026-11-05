@@ -36,7 +36,7 @@ private func crawlBeam(_ c: PixelCanvas, _ x: Int, _ y: Int, _ bottom: Int, spre
 extension Scenes {
     /// Where things stand on Carl's street, shared by the still picture and the moving layer: the apartment block's
     /// right edge and (on the screen saver) its roof, Carl's window, the street lamp's head, the corner building that
-    /// sinks (its left edge, width, height and the line it sinks behind), and the far tower's beacon.
+    /// sinks (its left edge, width, height and the line it sinks behind), and the tip of the Needle's spire, its beacon.
     static func crawlSeattleFrame(_ c: PixelCanvas, _ g: Int) -> (block: Int, roof: Int, window: (x: Int, y: Int),
                                                                   tree: (x: Int, y: Int), lamp: (x: Int, y: Int),
                                                                   sinker: (x: Int, w: Int, h: Int, base: Int),
@@ -51,7 +51,7 @@ extension Scenes {
         let lamp = (x: c.w * 50 / 100 + 9 * s, y: g - 50 * s)
         let sw = 40 * s
         let sinker = (x: c.w * 70 / 100, w: sw, h: 46 * s, base: g - 8 * s)
-        let beacon = tall ? (x: c.w * 60 / 100, y: g - 118 * s) : (x: -1, y: -1)
+        let beacon = tall ? (x: c.w * 60 / 100, y: g - 196 * s) : (x: c.w * 45 / 100, y: g - 60 * s)
         return (block, tall ? g - 150 * s : -1, window, tree, lamp, sinker, beacon)
     }
 
@@ -63,7 +63,8 @@ extension Scenes {
     /// into the earth), a crack running off along the kerb with the System's blue light glowing up out of it. Behind
     /// it all the low city under a rain-heavy sky lit orange from below. The street is dark wet asphalt with the
     /// lights' reflections in it. On the screen saver the block rises into a tower with a stair hut and an aerial,
-    /// and the night sky opens over the city: banks of cloud, the moon breaking through, the Needle far off.
+    /// and the night sky opens over the city: banks of cloud, the moon breaking through, the Needle standing tall.
+    /// In the window the Needle's top still shows over the roofs.
     static func crawlSeattle(_ c: PixelCanvas, _ g: Int) {
         let s = unit(g), tall = isTall(c), f = crawlSeattleFrame(c, g)
 
@@ -82,26 +83,8 @@ extension Scenes {
                 c.ellipse(bx + rx / 3, by - ry / 3, rx / 2, ry, C(0x2C2E3C))
                 c.rect(bx - rx * 2 / 3, by + ry + ry / 2, rx * 4 / 3, s, C(0x4A3A3A, 0.6 + 0.1 * Double(k % 2)))
             }
-            // The Needle, far off over the low city: three legs tapering up, the halo of its deck, the spire.
-            let nx = f.beacon.x, base = g - 30 * s, needle = C(0x181E2C), deck = f.beacon.y + 12 * s
-            for y in stride(from: deck, to: base, by: 1) {
-                let k = Double(y - deck) / Double(base - deck)
-                let spread = Int(Double(2 * s) + k * Double(9 * s)), waist = Int(Double(s) * (1 - abs(k - 0.35)) * 2)
-                c.rect(nx - spread + waist - s, y, 2 * s, 1, needle); c.rect(nx + spread - waist - s, y, 2 * s, 1, needle)
-                c.rect(nx - s, y, 2 * s, 1, needle)
-            }
-            // The saucer: a wide disc flaring out over a narrower ring, its windows lit in a band.
-            let disc = C(0x283246)
-            for k in 0..<(7 * s) {
-                let half = 8 * s + k * 2
-                c.rect(nx - half, deck - k, 2 * half, 1, k == 7 * s - 1 ? C(0x3A4660) : disc)
-            }
-            c.rect(nx - 22 * s, deck - 8 * s, 44 * s, 2 * s, C(0x3A4660)); c.rect(nx - 20 * s, deck - 10 * s, 40 * s, 2 * s, disc)
-            c.rect(nx - 14 * s, deck - 13 * s, 28 * s, 3 * s, disc)
-            for k in 0..<10 { c.rect(nx - 18 * s + k * 4 * s, deck - 4 * s, 2 * s, s, C(0xE8C070, 0.85)) }
-            c.rect(nx - s / 2, f.beacon.y, max(1, s), deck - 13 * s - f.beacon.y, C(0x283246))
             // Taller towers far off.
-            for (k, x) in stride(from: c.w * 40 / 100, to: c.w, by: 26 * s).enumerated() where abs(x - nx) > 16 * s {
+            for (k, x) in stride(from: c.w * 40 / 100, to: c.w, by: 26 * s).enumerated() where abs(x - f.beacon.x) > 44 * s {
                 let h = (40 + Int(noise(k * 19 + 3) * 46)) * s, w = (12 + Int(noise(k * 7 + 1) * 8)) * s
                 c.rect(x, g - 8 * s - h, w, h, C(0x1C2232)); c.rect(x, g - 8 * s - h, s, h, C(0x242A3C))
                 for wy in stride(from: g - 8 * s - h + 4 * s, to: g - 30 * s, by: 6 * s) where noise(k * 31 + wy) > 0.78 {
@@ -109,6 +92,8 @@ extension Scenes {
                 }
             }
         }
+
+        crawlSeattleNeedle(c, g, f.beacon, tall: tall)
 
         // The low city behind the street: flat roofs at different heights, a lit window here and there.
         for (k, x) in stride(from: f.block, to: c.w, by: 22 * s).enumerated() {
@@ -262,6 +247,39 @@ extension Scenes {
         for x in stride(from: 4 * s, to: c.w, by: 20 * s) { c.rect(x, mid, 9 * s, max(1, s / 2), C(0x8A7A40, 0.35)) }
     }
 
+    /// The Space Needle over the low city, its spire's tip at `tip`: three legs drawing in to a waist under the deck and
+    /// out again at the foot, lit down their left sides by the city; the great saucer, wide over a narrower ring, its
+    /// windows lit in a band; the cap and the spire on top. Big on the screen saver, and in the window a smaller one,
+    /// mostly its top, showing over the roofs.
+    private static func crawlSeattleNeedle(_ c: PixelCanvas, _ g: Int, _ tip: (x: Int, y: Int), tall: Bool) {
+        let s = unit(g), nx = tip.x, k = tall ? 2 : 1
+        let leg = C(0x3A4660), legL = C(0x56647E), disc = C(0x46546E), discL = C(0x6A7A96), discD = C(0x2C3648)
+        let deck = tip.y + (tall ? 48 : 22) * s, base = g - 8 * s
+        // The legs.
+        for y in deck..<base {
+            let v = Double(y - deck) / Double(base - deck)
+            let spread = Int((1.5 + 2.5 * v * v * v + v * 3) * Double(k * 2 * s))
+            let thick = k * s + k * s / 2
+            c.rect(nx - spread - thick / 2, y, thick, 1, legL); c.rect(nx + spread - thick / 2, y, thick, 1, leg)
+            c.rect(nx - thick / 2, y, thick, 1, leg)
+        }
+        for y in stride(from: deck + 40 * k * s, to: base, by: 40 * k * s) { c.rect(nx - 12 * k * s, y, 24 * k * s, k * s, leg) }
+        // The ring under the saucer, the saucer flaring out over it, and the band of windows.
+        for r in 0..<(4 * k * s) {
+            let half = (5 * k * s) + r * 2
+            c.rect(nx - half, deck - r, 2 * half, 1, discD)
+        }
+        let top = deck - 4 * k * s
+        c.rect(nx - 18 * k * s, top - 2 * k * s, 36 * k * s, 2 * k * s, discL)
+        c.rect(nx - 16 * k * s, top - 4 * k * s, 32 * k * s, 2 * k * s, disc)
+        c.rect(nx - 16 * k * s, top - 4 * k * s, 10 * k * s, k * s, discL)
+        for j in 0..<8 { c.rect(nx - 15 * k * s + j * 4 * k * s, top - 2 * k * s, 2 * k * s, k * s, C(0xF0C878)) }
+        c.rect(nx - 9 * k * s, top - 6 * k * s, 18 * k * s, 2 * k * s, disc); c.rect(nx - 9 * k * s, top - 6 * k * s, 6 * k * s, k * s, discL)
+        c.rect(nx - 4 * k * s, top - 8 * k * s, 8 * k * s, 2 * k * s, discD)
+        // The spire.
+        c.rect(nx - s, tip.y, 2 * s, top - 8 * k * s - tip.y, disc); c.rect(nx - s, tip.y, s, top - 8 * k * s - tip.y, discL)
+    }
+
     /// The corner building that sinks: three floors of grey-green stucco with a flat roof, windows (a few lit), and a
     /// corner shop at the bottom under a striped awning, `drop` pixels down into the pit and leaning a little to the
     /// right as it goes, nothing drawn below the pit's line; `a` fades it.
@@ -294,7 +312,7 @@ extension Scenes {
 
     /// The street's life: the rain coming down slantwise over everything and splashing on the street; the corner
     /// building sinking slowly into the pit, leaning as it goes, dust puffing up at its foot, until it's gone (it
-    /// stands again a while later, for the next one); the street lamp buzzing; and on the screen saver the Needle's
+    /// stands again a while later, for the next one); the street lamp buzzing; and the Needle's
     /// beacon blinking red.
     static func crawlSeattleLife(_ c: PixelCanvas, _ g: Int, _ t: Double) {
         let s = unit(g), f = crawlSeattleFrame(c, g), sk = f.sinker
@@ -320,18 +338,21 @@ extension Scenes {
             }
         }
 
-        // The rain: thin pale streaks falling slantwise, fast.
-        let count = c.w * c.h / (160 * s * s)
+        // The rain: thin pale streaks falling slantwise, fast. Fewer and longer than a real downpour, so it reads as
+        // rain and not noise, and thinned hard from head height down so the crew stay clear of it.
+        let count = c.w * c.h / (280 * s * s), crew = g - 46 * s
         let fall = Double(c.h + 20 * s)
         for i in 0..<count {
             let speed = 1.6 + noise(i * 7 + 2) * 0.5
             let y = Int((noise(i * 7 + 1) * fall + t * Double(c.h) * speed).truncatingRemainder(dividingBy: fall)) - 10 * s
             let x = Int(noise(i * 7) * Double(c.w + 20 * s)) - y / 4
-            let col = C(0xB8C8E8, 0.22 + 0.12 * noise(i * 7 + 3))
-            for k in 0..<4 { c.rect(x - k * s / 4, y + k * s, max(1, s / 2) + (s > 1 ? s / 2 : 0), s, col) }
+            let low = y >= crew
+            if low && i % 2 != 0 { continue }
+            let col = C(0xB8C8E8, (low ? 0.7 : 1) * (0.22 + 0.12 * noise(i * 7 + 3)))
+            for k in 0..<6 { c.rect(x - k * s / 4, y + k * s, max(1, s / 2) + (s > 1 ? s / 2 : 0), s, col) }
         }
         // Splashes on the street: a tick up either side where a drop lands.
-        for i in 0..<(c.w / (14 * s)) {
+        for i in 0..<(c.w / (28 * s)) {
             let ph = (t * 2.2 + noise(i * 5 + 4) * 7).truncatingRemainder(dividingBy: 1)
             guard ph < 0.25 else { continue }
             let x = Int(noise(i * 5 + Int(t * 2.2 + noise(i * 5 + 4) * 7)) * Double(c.w))
@@ -847,7 +868,9 @@ extension Scenes {
     /// The Over City's life: birds flitting from perch to perch (a short hop up and over, wings beating, then a rest
     /// on the crossbar), the flag on the dome flapping, and a wisp of cloud drifting slowly across the sky.
     static func crawlOverCityLife(_ c: PixelCanvas, _ g: Int, _ t: Double) {
-        let s = unit(g), f = crawlOverCityFrame(c, g), p = f.perches, n = p.count
+        let s = unit(g), f = crawlOverCityFrame(c, g)
+        // Perches with room above them for a bird (the flag's finial is off the top of a short window).
+        let p = f.perches.filter { $0.y >= 14 * s }, n = p.count
         // Wisps of cloud.
         for k in 0..<(isTall(c) ? 4 : 2) {
             let span = Double(c.w + 80 * s)
@@ -873,36 +896,69 @@ extension Scenes {
             if u < 0.3 || (u >= 0.5 && u < 0.8) {
                 let from = u < 0.3 ? a : b, to = u < 0.3 ? b : a
                 let v = (u < 0.3 ? u : u - 0.5) / 0.3
-                let hop = Double(max(0, min(30 * s, abs(to.x - from.x) / 3 + 8 * s, min(from.y, to.y) - 10 * s)))
+                let hop = Double(max(0, min(30 * s, abs(to.x - from.x) / 3 + 8 * s, min(from.y, to.y) - 12 * s)))
                 x = from.x + Int(Double(to.x - from.x) * v)
                 y = from.y + Int(Double(to.y - from.y) * v) - Int(sin(v * Double.pi) * hop)
                 flying = true
             } else if u >= 0.3 && u < 0.5 { x = b.x; y = b.y }
             let col = tones[k % tones.count], dir = flying && (u < 0.3 ? b.x < a.x : a.x < b.x) ? -1 : 1
-            crawlOverCityBird(c, x + (flying ? 0 : (k % 2 == 0 ? -3 : 2) * s), y, col, flying: flying, flap: Int(t * 9 + Double(k)) % 2 == 0, dir: dir, s)
+            crawlOverCityBird(c, x + (flying ? 0 : (k % 2 == 0 ? -2 : 2) * s), y, col, flying: flying, flap: Int(t * 6 + Double(k)) % 2 == 0,
+                              dir: flying ? dir : (k % 2 == 0 ? 1 : -1), s)
         }
     }
 
-    /// A bird: perched, a little body and head on the bar with a tail; flying, the body with wings up or down.
+    /// A Skyfowl, big enough to read as a bird from across the window: perched, upright on the bar with its folded
+    /// wing, pale breast and hooked gold beak; flying, side on with a broad wing up or down, its tail out behind.
+    /// `x` is its middle, `y` the bar under its feet (flying, its back), `dir` the way it faces.
     private static func crawlOverCityBird(_ c: PixelCanvas, _ x: Int, _ y: Int, _ col: Px, flying: Bool, flap: Bool, dir: Int, _ s: Int) {
-        let beak = C(0xE0A030)
-        if flying {
-            c.rect(x - 2 * s, y - s, 4 * s, 2 * s, col)
-            c.rect(x + dir * 2 * s - (dir < 0 ? s : 0), y - 2 * s, s * 2, 2 * s, col)
-            c.rect(x + dir * 4 * s - (dir < 0 ? s : 0), y - s, s, s, beak)
-            if flap {
-                c.rect(x - 3 * s, y - 3 * s, 2 * s, 2 * s, col); c.rect(x + s, y - 3 * s, 2 * s, 2 * s, col)
-                c.rect(x - 4 * s, y - 4 * s, s, s, col); c.rect(x + 3 * s, y - 4 * s, s, s, col)
-            } else {
-                c.rect(x - 4 * s, y + s, 3 * s, s, col); c.rect(x + s, y + s, 3 * s, s, col)
-            }
-        } else {
-            c.rect(x, y - 3 * s, 3 * s, 3 * s, col); c.rect(x + s, y - 5 * s, 2 * s, 2 * s, col)
-            c.rect(x + 3 * s, y - 4 * s, s, s, beak); c.rect(x - s, y - 2 * s, s, 2 * s, col)
-            c.rect(x + 2 * s, y - 4 * s, s, s, C(0x101010))
-        }
+        let rows = flying ? (flap ? crawlSkyfowlWingsUp : crawlSkyfowlWingsDown) : crawlSkyfowlPerched
+        let palette: [Character: Px] = ["a": col, "d": lerp(col, C(0x10141E), 0.4), "l": lerp(col, C(0xF4F0E4), 0.55),
+                                        "b": C(0xE8A828), "e": C(0x101014)]
+        let drawn = dir < 0 ? rows.map { String($0.reversed()) } : rows
+        let w = (rows.first?.count ?? 0) * s, h = rows.count * s
+        crawlSketch(c, x - w / 2, flying ? y - h / 2 : y - h, drawn, palette, cell: s)
     }
 }
+
+/// A Skyfowl on a bar, facing right.
+private let crawlSkyfowlPerched = [
+    ".....aaaa...",
+    "....aaaaaa..",
+    "....aeaaabb.",
+    "....aaaaa.b.",
+    "...daalll...",
+    "..ddaallll..",
+    ".dddaallll..",
+    ".dddaallll..",
+    ".dddaalll...",
+    "dddd.alll...",
+    "dd...aa.....",
+    "d....b.b....",
+]
+
+/// A Skyfowl flying right, its wing raised.
+private let crawlSkyfowlWingsUp = [
+    "......dd.........",
+    ".....ddaa........",
+    "....ddaaa........",
+    "...ddaaaa....aa..",
+    "..dddaaaa...aeab.",
+    "aa.aaaaaaaaaaaabb",
+    "aaaaaaaaaaaalll.b",
+    "..dd.lllllll.....",
+]
+
+/// A Skyfowl flying right, its wing down.
+private let crawlSkyfowlWingsDown = [
+    ".............aa..",
+    "............aeab.",
+    "aa.aaaaaaaaaaaabb",
+    "aaaaaaaaaaaalll.b",
+    "..ddaaaaalll.....",
+    "...ddaaaa........",
+    "....ddaa.........",
+    ".....dd..........",
+]
 
 // MARK: - Grimaldi's circus tent
 
@@ -914,17 +970,26 @@ extension Scenes {
                                                                 mound: Int, swing: Int) {
         let s = unit(g), tall = isTall(c)
         let ring = (x: c.w / 2, y: g - 9 * s, rx: c.w * 22 / 100)
-        return (g - 30 * s, tall ? g - 262 * s : g - 160 * s, [c.w * 24 / 100, c.w * 76 / 100], ring, ring.y - 24 * s,
+        return (g - 30 * s, tall ? g - 262 * s : g - 160 * s, [c.w * 24 / 100, c.w * 76 / 100], ring, ring.y - 34 * s,
                 tall ? g - 198 * s : -1)
     }
 
-    /// The vine mound's top over column `x`: highest in the ring's middle, lumpy.
+    /// The heaps of vine in the ring, as (middle across the ring from -1 to 1, half-width as a share of the ring, height
+    /// as a share of the mound), back ones first.
+    private static let crawlCircusHeaps: [(u: Double, w: Double, h: Double)] = [
+        (-0.48, 0.42, 0.72), (0.5, 0.44, 0.8), (0.02, 0.5, 1), (-0.78, 0.24, 0.42), (0.82, 0.22, 0.46), (-0.2, 0.3, 0.56), (0.28, 0.28, 0.5),
+    ]
+
+    /// The vine mound's top over column `x`: the tallest of the heaps there.
     private static func crawlCircusMoundTop(_ x: Int, _ f: (eave: Int, peak: Int, poles: [Int], ring: (x: Int, y: Int, rx: Int), mound: Int, swing: Int),
                                             _ s: Int) -> Int {
         let u = Double(x - f.ring.x) / Double(f.ring.rx)
         guard abs(u) < 1 else { return f.ring.y + 1 }
-        let h = pow(1 - u * u, 0.6) * Double(f.ring.y - f.mound) + (noise(x / max(1, s) / 3 + 17) - 0.5) * Double(4 * s)
-        return f.ring.y - Int(h)
+        let h = crawlCircusHeaps.map { p -> Double in
+            let v = (u - p.u) / p.w
+            return abs(v) < 1 ? (1 - v * v).squareRoot() * p.h : 0
+        }.max() ?? 0
+        return f.ring.y - Int(h * Double(f.ring.y - f.mound))
     }
 
     /// Grimaldi's circus tent: the big top, gone quiet and wrong. Red and cream stripes run up the roof to the peak;
@@ -1049,28 +1114,11 @@ extension Scenes {
             }
         }
 
-        // The vine mound in the ring: a dark mass, strands of pale green across it lit along their tops, leaves.
+        // The vine mound in the ring: heaps of thick vine piled on one another, each a dark dome wound with a few
+        // fat strands that follow its curve, lit along their tops, the back heaps in shadow and big leaves on the front.
         let r = f.ring
-        for x in stride(from: r.x - r.rx, to: r.x + r.rx, by: s) {
-            let top = crawlCircusMoundTop(x, f, s)
-            if top < r.y { c.rect(x, top, s, r.y - top, vineD) }
-        }
-        for k in 0..<9 {
-            let y0 = r.y - (3 + k * 2) * s, amp = Double(2 * s), ph = Double(k) * 1.7
-            for x in stride(from: r.x - r.rx, to: r.x + r.rx, by: s) {
-                let top = crawlCircusMoundTop(x, f, s)
-                let y = y0 + Int(sin(Double(x) / Double(7 * s) + ph) * amp)
-                guard y > top + s else { continue }
-                c.rect(x, y, s, s, k % 3 == 0 ? vineL : vine)
-                if (x / s + k * 5) % 13 == 0 { c.rect(x, y - s, 2 * s, s, vineL); c.rect(x + s, y - 2 * s, s, s, vineL) }
-            }
-        }
-        // The mound's lumpy edge, lit, with leaves sticking up.
-        for x in stride(from: r.x - r.rx, to: r.x + r.rx, by: s) {
-            let top = crawlCircusMoundTop(x, f, s)
-            guard top < r.y else { continue }
-            c.rect(x, top, s, s, vineL)
-            if noise(x / max(1, s) + 41) > 0.85 { c.rect(x - s, top - 2 * s, 2 * s, 2 * s, vine); c.rect(x - s, top - 2 * s, s, s, vineL) }
+        for (k, p) in crawlCircusHeaps.enumerated() {
+            crawlCircusHeap(c, g, f, p, back: k < 3, seed: k)
         }
         // The pedestal half buried at the left, its gold star, and the hoop at the right, both wound with vine.
         let pdx = r.x - r.rx * 55 / 100, pdy = r.y - 16 * s
@@ -1078,9 +1126,9 @@ extension Scenes {
         crawlSketch(c, pdx + 4 * s, pdy + 3 * s, [".#.", "###", "#.#"], ["#": C(0xE8C050)], cell: 2 * s)
         for y in stride(from: pdy, to: pdy + 10 * s, by: 3 * s) { c.rect(pdx + Int(noise(y) * 10) * s, y, 4 * s, s, vine) }
         let hx = r.x + r.rx * 50 / 100, hyy = r.y - 20 * s
-        for k in 0..<28 {
-            let a = Double(k) * Double.pi / 14
-            c.rect(hx + Int(cos(a) * Double(10 * s)), hyy + Int(sin(a) * Double(12 * s)), s, s, k % 4 == 0 ? C(0xE8E0D0) : C(0xC83040))
+        for k in 0..<40 {
+            let a = Double(k) * Double.pi / 20
+            c.rect(hx + Int(cos(a) * Double(10 * s)), hyy + Int(sin(a) * Double(12 * s)), 2 * s, 2 * s, k % 5 == 0 ? C(0xE8E0D0) : C(0xC83040))
         }
         for k in 0..<10 {
             let a = Double(k) * 0.7 + 0.4
@@ -1097,6 +1145,42 @@ extension Scenes {
         // The floor: dark sawdust, plain.
         c.ground(g, C(0x382A1E), edge: C(0x5A4430), speck: C(0x2C2016), seed: 97)
         c.ellipse(r.x, g + 3 * s, r.rx, 3 * s, C(0x7AA472, 0.05))
+    }
+
+    /// One heap of the vine mound: a dark dome and, tangled over it, fat strands that wander across its curve and over
+    /// one another, each with a lit top and a shaded underside, gaps where the dark shows through, a broad leaf here
+    /// and there. The heaps at the `back` are a tone darker, so the pile has depth.
+    private static func crawlCircusHeap(_ c: PixelCanvas, _ g: Int, _ f: (eave: Int, peak: Int, poles: [Int], ring: (x: Int, y: Int, rx: Int), mound: Int, swing: Int),
+                                        _ p: (u: Double, w: Double, h: Double), back: Bool, seed: Int) {
+        let s = unit(g), r = f.ring
+        let cx = r.x + Int(p.u * Double(r.rx)), rx = Int(p.w * Double(r.rx)), ry = Int(p.h * Double(r.y - f.mound))
+        let dark = back ? C(0x223828) : C(0x2E4C34), shade = back ? C(0x3E6044) : C(0x4E7450)
+        let body = back ? C(0x6E9A68) : C(0x8CB884), lit = back ? C(0x9AC090) : C(0xCCEAB8)
+        func arc(_ mid: Int, _ half: Double, _ high: Double, _ x: Int) -> Int? {
+            let v = Double(x - mid) / half
+            return abs(v) < 1 ? r.y - Int((1 - v * v).squareRoot() * high) : nil
+        }
+        for x in stride(from: cx - rx, to: cx + rx, by: s) {
+            if let y = arc(cx, Double(rx), Double(ry), x), y < r.y { c.rect(x, y, s, r.y - y, dark) }
+        }
+        let strands = max(3, ry / (5 * s))
+        for b in 0..<strands {
+            let k = 1 - Double(b) / Double(strands) * 0.8, n = seed * 17 + b * 5
+            let mid = cx + Int((noise(n) - 0.5) * 0.8 * Double(rx))
+            let half = Double(rx) * k * (0.8 + 0.5 * noise(n + 1)), high = Double(ry) * k
+            let thick = (b % 2 == 0 ? 3 : 2) * s
+            for x in stride(from: cx - rx, to: cx + rx, by: s) {
+                guard let top = arc(cx, Double(rx), Double(ry), x), let line = arc(mid, half, high, x) else { continue }
+                let y = line + Int(sin(Double(x) / Double(6 * s) + Double(n)) * Double(2 * s))
+                guard y >= top, y < r.y else { continue }
+                if noise((x / s + n * 3) / 7) > 0.82 { continue }
+                c.rect(x, y, s, thick + s, shade); c.rect(x, y, s, thick, body); c.rect(x, y, s, s, lit)
+                // A broad leaf off the strand now and then, on the front heaps.
+                if !back && (x / s + n * 3) % 19 == 0 {
+                    crawlSketch(c, x - 2 * s, y - 3 * s, [".###.", "#####", "..#.."], ["#": lit], cell: s)
+                }
+            }
+        }
     }
 
     /// One king pole's rigging on the screen saver: its cap where the canvas meets it, a little platform with a rail
