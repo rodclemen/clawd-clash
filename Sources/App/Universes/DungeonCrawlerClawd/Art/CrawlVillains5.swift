@@ -25,7 +25,7 @@ let crawlVillains5: [CrawlVillain: Persona] = [
  signature: 3.0, draw: drawEva),
     .quanCh: Persona(name: "Quan Ch", weapon: .blaster, motion: .fly,
                      shot: .energy(core: C(0xE8FCFF), glow: C(0x5AE0FF)), muzzle: (46, 31), handGun: false,
-                     headTop: 19, signature: 3.2, draw: drawQuanCh),
+                     headTop: 17, signature: 3.2, draw: drawQuanCh),
 ]
 
 // MARK: - Shared shapes
@@ -60,13 +60,15 @@ private func v5Bend(_ a: (Double, Double), _ ctrl: (Double, Double), _ b: (Doubl
     return (x, y)
 }
 
-/// A neck along that curve, `r` thick.
+/// A neck along that curve, `r` thick, thinning to `tip` at its end if given.
 private func v5Neck(_ c: PixelCanvas, _ a: (Double, Double), _ ctrl: (Double, Double), _ b: (Double, Double),
-                    r: Double, _ col: Px) {
+                    r: Double, tip: Double? = nil, _ col: Px) {
     var last = a
     for i in 1...10 {
-        let pt = v5Bend(a, ctrl, b, Double(i) / 10)
-        c.glowLine(last.0, last.1, pt.0, pt.1, core: col, glow: C(0, 0), coreR: r, glowR: r + 0.1)
+        let k = Double(i) / 10
+        let pt = v5Bend(a, ctrl, b, k)
+        let w = r + ((tip ?? r) - r) * k
+        c.glowLine(last.0, last.1, pt.0, pt.1, core: col, glow: C(0, 0), coreR: w, glowR: w + 0.1)
         last = pt
     }
 }
@@ -202,8 +204,8 @@ private func drawAmayon(_ c: PixelCanvas, _ p: Pose) {
 
 /// The Reminiscence Hydra: Clawd as a great ball of stitched flesh, pink-tan, a grey-green patch sewn into its lower
 /// side and a seam across it, dark stitches crossing both, Clawd's two eyes peering out of the middle; it sits on four
-/// short stumpy legs. Out of the top grow nine long necks, each with a little head of its own, swaying, the left four
-/// looking back and the rest forward, every head's eye glowing a different colour and the colours shifting along.
+/// short stumpy legs. Out of a hump on top grow nine thick necks in a bunch, each with a little head of its own, swaying,
+/// the left four looking back and the rest forward, every head's eye glowing a different colour and the colours shifting along.
 /// The top head is the Keymaster's, Judge Lucian's, bigger than the rest, in a white judge's wig. Two heads fight,
 /// taking turns (`Persona.shotTurns`): Monobrow Sam, with his monobrow, fires a crimson death ray, and Bea's mother,
 /// the front head with a red perm, spits fireballs. Signature: a head pops off with a puff, and a new one balloons
@@ -257,26 +259,42 @@ private func drawHydra(_ c: PixelCanvas, _ p: Pose) {
     c.rect(22, 28, 2, 3, ink); c.rect(31, 28, 2, 3, ink)
     c.px(22, 28, C(0x6A4A44)); c.px(31, 28, C(0x6A4A44))
 
-    // 6. The nine necks and heads, swaying: the left four look back, the rest forward. One on the left pops off and
-    //    balloons back in the signature; the Keymaster's on top is bigger, in a wig; Sam and Bea's mother shoot.
-    let spots: [(Double, Double)] = [(6, 24), (9, 16), (15, 10), (22, 7), (29, 6.5), (36, 7), (43, 10), (48, 16),
+    // 6. The hump the necks grow out of, so they part only near their heads and don't fan out from the ball as ribs.
+    v5Blob(c, 28.5, 22.5, 13.5, 6, fleshD)
+    v5Blob(c, 28, 22, 13, 5.5, flesh)
+    v5Blob(c, 23, 19.5, 5, 1.4, fleshL)
+
+    // 7. The nine necks and heads, swaying, in a bunch, not a fan: thick and short, two short ones in shade at the back
+    //    and the rest in front, the left four looking back and the rest forward. One on the left pops off and balloons
+    //    back in the signature; the Keymaster's on top is bigger, in a wig, on the thickest neck, and goes on last;
+    //    Sam and Bea's mother shoot.
+    let spots: [(Double, Double)] = [(9, 24), (12, 15), (19, 11), (21, 19), (29, 7), (37, 18), (43, 10), (46, 17),
                                      (51, 23)]
     let popping = s > 0.06 && s < 0.9
-    for (i, spot) in spots.enumerated() {
+    // All the necks go on first, then all the heads, so no neck ever hides one of the nine.
+    let order = [3, 5, 0, 1, 2, 7, 6, 8, 4]
+    for (i, headPass) in order.map({ ($0, false) }) + order.map({ ($0, true) }) {
+        let spot = spots[i]
         let a = (-165 + Double(i) * 18.75) * .pi / 180
-        let base = (28 + 11.5 * cos(a), 29.5 + 8 * sin(a))
+        let base = (28 + 11.5 * cos(a), 26 + 8 * sin(a))
         let still = i == shooter
         let wx = still ? 0 : sin(p.lt * 2.3 + Double(i) * 1.7) * 1.0
         let wy = still ? 0 : cos(p.lt * 1.9 + Double(i) * 1.3) * 0.8
         let hx = spot.0 + wx, hy = spot.1 + wy
         let left = i < 4
+        let back = i == 3 || i == 5
         let neckEnd = (hx + (left ? 1.5 : -1.5), hy + 1.5)
         let ctrl = ((base.0 * 2 + hx) / 3, (base.1 + hy * 2) / 3)
-        v5Neck(c, base, ctrl, neckEnd, r: 1.0, neckC)
-        v5Neck(c, (base.0 - 0.4, base.1 - 0.4), (ctrl.0 - 0.4, ctrl.1 - 0.4), (neckEnd.0 - 0.3, neckEnd.1 - 0.4),
-               r: 0.35, flesh)
-        let mid = v5Bend(base, ctrl, neckEnd, 0.5)
-        c.px(Int(mid.0.rounded()), Int(mid.1.rounded()), stitch)
+        let thick = i == keymaster ? 2.6 : 2.1
+        if !headPass {
+            v5Neck(c, base, ctrl, neckEnd, r: thick + 0.5, tip: thick - 0.5, fleshD)
+            v5Neck(c, base, ctrl, neckEnd, r: thick, tip: thick - 1, back ? fleshD : neckC)
+            if !back {
+                v5Neck(c, (base.0 - 0.6, base.1 - 0.6), (ctrl.0 - 0.6, ctrl.1 - 0.6), (neckEnd.0 - 0.4, neckEnd.1 - 0.4),
+                       r: 0.5, flesh)
+            }
+            continue
+        }
 
         let eye = eyes[(i + Int(p.lt * 1.2)) % eyes.count]
         let open = i == shooter
@@ -324,17 +342,17 @@ private func drawHydra(_ c: PixelCanvas, _ p: Pose) {
 
 // MARK: - Mrs. Ghazi
 
-/// Mrs. Ghazi: a sand ooze, Clawd's block gone soft and lumpy in warm tan sand: a slumping dome on top, ripples of
-/// darker sand along it like a dune, lit along the top, drips of sand sagging down her sides and a thin trickle always
-/// running off her to little heaps on the ground. Two deep-set eyes and a thin wobbly mouth pressed into the sand.
-/// She throws clumps of sand from a pseudopod. Signature: she slumps down into a low heap of sand, her eyes just
-/// peeping out of the top, and slowly rises again.
+/// Mrs. Ghazi: a sand ooze, Clawd's block melted into one big dune of warm tan sand: a long gentle back and a steep slip
+/// face, long ripples slanting across it, lit along the top, darker damp sand low down, sand sagging over her legs and
+/// a stray grain or two falling to little heaps on the ground. Deep sunken eye
+/// holes with an amber gleam and a slack dark mouth pressed into the sand. She throws clumps of sand from a pseudopod.
+/// Signature: the whole dune slumps into a wide low heap, a true sandpile right down over her legs with only her toes
+/// showing, her eyes just peeping out near the top, and slowly rises again.
 private func drawMrsGhazi(_ c: PixelCanvas, _ p: Pose) {
     let sand = C(0xD8B472), sandD = C(0xAE8848), sandL = C(0xF0D49A), deep = C(0x4A361C)
+    let damp = C(0xC49E5E), gleam = C(0xFFC85A)
     let s = p.signature ?? -1
     let slump = v5Arc(s, 0.06, 0.94, edge: 0.32)
-    let sink = Int((slump * 10).rounded())
-    let sp = Int((slump * 4).rounded())
     let armed = p.fire != nil || p.gunLift > 0
 
     // 1. The legs, sand to the toes, shaded on their far side, a little heap of fallen sand by each outer foot.
@@ -345,65 +363,83 @@ private func drawMrsGhazi(_ c: PixelCanvas, _ p: Pose) {
             c.rect(lx + 1, 38, 1, bottom - 38, sandD)
             c.px(lx, 39 + i % 2, sandL)
         }
-        c.pattern(13, 42, [".dd.", "dDDd"], ["d": sandD, "D": sand])
-        c.pattern(39, 42, [".dd.", "dDDd"], ["d": sandD, "D": sand])
-    }
-
-    // 2. The trickles: a thin stream of sand running off each side down to its heap, a lighter grain sliding down.
-    if !seatedPose {
-        for (n, x) in [15, 40].enumerated() {
-            c.rect(x, 35, 1, 7, sandD)
-            let f = (p.lt * 1.4 + Double(n) * 0.5).truncatingRemainder(dividingBy: 1)
-            c.px(x, 35 + Int(f * 7), sandL)
+        // The little heaps and a stray grain or two falling to them; slumped, she's swallowed them, and at her foot
+        // they'd read as more toes than her four.
+        if slump < 0.3 {
+            c.pattern(13, 42, [".dd.", "dDDd"], ["d": sandD, "D": sand])
+            c.pattern(39, 42, [".dd.", "dDDd"], ["d": sandD, "D": sand])
+            for (n, x) in [15, 41].enumerated() {
+                let f = (p.lt * 0.9 + Double(n) * 0.5).truncatingRemainder(dividingBy: 1)
+                c.px(x, 37 + Int(f * 5), sandL)
+            }
         }
     }
 
-    // 3. The breath.
+    // 2. The breath.
     c.oy += p.breathe
 
-    // 4. The body: the block gone soft, a lumpy dome slumping into it, lower and wider as she sinks.
-    let top = 22 + sink
-    let foot = 37 + Int((slump * 3).rounded())   // the heap's bottom edge, down over the tops of the legs as she slumps
-    c.rect(18 - sp, top + 4, 20 + 2 * sp, foot + 1 - top - 4, sand)
-    if slump > 0.3 { c.rect(16 - sp, foot - 2, 24 + 2 * sp, 3, sand); c.rect(16 - sp, foot, 24 + 2 * sp, 1, sandD) }
-    v5Blob(c, 28, Double(top) + 5.5, 10.5 + Double(sp), 5.5, sand, maxY: top + 5)
-    v5Blob(c, 22, Double(top) + 3.5, 4, 3, sand, maxY: top + 5)
-    v5Blob(c, 33, Double(top) + 4, 3.5, 2.6, sand, maxY: top + 5)
-    v5Blob(c, 22, Double(top) + 2.2, 2.6, 1.0, sandL)
-    v5Blob(c, 28, Double(top) + 1.4, 3.2, 0.9, sandL)
-    c.rect(18 - sp, top + 5, 1, 32 - top, sandL)
-    c.rect(37 + sp, top + 5, 1, 32 - top, sandD); c.rect(18 - sp, foot, 20 + 2 * sp, 1, sandD)
-    // Drips sagging off her bottom edge down the fronts of two legs.
+    // 3. The dune: one lopsided mound, column by column, a long gentle back on the left and a steep slip face on the
+    //    right, its crest off to the right of the middle; it slumps to a wide low heap, its foot sinking down over her
+    //    legs. Long ripples slant across it, not rings, damp and darker low down; lit along the top, the slip face in
+    //    shade.
+    let bottom = seatedPose ? 38 : 38 + Int((min(1, slump * 2.5) * 3).rounded())   // down over the legs early, no table
+    let height = 16 - slump * 7
+    let peak = 32 - slump * 4
+    let edgeL = 14 - slump * 7, edgeR = 41.5 + slump * 6
+    func surface(_ x: Int) -> Int? {
+        let px = Double(x) + 0.5
+        let u = px < peak ? (peak - px) / (peak - edgeL) : (px - peak) / (edgeR - peak)
+        guard u < 1 else { return nil }
+        // Rounded when she's up, sloping straight down like a poured heap as she slumps, so no flat rim forms.
+        let round = px < peak ? 2.4 - slump * 0.7 : 3.4 - slump * 1.6
+        return bottom - Int((height * (1 - pow(u, round))).rounded())
+    }
+    for x in Int(edgeL)...Int(edgeR) {
+        guard let y0 = surface(x), y0 <= bottom else { continue }
+        let slip = Double(x) > peak + 3
+        for y in y0...bottom {
+            let ripple = (y + x / 3 + 120) % 6 == 0
+            var col = y > bottom - 3 ? damp : sand
+            if slip { col = damp }
+            if ripple { col = sandD }
+            if y == y0 { col = slip ? sand : sandL }
+            if y == bottom { col = sandD }
+            c.px(x, y, col)
+        }
+    }
+
+    // 4. The sand sagging off her foot over the legs, a different length on each; gone when she's heaped up over them.
     if !seatedPose && slump < 0.3 {
-        c.rect(20, 38, 1, 2, sand); c.px(20, 40, sandD)
-        c.rect(32, 38, 1, 1, sand); c.px(32, 39, sandD)
+        for (x, n) in [(20, 3), (24, 1), (32, 2), (36, 1)] {
+            c.rect(x, bottom + 1, 2, n, sand); c.rect(x, bottom + n, 2, 1, sandD)
+        }
     }
 
-    // 5. The ripples, dune lines along her, and the drips sagging down her sides.
-    for (row, line) in [(top + 9, "dd.....dddd.....dd"), (top + 12, "...ddd......ddd...")] where row < 37 {
-        c.pattern(19, row, [line], ["d": sandD])
+    // 5. The face: sunken eye holes with an amber gleam deep in them, a shadow on the lid above, and a slack dark mouth
+    //    that closes up as she sinks.
+    let top = Double(bottom) - height
+    let ey = Int(top.rounded()) + 6 - Int((slump * 3).rounded())
+    for x in [22, 32] {
+        c.pattern(x, ey, [".DD.", "DDDD", "DDgD", ".DD."], ["D": deep, "g": gleam])
+        c.rect(x, ey - 1, 4, 1, sandD)
     }
-    let sag = Int((sin(p.lt * 1.6) * 1.2).rounded())
-    c.rect(17 - sp, top + 7, 1, 6 + sag, sand); c.px(17 - sp, top + 13 + sag, sandD)
-    c.rect(38 + sp, top + 8, 1, 4 - sag, sand); c.px(38 + sp, top + 12 - sag, sandD)
+    if slump < 0.35 {
+        let slack = Int(p.lt * 1.5) % 2
+        c.pattern(26, ey + 5, [".DDDD.", "DDDDDD", slack == 0 ? ".DDDD." : ".DD.D."], ["D": deep])
+    }
 
-    // 6. The face: deep-set eyes and a thin wobbly mouth, pressed into the sand.
-    let ey = min(top + 7, 33)
-    c.rect(22, ey, 2, 3, deep); c.rect(32, ey, 2, 3, deep)
-    c.px(22, ey - 1, sandD); c.px(23, ey - 1, sandD); c.px(32, ey - 1, sandD); c.px(33, ey - 1, sandD)
-    if ey + 4 <= 36 { c.pattern(25, ey + 4, ["d.dd.d", ".d..d."], ["d": deep]) }
-
-    // 7. The pseudopods: the far one a lump at her side; the near one too, or pushed out with a clump of sand on it.
-    let ay = 32 + Int((slump * 5).rounded())   // the pseudopods sink with her
-    c.rect(14 - sp, ay, 4, 3, sand); c.rect(14 - sp, ay + 2, 4, 1, sandD)
+    // 6. The pseudopods: the far one a lump at her side; the near one too, or pushed out with a clump of sand on it.
+    //    They melt into the heap as she slumps: left sticking out, they'd make a flat rim round her.
+    let sp = Int((slump * 6).rounded())
+    let lumps = slump < 0.12
+    if lumps { c.rect(13, 33, 4, 3, sand); c.px(13, 33, sandL); c.rect(13, 35, 4, 1, sandD) }
     if armed {
         c.rect(38 + sp, 30, 4, 3, sand); c.rect(41 + sp, 28, 3, 3, sand); c.rect(38 + sp, 32, 6, 1, sandD)
         if p.recoil == 0 {
             c.pattern(44 + sp, 26, [".LL", "LSS", "SSd"], ["L": sandL, "S": sand, "d": sandD])
         }
-    } else {
-        c.rect(38 + sp, ay, 3, 3, sand); c.rect(38 + sp, ay + 2, 3, 1, sandD)
-
+    } else if lumps {
+        c.rect(39, 33, 4, 3, sand); c.rect(39, 35, 4, 1, sandD)
     }
 }
 
@@ -765,7 +801,7 @@ private func evaSword(_ c: PixelCanvas, _ at: (x: Double, y: Double), _ angle: D
 }
 
 /// Eva: green and opalescent, Clawd in jade-green scales with a sheen of violet and sky-blue along them, a cobra's
-/// flared hood behind her head with pale belly scales down its front, a narrow snake's head with a yellow slit eye and
+/// hood spread below her head with pale belly scales down its middle, a narrow snake's head with a yellow slit eye and
 /// a flicking red tongue, four arms, a plum sash. She carries four swords: two crossed in an X on her back, their hilts
 /// over her shoulders, and two at her sash. She fights with all four, one in each hand. Signature: all four arms draw,
 /// the four blades fanned out round her with a glint.
@@ -810,22 +846,31 @@ private func drawEva(_ c: PixelCanvas, _ p: Pose) {
     c.rect(12, 27, 4, 3, scaleD); c.px(11, 29, scaleD); c.rect(14, 33, 3, 3, scaleD)
     if reach { c.rect(13, 24, 3, 4, scaleD) }
 
-    // 5. The hood behind her head: flared wide, dark at the rim, pale belly scales down its front.
-    v5Blob(c, 28, 19, 8, 8.5, scaleD)
-    v5Blob(c, 28.5, 19.5, 6.5, 7, scale)
-    c.rect(34, 13, 2, 14, belly)
-    for y in stride(from: 14, to: 27, by: 2) { c.rect(34, y, 2, 1, bellyD) }
-    c.pattern(22, 14, ["LL.", "L..", "L.."], ["L": scaleL])
-    c.pattern(23, 18, [".pp..pp.", "p..pp..p", ".pp..pp."], ["p": scaleL])   // the spectacle mark on the hood
+    // 5. The hood: a cobra's, spread wide below her head and narrowing to the neck, not a round shape of its own: dark
+    //    at the rim, ribbed, the pale belly scales running down its middle into the belly below. No marks on it that
+    //    could read as eyes.
+    let hoodHalf = [3, 5, 7, 8, 9, 9, 9, 9, 8, 8, 7, 6, 5, 5, 5, 5]
+    for (i, half) in hoodHalf.enumerated() {
+        let y = 11 + i
+        c.rect(29 - half, y, half * 2 + 1, 1, scaleD)
+        if half > 1 && i > 0 { c.rect(30 - half, y, half * 2 - 1, 1, scale) }
+    }
+    c.pattern(21, 14, ["L", "L", "L", "L"], ["L": scaleL])
+    c.pattern(22, 13, ["v", ".", ".", "."], ["v": violet])
+    for (a, b) in [((26.0, 25.0), (22.0, 16.0)), ((32.0, 25.0), (36.0, 16.0))] {
+        c.glowLine(a.0, a.1, b.0, b.1, core: scaleD, glow: C(0, 0), coreR: 0.5, glowR: 0.6)
+    }
+    c.rect(27, 13, 5, 14, belly)
+    for y in stride(from: 14, to: 27, by: 2) { c.rect(27, y, 5, 1, bellyD) }
 
     // 6. The body: jade, lit on the top and left with the opal sheen, scale strokes, the pale belly down the front,
     //    the plum sash with a sword hilt at either side.
     drawBody(c, Look(body: scale, shade: scaleD, arm: scale, eye: nil))
-    c.rect(19, 26, 12, 1, scaleL); c.rect(18, 27, 1, 9, scaleL)
+    c.rect(19, 26, 8, 1, scaleL); c.rect(18, 27, 1, 9, scaleL)
     c.rect(20, 27, 5, 1, violet); c.rect(18, 29, 1, 3, sky)
-    for (x, y) in [(21, 29), (25, 31), (29, 29), (22, 33)] { c.px(x, y, scaleD); c.px(x + 1, y + 1, scaleD) }
-    c.rect(32, 27, 5, 8, belly)
-    for y in [28, 30, 32, 34] { c.rect(32, y, 5, 1, bellyD) }
+    for (x, y) in [(21, 29), (23, 32), (33, 28), (33, 32)] { c.px(x, y, scaleD); c.px(x + 1, y + 1, scaleD) }
+    c.rect(27, 26, 5, 9, belly)
+    for y in [26, 28, 30, 32, 34] { c.rect(27, y, 5, 1, bellyD) }
     c.rect(18, 35, 20, 2, sash); c.rect(18, 35, 20, 1, sashL)
     if !drawn && p.melee == nil {
         for x in [20, 35] { c.rect(x, 32, 1, 3, C(0x3A2A4A)); c.rect(x - 1, 34, 3, 1, C(0xD8B040)) }
@@ -887,12 +932,14 @@ private func quanWing(_ c: PixelCanvas, _ sh: (Double, Double), _ a: (Double, Do
     c.glowLine(sh.0, sh.1, a.0, a.1, core: edge, glow: C(0, 0), coreR: 0.55, glowR: 0.65)
 }
 
-/// Quan Ch: Clawd in a long glowing robe, pale gold, a high collar and sky-blue trim down the front and round the
-/// hem, a soft glow round it; black hair in strands swept back off a stern brow. Wings of light behind him, see-through
-/// with pale blue ribs, folded up at rest, beating when he flies. His near hand, the left, glows pale cyan: his energy is
-/// pale cyan. Signature: the robe lifts him off the ground, the hem billowing, and the wings flare wide.
+/// Quan Ch: Clawd swallowed by a long glowing robe, pale gold: a tall collar rising either side of his face and crossing
+/// in a V under his chin, wide bell sleeves, a broad sky-blue sash knotted at the front with its ends hanging, sky-blue
+/// trim round the hem, a soft glow round it. Black hair swept back off a stern brow into a topknot with a pale cyan pin.
+/// Wings of light behind him, see-through with pale blue ribs, folded up at rest, beating when he flies. His near hand,
+/// the left, glows pale cyan: his energy is pale cyan. Signature: the robe lifts him off the ground, the hem billowing,
+/// and the wings flare wide.
 private func drawQuanCh(_ c: PixelCanvas, _ p: Pose) {
-    let robe = C(0xF0E2B0), robeD = C(0xC8B47A), robeL = C(0xFFF6D8), trim = C(0x4AB4F0)
+    let robe = C(0xF0E2B0), robeD = C(0xC8B47A), robeL = C(0xFFF6D8), trim = C(0x4AB4F0), trimL = C(0x8AD4FF)
     let rib = C(0x8AD4FF), edge = C(0xD8F2FF), fill = C(0x9ADCFF)
     let hair = C(0x1E1C24), hairL = C(0x46424E)
     let blue = C(0x5AE0FF), blueL = C(0xE8FCFF)
@@ -921,9 +968,9 @@ private func drawQuanCh(_ c: PixelCanvas, _ p: Pose) {
     // 5. The glow round the robe, soft and faint.
     v5Blob(c, 28, 33, 14, 11, C(0xFFF2B0, 0.12))
 
-    // 6. The face, Clawd's own orange; below it the long robe to the ground: pale gold, a high collar edged in sky
-    //    blue, lit on the left, folds by each leg, the trim down the front and round the hem, which flares and
-    //    billows as he lifts.
+    // 6. The face, Clawd's own orange, framed by the robe; the long robe to the ground: pale gold, lit on the left, folds
+    //    by each leg, the trim round the hem, which flares and billows as he lifts. The tall collar rises either side
+    //    of his face, edged in sky blue, and crosses in a V under his chin; the broad sash ties it in.
     drawBody(c, Look(body: clawdOrange, shade: clawdShade, arm: robe, eye: nil))
     let hem = seatedPose ? 39 : 42
     let billow = flare > 0.1 ? Int((sin(p.lt * 9) * 1.2).rounded()) : 0
@@ -932,13 +979,26 @@ private func drawQuanCh(_ c: PixelCanvas, _ p: Pose) {
     c.rect(16 - (flare > 0.1 ? 1 : 0), hem - 2, 24 + (flare > 0.1 ? 2 : 0), 2 + (billow > 0 ? 1 : 0), robe)
     c.rect(17, 34, 1, hem - 34, robeL); c.rect(18, 34, 1, hem - 35, robeL)
     c.rect(38, 34, 1, hem - 34, robeD); c.rect(37, 33, 1, 1, robeD)
-    if !seatedPose { for x in [22, 27, 30, 34] { c.rect(x, 36, 1, hem - 37, robeD) } }
+    if !seatedPose { for x in [22, 34] { c.rect(x, 38, 1, hem - 39, robeD) } }
     c.rect(16 - (flare > 0.1 ? 1 : 0), hem - 1, 24 + (flare > 0.1 ? 2 : 0), 1, trim)
-    c.rect(17, 33, 22, 1, trim); c.rect(16, 32, 3, 1, robe); c.rect(16, 33, 1, 1, trim)   // the high collar
-    c.rect(32, 34, 1, hem - 35, trim)
+    // The collar.
+    c.rect(17, 27, 3, 7, robe); c.rect(17, 27, 1, 7, robeL); c.rect(20, 27, 1, 6, trim)
+    c.rect(36, 27, 3, 7, robe); c.rect(38, 27, 1, 7, robeD); c.rect(35, 27, 1, 6, trim)
+    c.pattern(20, 33, [
+        "TTRRRRRRRRRRRRTT",
+        "RRTTRRRRRRRRTTRR",
+        "RRRRTTRRRRTTRRRR",
+        "RRRRRRTTTTRRRRRR",
+    ], ["T": trim, "R": robe])
+    // The sash, broad and sky blue, lit along its top, the knot at the front, its ends hanging.
+    if !seatedPose || hem > 38 {
+        c.rect(17, 37, 22, 2, trim); c.rect(17, 37, 22, 1, trimL)
+        c.rect(26, 36, 4, 3, trimL); c.rect(27, 37, 2, 1, trim)
+        if !seatedPose { c.rect(26, 39, 1, 2, trim); c.rect(29, 39, 1, 2, trim) }
+    }
 
-    // 7. The face and the hair: Clawd's eyes under a stern brow, black hair in strands swept back off it and down
-    //    the back of his head.
+    // 7. The face and the hair: Clawd's eyes under a stern brow, black hair in strands swept back off it into a
+    //    topknot on the crown, a pale cyan pin through it.
     c.rect(22, 29, 2, 3, ink); c.rect(31, 29, 2, 3, ink)
     c.rect(21, 28, 3, 1, hair); c.rect(30, 28, 3, 1, hair)
     c.pattern(16, 21, [
@@ -951,11 +1011,18 @@ private func drawQuanCh(_ c: PixelCanvas, _ p: Pose) {
         ".hhhhh................",
         "..hhh.................",
     ], ["h": hair, "H": hairL])
+    c.pattern(26, 17, [".hhhh.", "hHHhhh", "hhhhhh", ".hhhh."], ["h": hair, "H": hairL])
+    c.rect(24, 19, 10, 1, blue); c.px(33, 19, blueL)
 
-    // 8. The near hand, his left, glowing pale cyan: at his side, or forward and blazing as he casts.
-    c.rect(38, 33, 3, 3, robe); c.rect(38, 35, 3, 1, robeD)
-    let hx = casting ? 44 : 41, hy = casting ? 31 : 35
-    if casting { c.rect(40, 31, 4, 2, robe); c.rect(40, 32, 4, 1, robeD) }
+    // 8. The near sleeve, wide as a bell, and the near hand, his left, glowing pale cyan: at his side, or forward and
+    //    blazing as he casts. The far sleeve hangs behind.
+    c.rect(13, 33, 4, 6, robe); c.rect(13, 33, 1, 6, robeL); c.rect(13, 38, 4, 1, trim)
+    let hx = casting ? 44 : 44, hy = casting ? 31 : 38
+    if casting {
+        c.rect(39, 30, 4, 4, robe); c.rect(39, 33, 4, 1, robeD); c.rect(42, 30, 1, 4, trim)
+    } else {
+        c.rect(39, 32, 3, 7, robe); c.rect(41, 33, 1, 6, robeD); c.rect(39, 38, 3, 1, trim)
+    }
     let pulse = 0.5 + 0.5 * sin(p.lt * 6)
     c.circle(hx, hy, 3, blue.alpha(0.18 + 0.06 * pulse))
     c.circle(hx, hy, 2, blue.alpha(0.24))
