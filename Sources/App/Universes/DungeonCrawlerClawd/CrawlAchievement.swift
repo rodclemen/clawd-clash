@@ -18,10 +18,13 @@ import Foundation
 //
 // The System box is drawn as a layer, not the engine's caption: the caption is dark type on a cream backing, and this
 // is the System's own interface, blue with its block letters (`crawlText`). The letters have no lower case (they're
-// drawn as capitals) but do have "!". It sits clear above the status bubble's corner of the frame, so the bubble
-// never covers its lettering, and `markRoom` lifts the name tag over it. The loot box is drawn on their own picture
-// in `touch`, in front of them, so it gets the app's outline and reads on a dark desktop; the light, the flying
-// sparkles and the System box are a layer behind them.
+// drawn as capitals) but do have "!". It sits above the name tag, which stays where it always is: the engine draws
+// name tags over every layer, so a tag lifted over the box had the box slide behind it as it slammed down, and the
+// two stacked up nearly to the top of the window's scene. The status bubble may tuck over the box's bottom edge, never
+// its lettering. The box stands a little back from the way they face, so it overhangs a close opponent less. The loot
+// box is drawn on their own picture in `touch`, at their feet but behind whatever they hold, so it gets the app's
+// outline and reads on a dark desktop without hiding a blade; the light, the flying sparkles and the System box are a
+// layer behind them.
 
 /// A loot box's tier: how rare it is, and how it looks.
 enum CrawlLootTier: CaseIterable {
@@ -121,9 +124,18 @@ func crawlAchievement(k: Double, cast: Cast) -> CompactionLook? {
 
 private func ramp(_ x: Double, _ a: Double, _ b: Double) -> Double { max(0, min(1, (x - a) / (b - a))) }
 
-/// The System box: its size in art pixels (two lines of block letters, a rule between, a 1-pixel frame), not counting
-/// the glow round it.
-private let panelW = crawlTextWidth("YOU FORGOT EVERYTHING!") + 6, panelH = 17
+/// The second line's words, and the narrow gap between them: it's the line that sets how wide the box is.
+private let sublineWords = ["YOU", "FORGOT", "EVERYTHING!"], sublineGap = 3
+private let sublineW = sublineWords.reduce(0) { $0 + crawlTextWidth($1) } + sublineGap * (sublineWords.count - 1)
+/// The System box: its size in art pixels (two lines of block letters, a 1-pixel frame and a pixel inside it), not
+/// counting the glow round it.
+private let panelW = sublineW + 4, panelH = 16
+/// How far the box stands back from the way they face, so less of it hangs over whoever they're facing.
+private let panelBack = 6
+/// Rows from the head's top up to the box's bottom edge: room for a name tag wrapped onto two lines.
+private let tagRoom = 18
+/// The lowest the box's bottom edge goes over the status bubble: its frame on the bubble's top row, the words clear.
+private let bubbleTop = 1
 /// How far above the sprite's top the layer canvas reaches, for the System box over a tall head.
 private let headroom = 56
 /// The layer canvas's width; the character's middle is its middle.
@@ -138,11 +150,10 @@ struct CrawlAchievement: CompactionLook {
     let tier: CrawlLootTier
 
     // The System box.
-    /// Its top, in rows of their picture (negative: above its top edge), where it lands: clear of the head, and clear
-    /// of the status bubble that sits beside the head (rows 1 to 14, raised by `bubbleLift`), so the bubble never
-    /// covers its lettering. And the head's top, for the room the name tag needs over it.
+    /// Its top, in rows of their picture (negative: above its top edge), where it lands: clear of the name tag over
+    /// the head, and of the lettering's side of the status bubble that sits beside the head (rows 1 to 14, raised by
+    /// `bubbleLift`).
     let panelTop: Int
-    let headTop: Int
     /// Art pixels it's still above where it lands (slamming down), its sideways jolt on landing, the white flash of
     /// the landing, whether the second line is in yet (and its own little flash), and how much of it shows (it fades
     /// at the end).
@@ -167,15 +178,11 @@ struct CrawlAchievement: CompactionLook {
     let rays: Double
     let sparkles: Double
     let boxAlpha: Double
-    /// Room kept over the head for the System box, 0…1 of it: the name tag moves up first, and back down once it's gone.
-    let room: Double
 
     init(k: Double, tier: CrawlLootTier, cast: Cast) {
         self.k = k
         self.tier = tier
-        headTop = cast.drawnTop()
-        panelTop = max(2 - headroom, min(headTop - 3, -cast.bubbleLift) - panelH)
-        room = ramp(k, 0, 0.03) * (1 - ramp(k, 0.95, 1))
+        panelTop = max(2 - headroom, min(cast.drawnTop() - tagRoom, bubbleTop - cast.bubbleLift) - panelH + 1)
         // Down it slams, faster and faster; a jolt, a flash and a little bounce where it lands.
         let fall = ramp(k, 0.02, 0.06)
         let bounce = k > 0.06 && k < 0.09 ? Int((2 * sin(ramp(k, 0.06, 0.09) * .pi)).rounded()) : 0
@@ -199,9 +206,6 @@ struct CrawlAchievement: CompactionLook {
         boxAlpha = 1 - ramp(k, 0.88, 0.97)
     }
 
-    /// The name tag goes up over the System box (and its glow) while it's there.
-    var markRoom: Double { room * Double(headTop - panelTop + 2) }
-
     /// The System box over the head, and the loot box's light, behind them.
     func layers(cast: Cast, x: CGFloat, y: CGFloat, lift: CGFloat, scale: CGFloat, facing: CGFloat, t: Double) -> [StageLayer] {
         let c = PixelCanvas(layerW, Sprite.height + headroom)
@@ -209,19 +213,20 @@ struct CrawlAchievement: CompactionLook {
         func col(_ spriteX: Double) -> Double { Double(mid) + Double(facing < 0 ? -1 : 1) * (spriteX - Sprite.bodyCenterX) }
         crawlDrawLootLight(c, self, mouth: (col(Double(boxX) + 0.5), Double(headroom + ground - 7)), t: t)
         if panelDrop < 1000 {
-            crawlDrawSystemBox(c, self, x: mid - panelW / 2 + panelJolt, y: headroom + panelTop - panelDrop, t: t)
+            let back = facing < 0 ? panelBack : -panelBack
+            crawlDrawSystemBox(c, self, x: mid - panelW / 2 + back + panelJolt, y: headroom + panelTop - panelDrop, t: t)
         }
         guard let img = c.makeImage() else { return [] }
         let w = CGFloat(c.w) * scale, h = CGFloat(c.h) * scale
         return [StageLayer(image: img, rect: CGRect(x: (x - CGFloat(mid) * scale).rounded(), y: y + lift, width: w, height: h))]
     }
 
-    /// The loot box at their feet, in front of them.
+    /// The loot box at their feet, behind what they hold.
     func touch(_ sprite: PixelCanvas, t: Double) { crawlDrawLootBox(sprite, self, t: t) }
 }
 
 /// The System box, its top-left at (`x`, `y`): navy with a bright blue frame (lit top and left, deeper bottom and
-/// right) and a soft blue glow round it, NEW ACHIEVEMENT! in gold, a rule, then YOU FORGOT EVERYTHING! in white.
+/// right) and a soft blue glow round it, NEW ACHIEVEMENT! in gold, then YOU FORGOT EVERYTHING! in white.
 /// Landing, its frame and glow flash white; the second line flashes in the same way when it pops in.
 func crawlDrawSystemBox(_ c: PixelCanvas, _ a: CrawlAchievement, x: Int, y: Int, t: Double) {
     let al = a.panelAlpha
@@ -235,14 +240,17 @@ func crawlDrawSystemBox(_ c: PixelCanvas, _ a: CrawlAchievement, x: Int, y: Int,
     c.rect(x, y, w, h, navy)
     c.rect(x, y, w, 1, lit); c.rect(x, y, 1, h, lit)
     c.rect(x, y + h - 1, w, 1, deep); c.rect(x + w - 1, y, 1, h, deep)
-    let head = "NEW ACHIEVEMENT!", sub = "YOU FORGOT EVERYTHING!"
-    let hx = x + (w - crawlTextWidth(head)) / 2, sx = x + (w - crawlTextWidth(sub)) / 2
+    let head = "NEW ACHIEVEMENT!"
+    let hx = x + (w - crawlTextWidth(head)) / 2
     crawlText(c, hx, y + 3, head, C(0x7A4A10, al))                   // a shadow under the gold, so it stands up
     crawlText(c, hx, y + 2, head, C(0xFFD84A, al))
-    c.rect(x + 3, y + 8, w - 6, 1, C(0x2A64C8, al))
     if a.subline {
-        crawlText(c, sx, y + 10, sub, lerp(C(0xF0F6FF), C(0x9CD8FF), a.sublineFlash).alpha(al))
-        if a.sublineFlash > 0 { c.rect(x + 1, y + 9, w - 2, 7, C(0xFFFFFF, 0.3 * a.sublineFlash * al)) }
+        var sx = x + (w - sublineW) / 2
+        for word in sublineWords {
+            crawlText(c, sx, y + 9, word, lerp(C(0xF0F6FF), C(0x9CD8FF), a.sublineFlash).alpha(al))
+            sx += crawlTextWidth(word) + sublineGap
+        }
+        if a.sublineFlash > 0 { c.rect(x + 1, y + 8, w - 2, 7, C(0xFFFFFF, 0.3 * a.sublineFlash * al)) }
     }
 }
 
@@ -300,10 +308,12 @@ func crawlDrawLootLight(_ c: PixelCanvas, _ a: CrawlAchievement, mouth: (x: Doub
 /// lid, a band of trim down its middle and a clasp at the seam, lit on the left and shaded on the right. A celestial
 /// one is deep blue with stars twinkling all over it. Dropping, it's higher up; landing, it squats a row and puffs
 /// dust; rattling, it shakes a pixel each way, hops, and its lid lifts on a line of light; open, its mouth glows and
-/// the lid spins up and away.
-func crawlDrawLootBox(_ c: PixelCanvas, _ a: CrawlAchievement, t: Double) {
+/// the lid spins up and away, bright all the way. The chest goes behind what's on their picture already, so a drooping
+/// blade or a held hand stays in front of it; the flying lid and the dust go over everything.
+func crawlDrawLootBox(_ sprite: PixelCanvas, _ a: CrawlAchievement, t: Double) {
     guard a.boxDrop < 1000, a.boxAlpha > 0 else { return }
     let tier = a.tier, body = tier.body, trim = tier.trim, al = a.boxAlpha
+    let c = PixelCanvas(sprite.w, sprite.h)
     func p(_ col: Px) -> Px { col.alpha(al) }
     // Shake and hop while it rattles (in bursts that come closer together), squat a row as it lands.
     var dx = 0, up = a.boxDrop, lidUp = 0
@@ -342,12 +352,19 @@ func crawlDrawLootBox(_ c: PixelCanvas, _ a: CrawlAchievement, t: Double) {
     if tier == .celestial { crawlStars(c, x: x0 + 1, y: bodyTop + 1, w: 11, h: bottom - bodyTop - 1, alpha: al, t: t, seed: 3) }
     // The clasp at the seam.
     if !a.open { c.rect(x0 + 5, bodyTop - 1 - lidUp + (lidUp > 0 ? 0 : 1), 3, 2, p(trim.lit)) }
-    // The lid flying off, spinning, up and forward; gone as it fades.
+    // The chest behind what they hold: their picture back on top of it.
+    c.paste(sprite)
+    sprite.clear()
+    sprite.paste(c)
+    // The lid flying off, spinning, up and forward: in its lit colours and solid, so it keeps its outline and reads on
+    // a dark desktop, and gone quickly at the very end.
     if a.open && a.lidFlight < 1 {
         let f = a.lidFlight
         let lx = Double(boxX) + 0.5 + 9 * f, ly = Double(bodyTop - 2) - 30 * (1 - (1 - f) * (1 - f))
-        let fade = al * (1 - ramp(f, 0.5, 1))
-        prop(c, at: (lx, ly), angle: -f * 600, alpha: fade) { s in crawlDrawLid(s, tier, x: 13, y: 19, alpha: 1, t: t) }
+        let fade = al * (1 - ramp(f, 0.8, 1))
+        prop(sprite, at: (lx, ly), angle: -f * 600, alpha: fade) { s in
+            crawlDrawLid(s, tier, x: 13, y: 19, alpha: 1, t: t, bright: true)
+        }
     }
     // The dust puff where it landed: grey-gold pixels thrown out low either side.
     if a.dust > 0 && a.dust < 1 {
@@ -355,15 +372,17 @@ func crawlDrawLootBox(_ c: PixelCanvas, _ a: CrawlAchievement, t: Double) {
             let side = i % 2 == 0 ? -1.0 : 1.0
             let out = 7 + a.dust * (4 + noise(i * 5) * 5)
             let rise = a.dust * (1 + noise(i * 5 + 1) * 3)
-            c.px(boxX + Int(side * out), ground - 1 - Int(rise), C(0xE0D2B0, 0.8 * (1 - a.dust)))
+            sprite.px(boxX + Int(side * out), ground - 1 - Int(rise), C(0xE0D2B0, 0.8 * (1 - a.dust)))
         }
     }
 }
 
 /// The lid, 15 pixels wide and 3 tall, its top-left at (`x`, `y`): domed (its top row inset), lit along the top, the
-/// band of trim over it, shaded at the right.
-private func crawlDrawLid(_ c: PixelCanvas, _ tier: CrawlLootTier, x: Int, y: Int, alpha: Double, t: Double) {
-    let body = tier.body, trim = tier.trim
+/// band of trim over it, shaded at the right. `bright`: a step lighter all over, for the lid in the air, where a bronze
+/// one's shade would go dark against a dark desktop.
+private func crawlDrawLid(_ c: PixelCanvas, _ tier: CrawlLootTier, x: Int, y: Int, alpha: Double, t: Double, bright: Bool = false) {
+    let trim = tier.trim
+    let body = bright ? (face: tier.body.lit, lit: lerp(tier.body.lit, C(0xFFFFFF), 0.5), dark: tier.body.face) : tier.body
     c.rect(x + 1, y, 13, 1, body.lit.alpha(alpha))
     c.rect(x, y + 1, 15, 2, body.face.alpha(alpha))
     c.rect(x + 14, y + 1, 1, 2, body.dark.alpha(alpha))
