@@ -8,11 +8,12 @@ extension CrawlTrip {
     /// Floor Collapse, `k` (0…1) through its own part, over the whole of `r`. A big red countdown slams up in the
     /// middle of the old place, 00:00:03, in the System's block letters with a dark edge so it reads on anything, and
     /// ticks down a second at a time to 00:00:00, each tick a flash and a red pulse round the frame, the ground
-    /// shaking harder as it goes (0.04–0.36). At zero it blinks (0.36–0.46) while cracks run across the old place
-    /// along a grid of chunky blocks, each block cracking just before it goes. Then the floor gives way: the
-    /// blocks drop one after another, the middle of the floor first and the edges and the top last, each falling
-    /// faster as it goes and darkening, a rim of stone along its edges and dust puffing up where it was (0.36–0.92).
-    /// Below, the new place, in shadow at first, lighting up as the last of the old floor goes (0.55–0.97).
+    /// shaking harder as it goes (0.04–0.34). The old place stays whole until the count reaches zero; then it blinks
+    /// (0.34–0.46) while cracks run across the old place along a grid of chunky blocks, each block cracking just before
+    /// it goes. Then the floor gives way: the blocks drop one after another, the middle of the floor first and the
+    /// edges and the top last, each falling faster as it goes and darkening, a rim of stone along its edges and dust
+    /// puffing up where it was (0.36–0.81). Below, the new place, in shadow at first, lighting up only once the last
+    /// of the old floor is nearly gone, so nothing dark falls across it when it's lit (0.62–0.97).
     func drawFloorCollapse(_ ctx: CGContext, old: CGImage, new: CGImage, k: Double, in r: CGRect) {
         guard k > 0 else { ctx.drawShot(old, in: r); return }
         guard k < 1 else { ctx.drawShot(new, in: r); return }
@@ -33,12 +34,12 @@ extension CrawlTrip {
                 let mx = Double(x0 + x1) / 2, my = Double(row * bs + bs / 2)
                 let dx = abs(mx - Double(w) / 2) / Double(w / 2), dy = (Double(h) - my) / Double(h)
                 let far = min(1, (dx * dx * 0.8 + dy * dy * 1.1).squareRoot())
-                let start = 0.36 + 0.32 * far + 0.05 * noise(row * 37 + col * 11 + 300)
+                let start = 0.36 + 0.26 * far + 0.04 * noise(row * 37 + col * 11 + 300)
                 blocks.append(Block(x: x0, y: row * bs, w: x1 - x0, start: start))
             }
         }
         func drop(_ b: Block) -> Double {
-            let t = (k - b.start) / 0.2
+            let t = (k - b.start) / 0.16
             return t > 0 ? Double(h) * 1.25 * t * t : 0
         }
 
@@ -50,16 +51,16 @@ extension CrawlTrip {
 
         // The new place, below, in shadow until the old floor has gone.
         ctx.drawShot(new, in: r)
-        Self.wash(ctx, 0x0A0608, 0.8 * (1 - Self.span(k, 0.55, 0.97)), in: r)
+        Self.wash(ctx, 0x0A0608, 0.8 * (1 - Self.span(k, 0.62, 0.97)), in: r)
 
         // The old floor where it still stands, in one piece, then each falling block on its own.
         let standing = blocks.filter { drop($0) == 0 }
         if !standing.isEmpty {
             ctx.saveGState()
             ctx.clip(to: standing.map { art.frame($0.x, $0.y, $0.w, bs) })
-            // A touch bigger while it shakes, so no gap opens at the frame's edges.
-            let grow = quake > 0 ? -2 * px : 0
-            ctx.drawShot(old, in: r.insetBy(dx: grow, dy: grow).offsetBy(dx: shake.dx, dy: -shake.dy))
+            // It shakes at its true size, over a still copy of itself, so no gap opens at the frame's edges.
+            ctx.drawShot(old, in: r)
+            if quake > 0 { ctx.drawShot(old, in: r.offsetBy(dx: shake.dx, dy: -shake.dy)) }
             ctx.restoreGState()
         }
         for b in blocks {
@@ -78,13 +79,15 @@ extension CrawlTrip {
         for b in blocks {
             let dy = drop(b)
             if dy == 0 {
-                // A block cracks just before it goes: a jagged split along part of its top and down part of its
-                // side, so the cracks spread through the floor in the order it falls.
-                let lead = b.start - k
-                guard lead < 0.08 else { continue }
+                // A block cracks just before it goes, and never before the count reaches zero: a jagged split along
+                // part of its top and down part of its side, so the cracks spread through the floor in the order it
+                // falls.
+                let cracks = max(0.34, b.start - 0.035)
+                guard k >= cracks else { continue }
+                let done = (k - cracks) / (b.start - cracks)
                 let x = b.x + sx, y = b.y + sy, n = noise(b.x * 7 + b.y * 13 + 11)
-                let top = Int(Double(b.w) * (0.35 + 0.65 * (1 - lead / 0.08)))
-                let side = Int(Double(bs) * (0.3 + 0.7 * (1 - lead / 0.08)))
+                let top = Int(Double(b.w) * (0.35 + 0.65 * done))
+                let side = Int(Double(bs) * (0.3 + 0.7 * done))
                 let tx = n < 0.5 ? x : x + b.w - top
                 for i in 0..<top { c.px(tx + i, y + ((i / 3 + b.y) % 3 == 0 ? 1 : 0), rift) }
                 for i in 0..<side { c.px(x + ((i / 2 + b.x) % 3 == 0 ? 1 : 0), y + i, rift) }
