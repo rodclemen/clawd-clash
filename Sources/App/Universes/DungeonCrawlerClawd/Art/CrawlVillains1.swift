@@ -10,11 +10,11 @@ let crawlVillains1: [CrawlVillain: Persona] = [
 
 // MARK: - Maestro
 
-/// Maestro: a boar-faced orc, Clawd with grey-green hide, a big boar's snout pushed forward with its pink nostrils,
-/// small mean eyes under a heavy brow, a crest of black bristles over his head and down his back, an ivory tusk on the
-/// far side and a gold one on the near. A pink silk shirt half unbuttoned over his chest, gold chains on it, black
-/// trousers and shiny black shoes. He fights with his fists. Signature: the game-show host's turn: a microphone up to
-/// his snout, the tusky grin wide, a flourish of sparkle.
+/// Maestro: a boar-faced orc, Clawd with grey-green hide, one big boar's snout with two big nostrils in the middle of
+/// his face, small mean eyes under a heavy brow, a crest of black bristles over his head and down his back, an ivory
+/// tusk on the far side and a gold one jutting out on the near. A pink silk shirt half unbuttoned over his chest, a
+/// gold chain on it, black trousers and shiny black shoes. He fights with his fists. Signature: the game-show host's
+/// turn: a microphone held up in front of his snout, the tusky grin wide, a flourish of sparkle.
 private func drawMaestro(_ c: PixelCanvas, _ p: Pose) {
     let hide = C(0x7A8A62), hideD = C(0x58663E), hideL = C(0x98A87A)
     let snout = C(0xC89A8A), snoutD = C(0x9A6E62), nostril = C(0x4A2A2A)
@@ -35,9 +35,10 @@ private func drawMaestro(_ c: PixelCanvas, _ p: Pose) {
     // 2. The breath.
     c.oy += p.breathe
 
-    // 3. The body in grey-green hide; the near arm rises with the mic.
-    drawBody(c, Look(body: hide, shade: hideD, arm: silk, eye: nil), armRight: host ? 5 : 0)
-    c.rect(18, 26, 20, 1, hideL); c.rect(18, 26, 1, 7, hideL)
+    // 3. The body in grey-green hide, the head a little taller than Clawd's so the snout and tusks have room.
+    drawBody(c, Look(body: hide, shade: hideD, arm: silk, eye: nil))
+    c.rect(18, 24, 20, 2, hide); c.rect(37, 24, 1, 2, hideD)
+    c.rect(18, 24, 20, 1, hideL); c.rect(18, 24, 1, 9, hideL)
     c.rect(15, 33, 3, 3, silk); c.px(15, 33, silkL); c.rect(15, 35, 3, 1, silkD)
 
     // 4. The bristles: a crest of black bristles from his brow back over his head and down his back, in short strokes.
@@ -45,56 +46,48 @@ private func drawMaestro(_ c: PixelCanvas, _ p: Pose) {
         "........B.B.B.B.B.B.....",
         ".....B.BBBBBBBBBBBBB.B..",
         "...B.BBBlBBBlBBBBlBBBB..",
-        "..BBBBBBBBBBBBBBBBBBBB..",
         ".BBBBlBBBBBBBBBBBBBBBB..",
-        "..BBBBBBBBBBBBBBBBBBBB..",
         "...BBBBBBBBBBBBBBBBBBB..",
-        "....BB..................",
     ], ["B": bristle, "l": bristleL])
 
     // 5. The shirt: pink silk over the body, open to the middle of his chest with the hide showing, a wide collar, a
-    //    sheen on the left, the far side in shade; the gold chains over his chest.
-    c.rect(18, 32, 20, 6, silk)
-    c.rect(18, 32, 1, 6, silkL); c.rect(19, 33, 2, 1, silkL); c.rect(37, 32, 1, 6, silkD); c.rect(18, 37, 20, 1, silkD)
-    c.pattern(23, 32, [
-        "CC.......CC",
+    //    sheen on the left, the far side in shade; the gold chain over his chest.
+    c.rect(18, 34, 20, 4, silk)
+    c.rect(18, 34, 1, 4, silkL); c.rect(19, 35, 2, 1, silkL); c.rect(37, 34, 1, 4, silkD); c.rect(18, 37, 20, 1, silkD)
+    c.pattern(23, 34, [
+        "CHHHHHHHHHC",
         ".CHHHHHHHC.",
-        "..CHHHHHC..",
-        "...CHHHC...",
-        "....CsC....",
-    ], ["C": silkL, "H": hide, "s": silkD])
+        "..CCHHHCC..",
+    ], ["C": silkL, "H": hide])
     c.px(28, 37, C(0xF8F0F0))   // the first done-up button
-    c.pattern(24, 33, [
+    c.pattern(24, 34, [
         "g.......g",
-        ".g.....g.",
-        "..gGgGg..",
-        "....G....",
+        ".gg...gg.",
+        "...gGg...",
     ], ["g": gold, "G": goldD])
-    c.px(26, 34, hideD); c.px(29, 35, hideD)   // hair on his chest
 
-    // 6. The face: the brow heavy and low, small eyes under it, the snout pushed forward with its nostrils, the
-    //    tusks: ivory on the far side, gold on the near, and the grin.
-    c.rect(20, 27, 15, 1, hideD)
-    c.rect(22, 28, 2, 2, ink); c.rect(30, 28, 2, 2, ink)
-    c.px(22, 28, C(0xE8C040)); c.px(30, 28, C(0xE8C040))
-    c.pattern(30, 29, [
-        "....SSSSSSSS.",
-        "..SSSSSSSSSSS",
-        "..SSSSSSnSSnS",
-        "..SSSSSSnSSnS",
-        "...sssssssss.",
-    ], ["S": snout, "s": snoutD, "n": nostril])
-    c.rect(41, 30, 1, 3, snoutD)   // the flat end of the snout
+    // 6. The face: the brow heavy and low, small eyes under it; below them one big snout with two big nostrils, the
+    //    wide mouth under that, and a tusk standing clear either side of it, ivory on the far side and gold on the
+    //    near, jutting out past his cheek.
+    c.rect(20, 25, 16, 1, hideD)
+    c.rect(23, 26, 2, 2, ink); c.rect(32, 26, 2, 2, ink)
+    c.px(23, 26, C(0xE8C040)); c.px(32, 26, C(0xE8C040))
+    c.pattern(24, 28, [
+        ".LLLLLLLSSSS.",
+        "SSSnnSSSnnSSS",
+        "SSSnnSSSnnSSS",
+        ".sssssssssss.",
+    ], ["S": snout, "L": C(0xE4BCAC), "s": snoutD, "n": nostril])
     if grin {
-        c.pattern(27, 33, ["MWWWWWWWWM", ".MMMMMMMM."], ["M": C(0x3A1A1E), "W": C(0xF0E8D8)])
+        c.pattern(23, 32, ["MWWWWWWWWWWWWM", ".MMMMMMMMMMMM."], ["M": C(0x3A1A1E), "W": C(0xF0E8D8)])
     } else {
-        c.rect(28, 33, 8, 1, C(0x3A2A24))
+        c.rect(24, 32, 12, 1, C(0x3A2A24))
     }
-    c.pattern(26, 30, ["i.", "ii", "ii"], ["i": ivory])
-    c.pattern(36, 29, ["g.", "gG", "gG", "GG"], ["g": gold, "G": goldD])
+    c.pattern(20, 29, ["i.", "ii", "ii", "ii"], ["i": ivory])
+    c.pattern(38, 28, [".g", "gg", "gG", "gG", "GG"], ["g": gold, "G": goldD])
 
-    // 7. The fists: hide, the cuff of the silk sleeve; or, as host, the microphone up at his snout, a flourish of
-    //    sparkle round it.
+    // 7. The fists: hide, the cuff of the silk sleeve; or, as host, the microphone held up out in front of his snout,
+    //    a flourish of sparkle round it.
     func fist(_ x: Int, _ y: Int, _ a: Double) {
         c.rect(x - 1, y - 1, 3, 3, hide.alpha(a)); c.px(x - 1, y - 1, hideL.alpha(a)); c.rect(x - 1, y + 1, 3, 1, hideD.alpha(a))
         c.px(x + 1, y - 1, gold.alpha(a))   // a ring
@@ -102,10 +95,11 @@ private func drawMaestro(_ c: PixelCanvas, _ p: Pose) {
     if let a = p.melee {
         crawlPunch(c, angle: a, trail: p.trail, arm: silk, fist: fist)
     } else if host {
-        fist(39, 29, 1)
-        c.rect(40, 24, 2, 5, C(0x2A2A30)); c.rect(39, 22, 4, 3, C(0x8A8E98)); c.px(39, 22, C(0xD8DCE4))
+        c.rect(38, 33, 5, 3, silk); c.rect(38, 35, 5, 1, silkD)
+        fist(44, 32, 1)
+        c.rect(44, 25, 2, 6, C(0x2A2A30)); c.rect(43, 22, 4, 3, C(0x8A8E98)); c.px(43, 22, C(0xD8DCE4))
         if Int(p.lt * 8) % 2 == 0 {
-            for (x, y) in [(45, 20), (44, 16), (48, 23)] { c.px(x, y, C(0xFFF2A0)); c.px(x + 1, y, C(0xFFFFFF, 0.6)) }
+            for (x, y) in [(49, 20), (48, 16), (52, 23)] { c.px(x, y, C(0xFFF2A0)); c.px(x + 1, y, C(0xFFFFFF, 0.6)) }
         }
     } else {
         fist(39, 34, 1)
