@@ -10,11 +10,11 @@ let crawlHeroes5: [CrawlHero: Persona] = [
                      signature: 3.4, draw: drawPopovs),
     .miriamDom: Persona(name: "Miriam Dom", weapon: .saber, headTop: 11, signature: 4.0, draw: drawMiriamDom),
     .juiceBox: Persona(name: "Juice Box", weapon: .none, headTop: 19, signature: 4.2, draw: drawJuiceBox),
-    .gluteusMaxx: Persona(name: "Gluteus Maxx", weapon: .saber, headTop: 22, signature: 2.8, draw: drawGluteusMaxx),
+    .gluteusMaxx: Persona(name: "Gluteus Maxx", weapon: .saber, headTop: 23, signature: 2.8, draw: drawGluteusMaxx),
     .dongQuixote: Persona(name: "Dong Quixote", weapon: .saber, headTop: 21, signature: 3.4, draw: drawDongQuixote),
     .damascusSteel: Persona(name: "Damascus Steel", weapon: .saber, armoured: true, headTop: 22, signature: 3.6,
                             draw: drawDamascusSteel),
-    .anaconda: Persona(name: "Anaconda", weapon: .saber, headTop: 25, signature: 2.6, draw: drawAnaconda),
+    .anaconda: Persona(name: "Anaconda", weapon: .saber, headTop: 14, signature: 2.6, draw: drawAnaconda),
     .rosemarie: Persona(name: "Rosemarie", weapon: .blaster, shot: .thrown(C(0xF2C232)), muzzle: (43, 33),
                         handGun: false, headTop: 21, signature: 3.0, draw: drawRosemarie),
 ]
@@ -396,9 +396,15 @@ private func drawJuiceBoxGirl(_ c: PixelCanvas, _ p: Pose, blowing: Bool) {
     // 2. The breath.
     c.oy += p.breathe
 
-    // 3. The body, the far arm in the denim sleeve.
-    drawBody(c, Look(arm: denim, eye: nil))
-    c.px(15, 33, denimL); c.rect(15, 35, 3, 1, denimD)
+    // 3. The body. Her arms hang a pixel clear of it from the shoulder, so the sleeves don't run into the jacket: lit
+    //    on the left, a pale cuff, a bare hand.
+    torso(c, clawdOrange, clawdShade)
+    for x in [14, 39] {
+        c.rect(x, 33, 3, 3, denimD); c.rect(x, 33, 1, 3, denim)
+        c.rect(x, 35, 3, 1, denimL)
+        c.rect(x, 36, 3, 2, clawdOrange); c.rect(x, 37, 3, 1, clawdShade)
+    }
+    c.rect(14, 32, 4, 1, denimL); c.rect(38, 32, 4, 1, denim)
 
     // 4. The pink top, the leggings' waistband; the denim jacket hanging open either side, lit on the left, a collar,
     //    a pocket and a seam.
@@ -438,9 +444,9 @@ private func drawJuiceBoxGirl(_ c: PixelCanvas, _ p: Pose, blowing: Bool) {
         ".HHhH...............HH",
         ".hHHH...............Hh",
         ".HHhH...............hH",
-        ".HhH................H.",
-        ".HHh..................",
-        ".hH...................",
+        "..HhH...............H.",
+        "..HHh.................",
+        "..hH..................",
     ], ["H": hair, "h": hairD, "l": hairL])
 }
 
@@ -516,8 +522,9 @@ private func drawJuiceBoxRat(_ c: PixelCanvas, _ p: Pose) {
 
 // MARK: - Gluteus Maxx
 
-/// Gluteus Maxx: a short, hairy dancer, Clawd bare but for a shiny gold Speedo, dark hair in strokes on his chest, arms
-/// and legs, and a red hockey helmet with black vents, ear guards and a chin strap. He fights with a butt crush: he
+/// Gluteus Maxx: a short, hairy dancer, Clawd bare but for a shiny gold Speedo, a rug of dark hair on his chest, strokes
+/// of it on his arms and legs, and a small red hockey helmet perched on top, with black vents, ear guards and a chin
+/// strap. He fights with a butt crush: he
 /// turns his back on whoever he's fighting and bumps them with it, hard. Signature: he flexes, both arms up in a
 /// double biceps, a shine on each.
 private func drawGluteusMaxx(_ c: PixelCanvas, _ p: Pose) {
@@ -566,10 +573,13 @@ private func drawGluteusMaxx(_ c: PixelCanvas, _ p: Pose) {
         c.rect(16, 33, 1, 2, hairC); c.rect(39, 33, 1, 2, hairC)
     }
 
-    // 4. Chest hair in strokes down his sides (not on his back).
+    // 4. Chest hair (not on his back): a patch in strokes on each side and a line down the middle to the Speedo.
     if !fighting {
-        c.pattern(19, 32, ["h..", ".h.", "h.h"], ["h": hairC])
-        c.pattern(34, 32, ["..h", ".h.", "h.h"], ["h": hairC])
+        c.pattern(20, 32, [
+            ".hh.h......h.hh.",
+            "hh.hh..hh..hh.hh",
+            ".h.h...hh...h.h.",
+        ], ["h": hairC])
     }
 
     // 5. The gold Speedo: a lit band at the top, shining, cut in a V at the front; from behind, a plain band.
@@ -591,25 +601,22 @@ private func drawGluteusMaxx(_ c: PixelCanvas, _ p: Pose) {
         c.rect(21, 28, 3, 1, hairC); c.rect(32, 28, 3, 1, hairC)
     }
 
-    // 7. The red hockey helmet: the shell lit along its top, black vent slots, ear guards down the sides, the chin
-    //    strap under his jaw.
-    c.pattern(17, 22, [
-        "......HHHHHHHHHH......",
-        "....HHLLLLLLLLHHHH....",
-        "...HLLHHVHHHHVHHHHH...",
-        "..HLHHHHVHHHHVHHHHHd..",
-        ".HHHHHHHHHHHHHHHHHHHd.",
-        ".HHHHHHHHHHHHHHHHHHHHd",
-        ".ddddddddddddddddddddd",
-        ".HHH..............HHHd",
-        ".HHH..............HHd.",
-        "..Hs..............sd..",
-    ], ["H": helmet, "L": helmetL, "d": helmetD, "V": vent, "s": vent])
+    // 7. The red hockey helmet, perched on top so his face and chest stay in view: the shell lit along its top, black
+    //    vent slots, small ear guards at the sides, the chin strap under his jaw.
+    c.pattern(19, 23, [
+        "....HHHHHHHHHH....",
+        "..HHLLLLLLLLHHHH..",
+        ".HLHVVVHHHHVVVHHd.",
+        "HHHHHHHHHHHHHHHHHd",
+        "dddddddddddddddddd",
+        "HH..............Hd",
+        "Hd..............dd",
+    ], ["H": helmet, "L": helmetL, "d": helmetD, "V": vent])
     if fighting {
-        c.rect(19, 29, 18, 2, helmet); c.rect(19, 30, 18, 1, helmetD)   // the back of the shell
-        c.rect(23, 29, 1, 1, vent); c.rect(32, 29, 1, 1, vent)
+        c.rect(19, 28, 18, 2, helmet); c.rect(19, 29, 18, 1, helmetD)   // the back of the shell
+        c.rect(23, 28, 2, 1, vent); c.rect(31, 28, 2, 1, vent)
     } else {
-        c.rect(20, 31, 1, 2, vent); c.rect(35, 31, 1, 2, vent)
+        c.rect(19, 30, 1, 2, vent); c.rect(36, 30, 1, 2, vent)
     }
     c.ox -= shove / 2
 
@@ -819,13 +826,14 @@ private func drawDamascusSteel(_ c: PixelCanvas, _ p: Pose) {
 
 // MARK: - Anaconda
 
-/// Anaconda: a snake-man, Clawd in purple scales with a viper's broad head, flaring out wide at the jaw, a paler
-/// belly of scutes down his front, slit yellow eyes, a forked pink tongue that flicks out now and then, and a long
+/// Anaconda: a snake-man, Clawd in purple scales, his bare chest standing clear with a viper's broad head above it on
+/// a neck, flaring out wide at the jaw, a dark mark on its crown, a pale belly of scutes running from his chin to his
+/// belt, slit yellow eyes, a forked pink tongue that flicks out now and then, and a long
 /// purple tail out behind him. Shirtless, in tight black dancer's trousers with a silver-studded belt. He fights with
 /// his fists. Signature: a dancer's spin, turning on the spot twice, his arms out.
 private func drawAnaconda(_ c: PixelCanvas, _ p: Pose) {
     let scale = C(0x7E3EA0), scaleD = C(0x5A2A76), scaleL = C(0xA466C4)
-    let belly = C(0x9E64BC), bellyD = C(0x8A52A8)
+    let belly = C(0xC89CE0), bellyD = C(0x9E64BC)
     let eye = C(0xF2D23A), pants = C(0x1E1C22), pantsL = C(0x3A3842), stud = C(0xC8CCD4)
     let tongue = C(0xE8466A)
     let s = p.signature ?? -1
@@ -871,30 +879,37 @@ private func drawAnaconda(_ c: PixelCanvas, _ p: Pose) {
             u.rect(11, 31, 7, 2, scale); u.rect(11, 31, 7, 1, scaleL)
             u.rect(38, 31, 7, 2, scale); u.rect(38, 31, 7, 1, scaleL)
         }
-        u.rect(18, 31, 20, 1, scaleL); u.rect(18, 31, 1, 5, scaleL)
-        for (x, y) in [(19, 33), (34, 33)] { u.pattern(x, y, ["d.d", ".d."], ["d": scaleD]) }
+        u.rect(18, 26, 20, 1, scaleL); u.rect(18, 26, 1, 10, scaleL)
+        for (x, y) in [(19, 28), (34, 28), (19, 32), (34, 32)] { u.pattern(x, y, ["d.d", ".d."], ["d": scaleD]) }
 
-        // The viper's head: flaring out wide at the jaw on both sides, lit along its top.
-        u.pattern(15, 25, [
-            "....LLLLLLLLLLLLLLLL....",
-            ".LLSSSSSSSSSSSSSSSSSSSL.",
-            "LSSSSSSSSSSSSSSSSSSSSSSd",
-            "SSSSSSSSSSSSSSSSSSSSSSSd",
-            ".SSSSSSSSSSSSSSSSSSSSSd.",
-            "..SSSSSSSSSSSSSSSSSSSd..",
-            "...dddddddddddddddddd...",
-        ], ["S": scale, "L": scaleL, "d": scaleD])
+        // The neck, rising from his shoulders.
+        u.rect(24, 22, 8, 5, scale); u.rect(24, 22, 1, 5, scaleL); u.rect(31, 22, 1, 5, scaleD)
+
+        // The viper's head: flaring out wide at the jaw on both sides, lit along its top, a dark mark on its crown.
+        u.pattern(19, 14, [
+            ".....LLLLLLLL.....",
+            "...LLSSDDDDSSLL...",
+            "..LSSSSSDDSSSSSd..",
+            ".LSSSSSSSSSSSSSSd.",
+            "LSSSSSSSSSSSSSSSSd",
+            "SSSSSSSSSSSSSSSSSd",
+            ".SSSSSSSSSSSSSSSd.",
+            "..SSSSSSSSSSSSSd..",
+            "...dddddddddddd...",
+        ], ["S": scale, "L": scaleL, "d": scaleD, "D": scaleD])
 
         if !back {
-            // The paler belly, its scutes, low on his front.
-            u.rect(25, 33, 6, 3, belly)
-            u.rect(25, 35, 6, 1, bellyD)
-            // Slit yellow eyes under a heavy brow, and now and then the forked tongue.
-            u.rect(21, 28, 4, 1, scaleD); u.rect(31, 28, 4, 1, scaleD)
-            u.rect(21, 29, 3, 3, eye); u.rect(22, 29, 1, 3, ink)
-            u.rect(32, 29, 3, 3, eye); u.rect(33, 29, 1, 3, ink)
+            // The pale belly, its scutes in bands, from under his chin down to his belt.
+            u.rect(26, 23, 4, 4, belly); u.rect(26, 24, 4, 1, bellyD)
+            u.rect(23, 27, 10, 9, belly)
+            for y in [29, 31, 33, 35] { u.rect(23, y, 10, 1, bellyD) }
+            // Slit yellow eyes under a heavy brow, the long mouth, and now and then the forked tongue.
+            u.rect(21, 16, 4, 1, scaleD); u.rect(31, 16, 4, 1, scaleD)
+            u.rect(21, 17, 3, 3, eye); u.rect(22, 17, 1, 3, ink)
+            u.rect(32, 17, 3, 3, eye); u.rect(33, 17, 1, 3, ink)
+            u.rect(23, 20, 10, 1, scaleD)
             if (p.lt * 0.9).truncatingRemainder(dividingBy: 3) < 0.35 && turn < 0 {
-                u.pattern(27, 31, [".tt.", ".tt.", "t..t"], ["t": tongue])
+                u.pattern(26, 21, [".tt.", ".tt.", "t..t"], ["t": tongue])
             }
         }
 
