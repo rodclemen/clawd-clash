@@ -15,7 +15,7 @@ let crawlVillains7: [CrawlVillain: Persona] = [
                      headTop: 20, signature: 3.0, draw: drawGoblin),
     .tuskling: Persona(name: "Tuskling", headTop: 23, signature: 3.0, draw: drawTuskling),
     .pooka: Persona(name: "Pooka", weapon: .saber, headTop: 22, signature: 3.2, draw: drawPooka),
-    .cloneling: Persona(name: "Krakaren cloneling", headTop: 22, signature: 2.6, draw: drawCloneling),
+    .cloneling: Persona(name: "Krakaren cloneling", headTop: 20, signature: 2.6, draw: drawCloneling),
 ]
 
 // MARK: - Helpers
@@ -215,11 +215,12 @@ private func drawGrull(_ c: PixelCanvas, _ p: Pose) {
     }
 
     // 9. The near arm, down and out to his fist, and the molten axe in it: a black iron head, cracks glowing through
-    //    it, its bearded edge white-hot, on a dark haft with gold bands.
+    //    it, its bearded edge white-hot, on a thick pale ash haft with gold bands, so it stands out against his black
+    //    hide wherever the swing takes it.
     c.rect(42, 21, 3, 3, hide); c.rect(43, 23, 3, 3, hide); c.rect(45, 25, 2, 2, hide); c.px(42, 21, hideL)
     let hot = Int(p.lt * 6) % 2 == 0 ? C(0xFFF0A0) : C(0xFFD050)
     let axe = [
-        "..g.....",
+        "..gg....",
         "..hIc...",
         ".ihIIcO.",
         "iihIcIOY",
@@ -227,16 +228,16 @@ private func drawGrull(_ c: PixelCanvas, _ p: Pose) {
         "..hIcIOY",
         "..hIIOY.",
         "..hOO...",
-        "..h.....",
-        "..g.....",
-        "..h.....",
-        "..h.....",
-        "..h.....",
-        "..h.....",
-        "..g.....",
+        "..hH....",
+        "..gg....",
+        "..hH....",
+        "..hH....",
+        "..hH....",
+        "..hH....",
+        "..gg....",
     ]
     let axePal: [Character: Px] = ["I": C(0x2E2628), "i": C(0x48403E), "c": C(0xFF7A1A), "O": C(0xFF9A2A), "Y": hot,
-                                   "h": C(0x4A3222), "g": gold]
+                                   "h": C(0xD8B080), "H": C(0xA87A4C), "g": gold]
     let angle = p.melee ?? -62
     for (i, a) in p.trail.enumerated() {
         stamp(c, axe, axePal, pivot: (2.5, 12.5), at: (47, 28), angle: a, alpha: 0.3 / Double(i + 1))
@@ -293,25 +294,23 @@ private func drawEris(_ c: PixelCanvas, _ p: Pose) {
     // 4. Clawd's face and body, the arms in the coat's black sleeves.
     drawBody(c, Look(body: clawdOrange, shade: clawdShade, arm: blk, eye: nil))
 
-    // 5. The coat: long, black and white stripes two pixels wide, open down the front over the armour, the outer
-    //    edges black, the far side's white in shade, the hem flaring a pixel out; a striped collar standing up.
+    // 5. The coat: long, in a few broad black and white stripes, open down the front over the armour, the outer edges
+    //    black, the far side's white in shade, the hem flaring a pixel out. Each side is black, white, black: any
+    //    narrower and the stripes turn to a barcode at 1×.
     let hem = 40
     for x in 15...24 {
-        let dark = ((x - 15) / 2) % 2 == 0
+        let dark = x < 17 || x > 20
         let top = x < 17 ? 33 : 31
-        let bottom = x == 15 ? hem : hem
-        if x == 15 { c.rect(x, 37, 1, bottom - 36, blk); continue }
-        c.rect(x, top, 1, bottom - top + 1, dark ? blk : wht)
+        if x == 15 { c.rect(x, 37, 1, hem - 36, blk); continue }
+        c.rect(x, top, 1, hem - top + 1, dark ? blk : wht)
     }
     for x in 31...40 {
-        let dark = ((40 - x) / 2) % 2 == 0
+        let dark = x < 35 || x > 38
         let top = x > 38 ? 33 : 31
         if x == 40 { c.rect(x, 37, 1, hem - 36, blk); continue }
         c.rect(x, top, 1, hem - top + 1, dark ? blk : whtD)
     }
     c.rect(16, hem, 9, 1, blkL); c.rect(31, hem, 9, 1, blk)   // the hem
-    c.rect(24, 31, 1, hem - 30, blk); c.rect(31, 31, 1, hem - 30, blk)   // the open edges
-    c.rect(18, 36, 6, 1, blkL); c.rect(33, 36, 6, 1, blk)   // where the coat is belted in
 
     // 6. The breastplate between the coat's edges: silver, lit on the left, gold trim, a glowing seam down the
     //    middle and a magenta stone; plates of a skirt below it, then the legs showing under the open coat.
@@ -586,13 +585,13 @@ private func drawGoblin(_ c: PixelCanvas, _ p: Pose) {
 // MARK: - The Tuskling
 
 /// A Tuskling: one of Ball of Swine's warthog aristocrats on its own, short and stout: Clawd in pale pink with pointed
-/// dark-tipped ears, little black eyes, a pink snout with its nostrils, curved ivory tusks either side and a wart under
-/// each eye; a black tuxedo with lit lapels over a white shirt and a black bow tie, tuxedo trousers, pink trotters and
+/// dark-tipped ears, little black eyes, a broad pink snout with its nostrils and thick curved ivory tusks jutting up
+/// either side of it; a black tuxedo with lit lapels over a white shirt and a black bow tie, tuxedo trousers, pink trotters and
 /// a curly tail. He doesn't fight. Signature: he screws a gold monocle into his eye, lifts his snout, gives a haughty
 /// snort, and the monocle pops out.
 private func drawTuskling(_ c: PixelCanvas, _ p: Pose) {
     let pig = C(0xF4BCAC), pigD = C(0xD49284), pigL = C(0xFFDCD0), snout = C(0xE08A82), nostril = C(0x6A2E2E)
-    let tux = C(0x24242C), tuxL = C(0x46465A), shirt = C(0xF4F2EE), shirtD = C(0xC8C6D0), tusk = C(0xF6EEDA)
+    let tux = C(0x24242C), tuxL = C(0x46465A), shirt = C(0xF4F2EE), shirtD = C(0xC8C6D0), tusk = C(0xFFFBEE)
     let gold = C(0xE8C040), goldD = C(0xA88424)
     let s = p.signature ?? -1
     let placing = s > 0.08 && s < 0.2
@@ -631,10 +630,7 @@ private func drawTuskling(_ c: PixelCanvas, _ p: Pose) {
     let up = haughty ? 1 : 0
     c.rect(22, 29, 2, 2, ink); c.rect(32, 29, 2, 2, ink)
     if haughty { c.rect(22, 29, 2, 1, pigD); c.rect(32, 29, 2, 1, pigD) }
-    c.px(21, 32, pigD); c.px(34, 32, pigD)
-    c.pattern(25, 30 - up, [".SSSS.", "SSSSSS", "SnSSnS", ".ssss."], ["S": snout, "s": pigD, "n": nostril])
-    c.pattern(23, 31 - up, ["T.", "T.", "TT"], ["T": tusk])
-    c.pattern(31, 31 - up, [".T", ".T", "TT"], ["T": tusk])
+    c.pattern(24, 30 - up, [".SSSSSS.", "SSSSSSSS", "SSnSSnSS", ".ssssss."], ["S": snout, "s": pigD, "n": nostril])
 
     // 7. The tuxedo: black, lit lapels, the white shirt front between them, a black bow tie at the collar, two
     //    studs; the far side in shade.
@@ -645,6 +641,13 @@ private func drawTuskling(_ c: PixelCanvas, _ p: Pose) {
     c.pattern(25, 34, ["bb.bb", ".bbb."], ["b": ink])
     c.px(27, 34, C(0x3A3A48))
     c.px(27, 36, ink); c.px(28, 37, C(0x46465A))
+
+    // The tusks: short, thick and curved, jutting up out of his lower jaw either side of the snout, tips curling out,
+    // edged in dark so the ivory stands clear of the pale pink. Rooted over his collar, on the black of the tuxedo.
+    let tuskArt = ["oT...", "oTTo.", ".oTTo", "..TTo", "..TT."]
+    let tuskPal: [Character: Px] = ["T": tusk, "o": C(0x7A4238)]
+    c.pattern(21, 31 - up, tuskArt, tuskPal)
+    c.pattern(30, 31 - up, mirrored(tuskArt), tuskPal)
 
     // 8. The sleeves, white cuffs, pink trotter hands; the near one up at his eye placing the monocle.
     c.rect(15, 33, 3, 3, tux); c.rect(15, 35, 3, 1, shirt); c.px(15, 33, tuxL)
@@ -817,8 +820,8 @@ private func drawPookaGoat(_ c: PixelCanvas, _ p: Pose, bleat: Bool) {
 
 /// A Krakaren cloneling: a little pink tentacle blob, the Krakaren clone in miniature: the same deep coral pink, a
 /// small round mantle bulging out behind, Clawd's four legs as tentacles with pale suckers, a stubby one trailing
-/// behind and another curled in front. A tuft of blonde hair swept down over one eye like its mother's, cross little
-/// brows, a lash, a streak of running mascara under each eye and pursed red lips. It doesn't fight. Signature: like
+/// behind and another curled in front. A tall tuft of blonde hair swept across to one brow like its mother's, cross
+/// little brows, a lash, a streak of running mascara under each eye and pursed red lips. It doesn't fight. Signature: like
 /// mother like daughter, its little tentacle rises and wags at you like a finger.
 private func drawCloneling(_ c: PixelCanvas, _ p: Pose) {
     let skin = C(0xD8506E), skinD = C(0xA8344E), skinL = C(0xF07C98), sucker = C(0xF8C4D2)
@@ -863,15 +866,21 @@ private func drawCloneling(_ c: PixelCanvas, _ p: Pose) {
     c.pattern(32, 33, [".m", "m."], ["m": mascara])
     c.pattern(27, 34, ["LL", "lL"], ["L": lip, "l": C(0xD84A60)])
 
-    // 6. The hair: a little blonde tuft, spiky at the back, its fringe swept down and across.
-    c.pattern(19, 22, [
-        "..l.l.........",
-        ".lHlHHl.......",
-        "lHHHHHHlllHH..",
-        ".HhHHHHHHHHHHH",
-        "..HhHHhhHHHHhH",
-        "...HH....HHhhH",
-        "...........HhH",
+    // 6. The hair: its mother's manager-mom cut in miniature, standing up off its head: spiky at the back, high on top,
+    //    the fringe swept across and down in one sheet to its near brow; dark lowlights following the sweep.
+    c.pattern(18, 20, [
+        "..l.l.l............",
+        ".lHlHHlHHl.........",
+        "lHHHHHHHlllHH......",
+        ".HhHHHHHHHHlllHHH..",
+        "..HhHHHHhhHHHHHHHH.",
+        "...HHHHHHHHhhHHHHHH",
+        "...HH.....HHHHhhHHH",
+        "...........HHHHHhHH",
+        ".............HHHhHH",
+        "...............HhHH",
+        "................HHH",
+        "..................H",
     ], ["H": hair, "h": hairD, "l": hairL])
 
     // 7. The near tentacle: curled at rest; up beside its head, wagging, in the signature.
