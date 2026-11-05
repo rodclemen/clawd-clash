@@ -644,7 +644,8 @@ private let crawlCastleMasks: [([String], [Character: Px])] = [
     ([".....s.s.s...", "......sss....", "..sssssssss..", ".sKKKKKKKKKs.", "sKKKKKKKKKKKs", "sKK..KKK..KKs",
       "sKK..KKK..KKs", ".sKKKKdKKKKs.", "..sKKK.KKKs..", "...sKKKKKs...", "....sssss...."],
      ["s": C(0xC8CCD8), "K": C(0x18141E), "d": C(0x5A5A68)]),
-    (["..y.........y..", ".vVVVVVVVVVVVv.", "vVV..VVyVV..VVv", "vVV..VyVyV..VVv", ".vVVVVv.vVVVVv.", "..vvvv...vvvv.."],
+    (["......yyy......", ".....y..yy.....", ".vvvvvvvvvvvvv.", "vVVVVVVyVVVVVVv", "vV..VVyVyVV..Vv", "vVV.VVVyVVV.VVv",
+      ".vVVVVv.vVVVVv.", "...vvv...vvv..."],
      ["v": C(0x5A2A7A), "V": C(0x8A4AB0), "y": C(0xF0C850)]),
 ]
 
