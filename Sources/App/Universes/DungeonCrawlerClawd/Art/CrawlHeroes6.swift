@@ -12,14 +12,14 @@ let crawlHeroes6: [CrawlHero: Persona] = [
     .ferdinand: Persona(name: "Ferdinand", weapon: .lightning, magic: Magic(core: C(0xFFFBD8), glow: C(0xF4D21E)),
                         pivot: (35, 21), headTop: 13, signature: 2.8, draw: drawFerdinand),
     .quasar: Persona(name: "Quasar", weapon: .none, headTop: 11, signature: 3.0, draw: drawQuasar),
-    .rosetta: Persona(name: "Rosetta Thagra", weapon: .blaster, shot: .thrown(C(0x30303A)), muzzle: (43, 30),
+    .rosetta: Persona(name: "Rosetta Thagra", weapon: .blaster, shot: .thrown(C(0xFF9A2A)), muzzle: (43, 30),
                       handGun: false, headTop: 20, signature: 3.4, draw: drawRosetta),
     .tipid: Persona(name: "Tipid", weapon: .blaster, shot: .thrown(C(0xA8E040)), muzzle: (43, 31), handGun: false,
                     headTop: 17, signature: 3.0, draw: drawTipid),
     .formidable: Persona(name: "Princess Formidable", weapon: .blaster,
                          shot: .energy(core: C(0xE4F6FF), glow: C(0x2AA0FF)), muzzle: (51, 33), handGun: false,
                          headTop: 18, signature: 3.0, draw: drawFormidable),
-    .orthrus: Persona(name: "Orthrus", weapon: .saber, bulk: 4, headTop: 11, signature: 3.2, draw: drawOrthrus),
+    .orthrus: Persona(name: "Orthrus", weapon: .saber, bulk: 4, headTop: 8, signature: 3.2, draw: drawOrthrus),
     .garret: Persona(name: "Garret", weapon: .saber, headTop: 20, signature: 3.0, draw: drawGarret),
 ]
 
@@ -460,7 +460,7 @@ private func drawQuasar(_ c: PixelCanvas, _ p: Pose) {
 /// Rosetta Thagra: a Crest, Clawd in pinkish-tan leathery skin, bald, a few creases on her brow, gold earrings, stern
 /// thin brows and a dark red mouth; a teal pantsuit, its lapels round a white blouse, gold buttons. On her bald head
 /// sits her movable blob of hair, a purple tuft of strands. She throws black bombs, one always in her hand, its fuse
-/// fizzing. Signature: the hair blob slides across her head and back, changing colour as it goes.
+/// fizzing; in flight all you see is the lit fuse, orange, since black is lost on a dark desktop. Signature: the hair blob slides across her head and back, changing colour as it goes.
 private func drawRosetta(_ c: PixelCanvas, _ p: Pose) {
     let skin = C(0xC89A86), skinD = C(0xA07462), skinL = C(0xE4BCA8)
     let suit = C(0x2E7A80), suitD = C(0x1E5A60), suitL = C(0x4E9CA2), blouse = C(0xF2F0EC)
@@ -524,12 +524,13 @@ private func drawRosetta(_ c: PixelCanvas, _ p: Pose) {
 
 // MARK: - Tipid
 
-/// Tipid: a tall Crest, Clawd in dark leathery brown, his bald head rising tall above his brow, creased across, a pale
-/// scar slashed over it with its stitches; one brow cocked, the other eye in a squint, and a sideways grin up on one
-/// side. A long brown leather coat with its collar up, a bandolier of green poison vials across it, dark trousers and
+/// Tipid: a tall Crest, Clawd in leathery tan, his bald head rising tall and narrow out of his coat, a broad pale scar
+/// slashed over it with its stitches; one brow cocked, the other eye in a squint, and a sideways grin up on one side. A
+/// long dark brown leather coat, its collar turned up either side of his face and its tails hanging past his hips, a
+/// bandolier of green poison vials across it, dark trousers and
 /// boots. He throws the vials. Signature: the sideways grin goes wide, a glint on his teeth, and a thumbs up.
 private func drawTipid(_ c: PixelCanvas, _ p: Pose) {
-    let skin = C(0x9C7C60), skinD = C(0x765A42), skinL = C(0xBC9C7E)
+    let skin = C(0xB8926E), skinD = C(0x8C6A4C), skinL = C(0xD8B48E)
     let coat = C(0x5A3E28), coatD = C(0x3E2A1A), coatL = C(0x7A5838), strap = C(0xA88452)
     let vial = C(0xA8E040), vialD = C(0x6A9A20), vialL = C(0xE8FFB0), cork = C(0x9A6A3A)
     let scar = C(0xE8B4A8), tooth = C(0xF4F0E4)
@@ -544,31 +545,37 @@ private func drawTipid(_ c: PixelCanvas, _ p: Pose) {
     // 2. The breath.
     c.oy += p.breathe
 
-    // 3. The body in leathery brown; his tall bald head rising above it, lit along its top and on the left, creases
-    //    across it.
-    drawBody(c, Look(body: skin, shade: skinD, arm: coat, eye: nil), armRight: thumb ? 5 : 0)
-    c.pattern(18, 17, [
-        ".....LLLLLLLL.......",
-        "...LLSSSSSSSSSS.....",
-        "..LSSSSSSSSSSSSSS...",
-        ".LSSSSSSSSSSSSSSSd..",
-        ".LSSSSSSSSSSSSSSSSd.",
-        "LSSSSSSSSSSSSSSSSSSd",
-        "LSSSSSSSSSSSSSSSSSSd",
-        "LSSSSSSSSSSSSSSSSSSd",
-        "LSSSSSSSSSSSSSSSSSSd",
-    ], ["S": skin, "L": skinL, "d": skinD])
-    c.rect(18, 26, 1, 6, skinL)
-    c.rect(22, 21, 4, 1, skinD); c.rect(29, 22, 5, 1, skinD); c.rect(23, 24, 6, 1, skinD)
-
-    // 4. The scar slashed across his head, pale, its stitches crossing it.
-    for k in 0...9 {
-        let x = 22 + k, y = 18 + Int((Double(k) * 0.55).rounded())
-        c.px(x, y, scar)
-        if k % 3 == 1 { c.px(x, y - 1, skinD); c.px(x, y + 1, skinD) }
+    // 3. The coat's tails, hanging behind him either side of his legs.
+    if !seatedPose {
+        c.rect(15, 36, 3, 5, coat); c.rect(15, 36, 1, 5, coatL); c.rect(15, 40, 3, 1, coatD)
+        c.rect(38, 36, 2, 4, coatD)
     }
 
-    // 5. The face: the left brow cocked up, the right eye in a squint; the sideways grin, flat on the left and
+    // 4. His neck and face in leathery tan, narrower than the coat; his tall bald head rising above them, lit along
+    //    its top and on the left, one crease across it; the sleeves.
+    c.rect(20, 26, 16, 8, skin); c.rect(20, 26, 1, 6, skinL); c.rect(35, 26, 1, 7, skinD)
+    c.rect(15, 33, 3, 3, coat); c.rect(38, thumb ? 28 : 33, 3, 3, coat)
+    c.pattern(20, 17, [
+        "....LLLLLLLL....",
+        "..LLSSSSSSSSSS..",
+        ".LSSSSSSSSSSSSd.",
+        ".LSSSSSSSSSSSSd.",
+        "LSSSSSSSSSSSSSSd",
+        "LSSSSSSSSSSSSSSd",
+        "LSSSSSSSSSSSSSSd",
+        "LSSSSSSSSSSSSSSd",
+        "LSSSSSSSSSSSSSSd",
+    ], ["S": skin, "L": skinL, "d": skinD])
+    c.rect(22, 24, 5, 1, skinD)
+
+    // 5. The scar slashed across his head, broad and pale, its stitches crossing it.
+    for k in 0...9 {
+        let x = 23 + k, y = 18 + Int((Double(k) * 0.65).rounded())
+        c.rect(x, y, 1, 2, scar)
+        if k % 3 == 1 { c.px(x, y - 1, coatD); c.px(x, y + 2, coatD) }
+    }
+
+    // 6. The face: the left brow cocked up, the right eye in a squint; the sideways grin, flat on the left and
     //    turned up on the right, his teeth in it (wider, with a glint, in the signature).
     c.pattern(21, 26, ["..d", "dd."], ["d": C(0x4A3426)])
     c.rect(22, 29, 2, 3, ink)
@@ -582,8 +589,10 @@ private func drawTipid(_ c: PixelCanvas, _ p: Pose) {
         c.px(36, 27, C(0xFFFFFF, 0.5)); c.px(36, 29, C(0xFFFFFF, 0.5))
     }
 
-    // 6. The long leather coat from the collar down, the collar turned up and lit, the far side in shade; the tan
-    //    bandolier across it with four green vials in their loops, corked.
+    // 7. The long leather coat from the collar down, the collar turned up either side of his face, lit on the left,
+    //    the far side in shade; the tan bandolier across it with four green vials in their loops, corked.
+    c.pattern(16, 26, ["...L", "..LC", ".LCC", ".LCC", "LCCC", "LCCC", "LCCC"], ["L": coatL, "C": coat])
+    c.pattern(36, 26, ["d...", "Cd..", "CCd.", "CCd.", "CCCd", "CCCd", "CCCd"], ["d": coatD, "C": coat])
     c.rect(18, 33, 20, 5, coat)
     c.rect(18, 33, 20, 1, coatL); c.rect(18, 33, 1, 5, coatL); c.rect(36, 34, 2, 4, coatD)
     c.rect(27, 34, 1, 4, coatD)
@@ -592,7 +601,7 @@ private func drawTipid(_ c: PixelCanvas, _ p: Pose) {
         c.px(x, 34, cork); c.rect(x, 35, 2, 2, vial); c.px(x, 35, vialL); c.px(x + 1, 36, vialD)
     }
 
-    // 7. The near hand: a vial ready to throw (gone a moment as he throws it), or raised in a thumbs up.
+    // 8. The near hand: a vial ready to throw (gone a moment as he throws it), or raised in a thumbs up.
     if thumb {
         c.rect(38, 28, 3, 3, coat); c.px(38, 28, coatL)
         c.rect(40, 25, 4, 4, skin); c.rect(40, 25, 1, 4, skinL); c.rect(43, 26, 1, 3, skinD)
@@ -718,6 +727,7 @@ private func crawlH6PuppyHead(_ c: PixelCanvas, _ x: Int, _ y: Int, _ f: Orthrus
         ".FFFFFFFMMMM.",
     ], ["F": f.fur, "L": f.furL, "M": muzzle])
     if jaw > 0 {
+        c.rect(x + 2, y + 7, 6, jaw, f.fur)
         c.rect(x + 8, y + 7, 5, jaw, mouth)
         c.px(x + 9, y + 7, white); c.px(x + 11, y + 7, white)
     }
@@ -739,8 +749,8 @@ private func crawlH6PuppyHead(_ c: PixelCanvas, _ x: Int, _ y: Int, _ f: Orthrus
 }
 
 /// Orthrus: a huge two-headed puppy, Clawd grown chubby in fawn fur, lit on top, a cream belly, big soft paws, a
-/// short tail wagging; two floppy-eared puppy heads up on thick necks, the far one behind and a shade darker, each in
-/// a red collar with a gold tag. He bites. Signature: the far head sniffs the air, its nose twitching, while the near
+/// short tail wagging; two floppy-eared puppy heads on thick necks forking apart in a V, the far one high at the back
+/// and a shade darker, the near one out in front, each in a red collar with a gold tag. He bites. Signature: the far head sniffs the air, its nose twitching, while the near
 /// one licks, its pink tongue flicking out.
 private func drawOrthrus(_ c: PixelCanvas, _ p: Pose) {
     let near = OrthrusFur(fur: C(0xD8B07A), furD: C(0xB08A56), furL: C(0xF0CE98))
@@ -780,21 +790,22 @@ private func drawOrthrus(_ c: PixelCanvas, _ p: Pose) {
     c.rect(21, 34, 15, 3, cream); c.rect(21, 36, 15, 1, creamD)
     for (x, y) in [(20, 30), (26, 29), (32, 31)] { c.rect(x, y, 2, 1, near.furD) }
 
-    // 5. The far head, up behind on its neck in its red collar, sniffing in the signature.
-    c.rect(22, 18, 9, 10, far.fur); c.rect(30, 18, 1, 10, far.furD)
-    c.rect(22, 24, 9, 2, collar); c.rect(22, 24, 9, 1, collarL); c.px(28, 26, tag)
-    crawlH6PuppyHead(c, 21, 10, far, sniff: sniff)
+    // 5. The far head, high up at the back on its neck in its red collar, clear of the near one, sniffing in the
+    //    signature.
+    c.rect(20, 16, 9, 12, far.fur); c.rect(28, 16, 1, 12, far.furD)
+    c.rect(20, 23, 9, 2, collar); c.rect(20, 23, 9, 1, collarL); c.px(26, 25, tag)
+    crawlH6PuppyHead(c, 19, 8, far, sniff: sniff)
     if sniff {
-        c.px(36, 12, C(0xFFFFFF, 0.7)); c.px(37, 11, C(0xFFFFFF, 0.5))
+        c.px(34, 10, C(0xFFFFFF, 0.7)); c.px(35, 9, C(0xFFFFFF, 0.5))
     }
 
     // 6. The near head, out in front on its thick neck in a red collar; it lunges and snaps when he bites, and licks
     //    in the signature.
-    c.rect(31 + lunge / 2, 22, 9, 6, near.fur); c.rect(31 + lunge / 2, 22, 1, 6, near.furL)
-    c.rect(31 + lunge / 2, 25, 9, 2, collar); c.rect(31 + lunge / 2, 25, 9, 1, collarL); c.px(37 + lunge / 2, 27, tag)
-    crawlH6PuppyHead(c, 33 + lunge, 15, near, jaw: jaw, tongue: jaw > 0 ? 0 : lick)
+    c.rect(33 + lunge / 2, 23, 10, 5, near.fur); c.rect(33 + lunge / 2, 23, 1, 5, near.furL)
+    c.rect(33 + lunge / 2, 25, 10, 2, collar); c.rect(33 + lunge / 2, 25, 10, 1, collarL); c.px(40 + lunge / 2, 27, tag)
+    crawlH6PuppyHead(c, 38 + lunge, 16, near, jaw: jaw, tongue: jaw > 0 ? 0 : lick)
     if lunge >= 3, Int(p.lt * 12) % 2 == 0 {
-        c.px(48 + lunge, 18, C(0xFFFFFF, 0.8)); c.px(49 + lunge, 21, C(0xFFFFFF, 0.8)); c.px(48 + lunge, 24, C(0xFFFFFF, 0.8))
+        c.px(53 + lunge, 19, C(0xFFFFFF, 0.8)); c.px(54 + lunge, 22, C(0xFFFFFF, 0.8)); c.px(53 + lunge, 25, C(0xFFFFFF, 0.8))
     }
 
     // 7. The near forepaw at his chest.
