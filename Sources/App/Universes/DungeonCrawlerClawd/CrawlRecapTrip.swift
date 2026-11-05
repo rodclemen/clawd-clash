@@ -8,8 +8,9 @@ import Foundation
 
 extension CrawlTrip {
     /// Recap Episode, `k` (0…1) through its own part, over the whole of `r`. TV static creeps in over the old place a
-    /// speck at a time until it's all snow, a darker band rolling down through it (0–0.12); PREVIOUSLY ON flickers on
-    /// in big cream block letters on a black strip across the middle and the three dots tap in one by one (0.14–0.3),
+    /// speck at a time until it's all snow, a darker band rolling down through it (0–0.12); Odette's show cuts in: its
+    /// mantis medallion over a black strip across the middle, PREVIOUSLY ON in big cream block letters, centred, the
+    /// three dots tapping in one by one after them, and ODETTE'S AFTER HOURS in sage green under it (0.14–0.3); it
     /// holds, and breaks up back into the snow (0.44–0.52); the new place tunes in: the snow thins away, the picture
     /// rolls down the screen with the black blanking bar between frames, slower and slower until it settles, a few
     /// bands of it torn sideways and pulling straight (0.48–0.84); a last faint flicker of scan lines fades off it
@@ -79,12 +80,22 @@ extension CrawlTrip {
             var s = 4
             while s > 1 && crawlTextWidth(full, scale: s) > w * 82 / 100 { s -= 1 }
             if !art.wide && s > 3 { s = 3 }
-            let tw = crawlTextWidth(full, scale: s), th = 5 * s
-            let x = (w - tw) / 2, y = (h - th) / 2 - (art.wide ? 0 : h / 12)
+            // The words alone are centred, so they don't move as the dots come; the dots hang off their end.
+            let tw = crawlTextWidth(words, scale: s), th = 5 * s
+            let show = "ODETTE'S AFTER HOURS"
+            let ts = crawlTextWidth(show, scale: 2) <= w * 82 / 100 ? 2 : 1, showH = 5 * ts
+            // Stacked and centred: the medallion, its foot over the strip's top edge, then the strip with both lines.
+            let cell = art.wide ? 1 : 2, disc = 16 * cell
+            let pad = 2 * s, gap = s + 2, stripH = pad + th + gap + showH + pad, over = pad - 2
+            let top = (h - (2 * disc + stripH - over)) / 2
+            let stripY = top + 2 * disc - over
+            let x = (w - tw) / 2, y = stripY + pad
             let strip = PixelCanvas(w, h)
-            strip.rect(0, y - 2 * s, w, th + 4 * s, C(0x060608, 0.9))
-            strip.rect(0, y - 2 * s, w, max(1, s / 2), C(0xE23A3A))           // a thin red line, top and bottom
-            strip.rect(0, y + th + 2 * s - max(1, s / 2), w, max(1, s / 2), C(0xE23A3A))
+            strip.rect(0, stripY, w, stripH, C(0x060608, 0.9))
+            strip.rect(0, stripY, w, max(1, s / 2), C(0xE23A3A))              // a thin red line, top and bottom
+            strip.rect(0, stripY + stripH - max(1, s / 2), w, max(1, s / 2), C(0xE23A3A))
+            crawlText(strip, (w - crawlTextWidth(show, scale: ts)) / 2, y + th + gap, show, C(0xA8D07A), scale: ts)
+            recapMedallion(strip, w / 2, top + disc, cell: cell)
             let text = words + String(repeating: ".", count: dots)
             crawlText(strip, x + max(1, s / 2), y + max(1, s / 2), text, C(0x3A2A20), scale: s)   // a shadow under the cream
             crawlText(strip, x, y, text, C(0xFFF2D6), scale: s)
@@ -102,6 +113,44 @@ extension CrawlTrip {
             for y in stride(from: 0, to: h, by: 2) { c.rect(0, y, w, 1, C(0x000000, a)) }
         }
         art.show(ctx)
+    }
+}
+
+/// The mantis of Odette's set, front on (the medallion in her studio, Scenes.crawlStudio).
+private let recapMantis = [
+    ".d.................d.",
+    "..d...............d..",
+    "...d.............d...",
+    "....eegggggggggee....",
+    ".....ggggggggggg.....",
+    "......ggggggggg......",
+    ".......ggdddgg.......",
+    "........ggggg........",
+    ".........ggg.........",
+    "..........g..........",
+    "..l.......g.......l..",
+    "..ll......g......ll..",
+    "...ll.....g.....ll...",
+    "....lll..ggg..lll....",
+    "......llgggggll......",
+    ".........ggg.........",
+    "........ggggg........",
+    "........ggggg........",
+    "........ggggg........",
+    ".........ggg.........",
+    "..........d..........",
+]
+
+/// The show's medallion centred on (`x`, `y`), `cell` art pixels to one of the mantis's: a cream ring, a dark sage
+/// disc, the mantis on it, as it hangs on the studio's set.
+private func recapMedallion(_ c: PixelCanvas, _ x: Int, _ y: Int, cell: Int) {
+    c.circle(x, y, 16 * cell, C(0xC8B898)); c.circle(x, y, 15 * cell, C(0xE6D8BC)); c.circle(x, y, 13 * cell, C(0x22342A))
+    c.circle(x - 2 * cell, y - 2 * cell, 9 * cell, C(0x2A3E32))
+    let palette: [Character: Px] = ["d": C(0xA8D07A), "e": C(0xF0F4A8), "g": C(0x84B860), "l": C(0xB8E08A)]
+    for (row, line) in recapMantis.enumerated() {
+        for (col, ch) in line.enumerated() {
+            if let p = palette[ch] { c.rect(x + (col - 10) * cell - cell / 2, y + (row - 10) * cell - cell / 2, cell, cell, p) }
+        }
     }
 }
 
