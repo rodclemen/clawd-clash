@@ -74,11 +74,11 @@ extension CrawlTrip {
             let a = step(walls)
             guard a > 0 else { continue }
             let hex: UInt32 = since < 0.06 ? 0xFFFFFF : dot.kind.colour
-            let size = dot.kind == .boss ? 3 : 2
+            let size = (art.wide ? 4 : 3) + (dot.kind == .boss ? 2 : 0)
             if since < 0.06 { c.rect(dot.x - 1, dot.y - 1, size + 2, size + 2, C(hex, a * 0.5)) }
             if dot.kind == .monster && !blink && since > 0.1 { c.rect(dot.x, dot.y, size, size, C(0x8A1A20, a)); continue }
             c.rect(dot.x, dot.y, size, size, C(hex, a))
-            if dot.kind == .boss { c.rect(dot.x - 1, dot.y + 1, size + 2, 1, C(hex, a)) }
+            if dot.kind == .boss { c.rect(dot.x - 1, dot.y + size / 2, size + 2, 1, C(hex, a)) }
         }
 
         // The spell going off in the middle: a white spark and PING! over it.
@@ -125,7 +125,9 @@ private enum CrawlPingDot {
 }
 
 /// The dungeon map for a `w`×`h` frame: tiles of `tile` pixels, a room in the middle where the crew stand and rooms
-/// scattered round it, each joined to the middle one by an L of corridor; and the dots, in tile pixels.
+/// scattered round it, each joined to the middle one by an L of corridor; and the dots, in tile pixels. On the window's
+/// strip the tiles are bigger and the rooms fewer, in two rows either side of one long corridor, so the map doesn't
+/// turn into a stack of horizontal bands.
 private struct CrawlPingMap {
     let tile: Int, tw: Int, th: Int
     var cells: [Bool]
@@ -134,7 +136,8 @@ private struct CrawlPingMap {
 }
 
 private func crawlPingMap(_ w: Int, _ h: Int) -> CrawlPingMap {
-    let T = h > 130 ? 5 : 4
+    let wide = w * 5 > h * 12
+    let T = wide ? 6 : h > 130 ? 5 : 4
     let tw = w / T + 1, th = h / T + 1
     var m = CrawlPingMap(tile: T, tw: tw, th: th, cells: [Bool](repeating: false, count: tw * th))
     func carve(_ x: Int, _ y: Int, _ cw: Int, _ ch: Int) {
@@ -144,7 +147,7 @@ private func crawlPingMap(_ w: Int, _ h: Int) -> CrawlPingMap {
     carve(mx - 3, my - 2, 7, 5)
     // Rooms round the middle, one to each slot of a loose grid, a few slots left as solid rock.
     var rooms: [(x: Int, y: Int, w: Int, h: Int)] = []
-    let gx = max(3, tw / 12), gy = 3
+    let gx = max(3, tw / 12), gy = wide ? 2 : 3
     for j in 0..<gy {
         for i in 0..<gx {
             let n = j * 31 + i * 7
@@ -155,28 +158,31 @@ private func crawlPingMap(_ w: Int, _ h: Int) -> CrawlPingMap {
             let ry = j * sh + 1 + Int(noise(n + 504) * Double(max(1, sh - rh - 2)))
             if abs(rx + rw / 2 - mx) < 6 && abs(ry + rh / 2 - my) < 4 { continue }
             rooms.append((rx, ry, rw, rh)); carve(rx, ry, rw, rh)
-            // An L of corridor from the room to the middle: across, then up or down.
+            // An L of corridor from the room to the middle: across, then up or down; on the strip up or down first,
+            // so every room joins the one long corridor.
             let ax = rx + rw / 2, ay = ry + rh / 2
-            carve(min(ax, mx), ay, abs(ax - mx) + 1, 1)
-            carve(mx, min(ay, my), 1, abs(ay - my) + 1)
+            carve(min(ax, mx), wide ? my : ay, abs(ax - mx) + 1, 1)
+            carve(wide ? ax : mx, min(ay, my), 1, abs(ay - my) + 1)
         }
     }
     // The party round the middle; a monster or two in each room; the boss in the room farthest off.
-    for (dx, dy) in [(-3, -1), (2, -2), (-1, 2), (3, 1)] { m.dots.append((mx * T + dx * 2, my * T + dy * 2, .party)) }
+    for (dx, dy) in [(-3, -1), (2, -2), (-1, 2), (3, 1)] { m.dots.append((mx * T + dx * 3, my * T + dy * 3, .party)) }
     var farthest = -1, best = -1
     for (i, rm) in rooms.enumerated() {
         let d = abs(rm.x + rm.w / 2 - mx) + abs(rm.y + rm.h / 2 - my) * 2
         if d > best { best = d; farthest = i }
         let count = 1 + Int(noise(i * 9 + 600) * 2)
         for n in 0..<count {
-            let x = (rm.x * T) + 1 + Int(noise(i * 9 + n * 3 + 601) * Double(max(1, rm.w * T - 4)))
-            let y = (rm.y * T) + 1 + Int(noise(i * 9 + n * 3 + 602) * Double(max(1, rm.h * T - 4)))
+            // Each monster has its own share of the room's width, so two never run together into one blob.
+            let share = rm.w * T / count
+            let x = (rm.x * T) + n * share + 1 + Int(noise(i * 9 + n * 3 + 601) * Double(max(1, share - 6)))
+            let y = (rm.y * T) + 1 + Int(noise(i * 9 + n * 3 + 602) * Double(max(1, rm.h * T - 6)))
             m.dots.append((x, y, .monster))
         }
     }
     if farthest >= 0 {
         let rm = rooms[farthest]
-        m.dots.append(((rm.x + rm.w / 2) * T - 1, (rm.y + rm.h / 2) * T - 1, .boss))
+        m.dots.append(((rm.x + rm.w / 2) * T - 2, (rm.y + rm.h / 2) * T - 2, .boss))
     }
     return m
 }
