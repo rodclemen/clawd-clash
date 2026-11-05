@@ -305,10 +305,12 @@ extension Scenes {
             for y in stride(from: y0, to: g, by: s) {
                 let v = Double(y - y0) / span
                 let x = l.x + Int(Double(tx - l.x) * v), half = Int(Double(3 * s) + v * Double(14 * s))
-                c.rect(x - half, y, half * 2, s, C(0xFFF0C8, 0.07))
+                c.rect(x - half, y, half * 2, s, C(0xFFF0C8, 0.14))
+                c.rect(x - half / 2, y, half / 2 * 2, s, C(0xFFF4D8, 0.12))
             }
-            c.ellipse(tx, g + 3 * s, 18 * s, 3 * s, C(0xFFF0C8, 0.12))
-            c.ellipse(tx, g + 3 * s, 10 * s, 2 * s, C(0xFFF8E0, 0.10))
+            c.ellipse(l.x, l.y + 7 * s, 6 * s, 2 * s, C(0xFFF4D8, 0.45))
+            c.ellipse(tx, g + 3 * s, 18 * s, 3 * s, C(0xFFF0C8, 0.26))
+            c.ellipse(tx, g + 3 * s, 10 * s, 2 * s, C(0xFFF8E0, 0.24))
         }
         let n = f.bulbs.count, step = Int(t * 8)
         for (i, b) in f.bulbs.enumerated() where (i + step) % 3 == 0 && n > 0 {
@@ -320,18 +322,18 @@ extension Scenes {
 // MARK: - Havana, Eighth Floor
 
 /// One pastel colour of a Havana house: its wall, the shade, the light on its trim, and the deep shadow under its
-/// arcade.
+/// arcade. The walls are a shade deeper than the trim, late-afternoon pastels, so white outlines read on them.
 private struct CrawlHavanaPaint {
     let wall: Px, shade: Px, light: Px, deep: Px
 }
 
 private let crawlHavanaPaints = [
-    CrawlHavanaPaint(wall: C(0xC8848E), shade: C(0xA0646E), light: C(0xE0A4AC), deep: C(0x4A2830)),
-    CrawlHavanaPaint(wall: C(0x7CB49C), shade: C(0x5C947C), light: C(0xA0D0BC), deep: C(0x26403A)),
-    CrawlHavanaPaint(wall: C(0xD0B468), shade: C(0xA88C4C), light: C(0xE8CC90), deep: C(0x4A3C20)),
-    CrawlHavanaPaint(wall: C(0x7CA4C8), shade: C(0x5C84A8), light: C(0xA0C0DC), deep: C(0x26344A)),
-    CrawlHavanaPaint(wall: C(0xA48CC0), shade: C(0x846CA0), light: C(0xC4B0DC), deep: C(0x362C4E)),
-    CrawlHavanaPaint(wall: C(0xD89C74), shade: C(0xB07858), light: C(0xECBC98), deep: C(0x4A3020)),
+    CrawlHavanaPaint(wall: C(0xA8606C), shade: C(0x864C58), light: C(0xC8848E), deep: C(0x3A1E26)),
+    CrawlHavanaPaint(wall: C(0x4E8A72), shade: C(0x3C6E5A), light: C(0x7CB49C), deep: C(0x1E342E)),
+    CrawlHavanaPaint(wall: C(0xA88A44), shade: C(0x866C34), light: C(0xD0B468), deep: C(0x3A2E18)),
+    CrawlHavanaPaint(wall: C(0x4E7CA4), shade: C(0x3C6286), light: C(0x7CA4C8), deep: C(0x1E2A3C)),
+    CrawlHavanaPaint(wall: C(0x7C62A0), shade: C(0x604C80), light: C(0xA48CC0), deep: C(0x2A2240)),
+    CrawlHavanaPaint(wall: C(0xB0704C), shade: C(0x8C563A), light: C(0xD89C74), deep: C(0x3A2418)),
 ]
 
 private struct CrawlHavanaFrame {
@@ -379,7 +381,7 @@ extension Scenes {
 
         // The sky: a hot, hazy blue fading to cream at the horizon, deeper and bluer up high on the screen saver.
         if tall { c.gradient(0, g - 60 * s, C(0x4A84B8), C(0x8EC0D8), bands: 6) }
-        c.gradient(tall ? g - 60 * s : 0, g - 20 * s, C(0x8EC0D8), C(0xE8DCC0), bands: 5)
+        c.gradient(tall ? g - 60 * s : 0, g - 20 * s, C(0x8EC0D8), C(0xC8C4AC), bands: 5)
         // On the screen saver: a pall of smoke where the fire column ends, a few hazy clouds.
         if tall {
             for k in 0..<6 {
@@ -398,8 +400,8 @@ extension Scenes {
         // The far skyline: low blocks in the haze.
         for k in 0..<(c.w / (10 * s) + 1) {
             let h = (6 + Int(noise(k * 3 + 11) * 12)) * s
-            c.rect(k * 10 * s, g - 30 * s - h, 10 * s, h + 10 * s, C(0xC8C4C0))
-            c.rect(k * 10 * s, g - 30 * s - h, s, h + 10 * s, C(0xD8D4CC))
+            c.rect(k * 10 * s, g - 30 * s - h, 10 * s, h + 10 * s, C(0x9CA4AC))
+            c.rect(k * 10 * s, g - 30 * s - h, s, h + 10 * s, C(0xACB2B6))
         }
 
         crawlHavanaTower(c, g, f.tower, s)
@@ -451,7 +453,7 @@ extension Scenes {
     private static func crawlHavanaHouse(_ c: PixelCanvas, _ g: Int, _ x: Int, _ w: Int, _ h: Int, _ p: CrawlHavanaPaint,
                                          shutterTeal: Bool, _ s: Int) {
         let top = g - h, arcade = g - 13 * s, iron = C(0x2A2428)
-        let shutter = shutterTeal ? C(0x3A8A88) : C(0xF0ECE0)
+        let shutter = shutterTeal ? C(0x2E7472) : C(0xC8C0B0)
         c.rect(x, top, w, h, p.wall); c.rect(x, top, s, h, p.light); c.rect(x + w - s, top, s, h, p.shade)
         // The cornice, and a parapet over it.
         c.rect(x, top, w, s, p.light); c.rect(x, top + s, w, 2 * s, p.wall); c.rect(x, top + 3 * s, w, s, p.shade)
@@ -541,8 +543,9 @@ private struct CrawlLarracosFrame {
     var trench: Int
     /// The banners: each pole's column and its top.
     var poles: [(x: Int, top: Int)]
-    /// The castle's middle, the top of its hill, and its unit (bigger on the screen saver).
-    var castle: (x: Int, hill: Int, u: Int)
+    /// The castle's middle, the top of its hill, its unit on the screen saver (the siege towers' too), and the unit
+    /// it's drawn in, counted in halves: one and a half in the window, three on the screen saver.
+    var castle: (x: Int, hill: Int, u: Int, halves: Int)
     var smoke: [(x: Int, y: Int)]
 }
 
@@ -550,9 +553,9 @@ extension Scenes {
     /// Where things stand at Larracos, shared by the still picture and the moving layer: the trench's lip, the banner
     /// poles, the castle on its hill, and where the smoke rises from.
     private static func crawlLarracosFrame(_ c: PixelCanvas, _ g: Int) -> CrawlLarracosFrame {
-        let s = unit(g), u = isTall(c) ? 3 * s : s
+        let s = unit(g), tall = isTall(c), u = tall ? 3 * s : s
         let poles = [6, 30, 92].map { (x: c.w * $0 / 100, top: g - 54 * s) }
-        let castle = (x: c.w * 62 / 100, hill: g - 26 * s - 6 * u, u: u)
+        let castle = (x: c.w * 62 / 100, hill: tall ? g - 26 * s - 6 * u : g - 29 * s, u: u, halves: tall ? 6 * s : 3 * s)
         let smoke = [(x: c.w * 18 / 100, y: g - 26 * s), (x: c.w * 84 / 100, y: g - 27 * s)]
         return CrawlLarracosFrame(trench: g - 14 * s, poles: poles, castle: castle, smoke: smoke)
     }
@@ -581,7 +584,7 @@ extension Scenes {
         // The far hills.
         c.dunes(base: g - 27 * s, amp: Double(3 * s), freq: 0.02 / Double(s), phase: 1.3, bottom: g, C(0x8A8670), shade: C(0x9A9680))
 
-        crawlLarracosCastle(c, g, f.castle)
+        crawlLarracosCastle(c, g, f.castle, tall: tall)
 
         // The smoke still rising from the battlefield: dark columns leaning with the wind.
         for p in f.smoke {
@@ -637,47 +640,50 @@ extension Scenes {
         for x in stride(from: 0, to: c.w, by: 8 * s) { c.rect(x, g + 2 * s, s, c.h - g - 3 * s, C(0x342A20)) }
     }
 
-    /// The castle on its hill, in units of `u` (one place unit in the window, three on the screen saver): the hill
-    /// lit on its left, the keep behind, the curtain wall with its gate, two round towers under red cone roofs, and a
-    /// purple and gold banner on the keep (the castle's own lord, none of the three in the trenches).
-    private static func crawlLarracosCastle(_ c: PixelCanvas, _ g: Int, _ k: (x: Int, hill: Int, u: Int)) {
-        let u = k.u, cx = k.x
+    /// The castle on its hill, in units of `v` (one and a half place units in the window, three on the screen saver):
+    /// the hill lit on its left, the keep behind, the curtain wall with its gate, two round towers under red cone
+    /// roofs, and a purple and gold banner on the keep (the castle's own lord, none of the three in the trenches). In
+    /// the window's short strip it stands squatter, so that it can be wide and still fit under the top edge.
+    private static func crawlLarracosCastle(_ c: PixelCanvas, _ g: Int, _ k: (x: Int, hill: Int, u: Int, halves: Int), tall: Bool) {
+        func v(_ n: Int) -> Int { n * k.halves / 2 }
+        let cx = k.x, thin = max(1, v(1) / 2)
         let stone = C(0x8C8880), stoneD = C(0x6C6862), stoneL = C(0xA8A49C), slit = C(0x2A2828)
         // The hill: rounded, lit on the left, its right side in shade.
-        let rx = 72 * u, ry = 16 * u
+        let rx = v(72), ry = v(tall ? 16 : 4)
         for dy in 0..<(g - k.hill) {
-            let v = 1 - Double(dy) / Double(ry)
-            let half = v <= 0 ? rx : Int(Double(rx) * (1 - v * v).squareRoot())
+            let a = 1 - Double(dy) / Double(ry)
+            let half = a <= 0 ? rx : Int(Double(rx) * (1 - a * a).squareRoot())
             c.rect(cx - half, k.hill + dy, half * 2, 1, C(0x5E6648))
             c.rect(cx + half / 3, k.hill + dy, half * 2 / 3, 1, C(0x4E5640))
             c.rect(cx - half, k.hill + dy, max(1, half / 4), 1, C(0x6E7656))
         }
-        let base = k.hill + 2 * u
+        let base = k.hill + v(2)
         // The keep: a tall block behind the wall, crenels on top, arrow slits, a banner flying from a pole.
-        let kw = 20 * u, kt = base - 28 * u
-        c.rect(cx - kw / 2, kt, kw, base - kt, stone); c.rect(cx + kw / 2 - 5 * u, kt, 5 * u, base - kt, stoneD)
-        c.rect(cx - kw / 2, kt, u, base - kt, stoneL)
-        for x in stride(from: cx - kw / 2, to: cx + kw / 2, by: 4 * u) { c.rect(x, kt - 2 * u, 2 * u, 2 * u, stone) }
-        for x in [cx - 4 * u, cx + 3 * u] { c.rect(x, kt + 4 * u, u, 3 * u, slit) }
-        c.rect(cx, kt - 7 * u, max(1, u / 2), 5 * u, C(0x4A3420))
-        c.rect(cx + max(1, u / 2), kt - 7 * u, 5 * u, 3 * u, C(0x5A2A7A)); c.rect(cx + max(1, u / 2), kt - 6 * u, 5 * u, u, C(0xE8C050))
+        let kw = v(20), kt = base - v(tall ? 28 : 20), pole = v(tall ? 7 : 5)
+        c.rect(cx - kw / 2, kt, kw, base - kt, stone); c.rect(cx + kw / 2 - v(5), kt, v(5), base - kt, stoneD)
+        c.rect(cx - kw / 2, kt, v(1), base - kt, stoneL)
+        for x in stride(from: cx - kw / 2, to: cx + kw / 2, by: v(4)) { c.rect(x, kt - v(2), v(2), v(2), stone) }
+        for x in [cx - v(4), cx + v(3)] { c.rect(x, kt + v(4), v(1), v(3), slit) }
+        c.rect(cx, kt - pole, thin, pole - v(2), C(0x4A3420))
+        c.rect(cx + thin, kt - pole, v(5), v(3), C(0x5A2A7A)); c.rect(cx + thin, kt - pole + v(1), v(5), v(1), C(0xE8C050))
         // The curtain wall, crenellated, a dark gate in its middle.
-        let ww = 64 * u, wt = base - 14 * u
-        c.rect(cx - ww / 2, wt, ww, base - wt, stone); c.rect(cx - ww / 2, wt, ww, u, stoneL)
-        for x in stride(from: cx - ww / 2, to: cx + ww / 2, by: 4 * u) { c.rect(x, wt - 2 * u, 2 * u, 2 * u, stone) }
-        for y in stride(from: wt + 3 * u, to: base, by: 3 * u) { c.rect(cx - ww / 2, y, ww, max(1, u / 2), stoneD) }
-        c.rect(cx - 4 * u, base - 8 * u, 8 * u, 8 * u, slit); c.ellipse(cx, base - 8 * u, 4 * u, 2 * u, slit)
+        let ww = v(64), wt = base - v(tall ? 14 : 11)
+        c.rect(cx - ww / 2, wt, ww, base - wt, stone); c.rect(cx - ww / 2, wt, ww, v(1), stoneL)
+        for x in stride(from: cx - ww / 2, to: cx + ww / 2, by: v(4)) { c.rect(x, wt - v(2), v(2), v(2), stone) }
+        for y in stride(from: wt + v(3), to: base, by: v(3)) { c.rect(cx - ww / 2, y, ww, thin, stoneD) }
+        c.rect(cx - v(4), base - v(8), v(8), v(8), slit); c.ellipse(cx, base - v(8), v(4), v(2), slit)
         // The towers at either end: round (lit on the left, shaded on the right), red cone roofs.
-        for tx in [cx - ww / 2 - 4 * u, cx + ww / 2 - 4 * u] {
-            let tt = base - 20 * u
-            c.rect(tx, tt, 8 * u, base - tt, stone); c.rect(tx, tt, 2 * u, base - tt, stoneL); c.rect(tx + 5 * u, tt, 3 * u, base - tt, stoneD)
-            c.rect(tx + 3 * u, tt + 5 * u, u, 3 * u, slit)
-            for row in 0..<(9 * u) {
-                let half = (5 * u) * (9 * u - row) / (9 * u)
-                c.rect(tx + 4 * u - half, tt - row, half * 2, 1, C(0x8A3A2A))
-                c.rect(tx + 4 * u + half / 3, tt - row, max(0, half * 2 / 3), 1, C(0x6A2A20))
+        for tx in [cx - ww / 2 - v(4), cx + ww / 2 - v(4)] {
+            let tt = base - v(tall ? 20 : 15), roof = v(9)
+            c.rect(tx, tt, v(8), base - tt, stone); c.rect(tx, tt, v(2), base - tt, stoneL)
+            c.rect(tx + v(5), tt, v(8) - v(5), base - tt, stoneD)
+            c.rect(tx + v(3), tt + v(5), v(1), v(3), slit)
+            for row in 0..<roof {
+                let half = v(5) * (roof - row) / roof
+                c.rect(tx + v(4) - half, tt - row, half * 2, 1, C(0x8A3A2A))
+                c.rect(tx + v(4) + half / 3, tt - row, max(0, half * 2 / 3), 1, C(0x6A2A20))
             }
-            c.rect(tx - u, tt, 10 * u, u, C(0x5A2A20))
+            c.rect(tx - v(1), tt, v(10), v(1), C(0x5A2A20))
         }
     }
 
@@ -867,27 +873,35 @@ extension Scenes {
     }
 
     /// The fountain, half as big again as its units: a wide basin on a low foot, a fluted pedestal, a bowl on it and
-    /// a little spout bowl on top, all in warm grey marble; boiling water spills from each bowl into the next.
+    /// a little bowl on a stem on top, each narrowing to its foot, all in warm grey marble. The boiling water domes up
+    /// in the top bowl and spills over each lip in an arc, splashing into the bowl below.
     private static func crawlTempleFountain(_ c: PixelCanvas, _ g: Int, _ cx: Int, _ s: Int) {
         let marble = C(0xB8A8A0), shade = C(0x8E8078), light = C(0xD0C4BA), water = C(0x9CC8CC), waterL = C(0xD8F0F0)
         func r(_ dx: Int, _ dy: Int, _ w: Int, _ h: Int, _ col: Px) { crawlBig(c, cx, g, dx, dy, w, h, 7 * s, 5, col) }
-        // The spout on top and the bowl under it.
-        r(-2, 34, 4, 8, marble); r(1, 34, 1, 8, shade)
-        r(-4, 36, 8, 2, light); r(-3, 37, 6, 1, water)
-        r(-5, 35, 1, 9, water.alpha(0.75)); r(4, 35, 1, 9, water.alpha(0.75))
+        // The stem and the top bowl: a wide lip narrowing in steps to the stem, the water domed up over it.
+        r(-2, 31, 4, 5, marble); r(1, 31, 1, 5, shade); r(-2, 31, 1, 5, light)
+        r(-7, 36, 14, 1, water); r(-3, 37, 6, 1, water); r(-1, 38, 2, 1, waterL); r(-4, 36, 3, 1, waterL)
+        r(-8, 35, 16, 2, light); r(-7, 33, 14, 1, marble); r(-6, 32, 12, 1, marble); r(-4, 31, 8, 1, marble)
+        r(2, 33, 5, 1, shade); r(2, 32, 4, 1, shade); r(1, 31, 3, 1, shade)
         // The pedestal.
         r(-4, 22, 8, 12, marble); r(2, 22, 2, 12, shade); r(-2, 22, 1, 12, shade); r(-4, 22, 1, 12, light)
         // The middle bowl.
-        r(-13, 27, 26, 1, water); r(-9, 27, 4, 1, waterL)
+        r(-13, 27, 26, 1, water)
         r(-14, 26, 28, 2, light); r(-12, 24, 24, 2, marble); r(4, 24, 8, 2, shade); r(-8, 22, 16, 1, shade)
-        // Water spilling from its lip into the basin.
-        r(-15, 25, 1, 13, water.alpha(0.7)); r(14, 25, 1, 13, water.alpha(0.7))
         // The basin: its water, a lit rim, the marble front shaded on the right, veins, a foot.
-        r(-25, 12, 50, 1, water); r(-20, 12, 6, 1, waterL)
+        r(-25, 12, 50, 1, water)
         r(-26, 11, 52, 2, light); r(-26, 9, 52, 1, shade)
         r(-24, 8, 48, 6, marble); r(10, 8, 14, 6, shade)
         for (vx, vy) in [(-18, 7), (-15, 6), (-12, 5), (4, 6), (6, 5)] { r(vx, vy, 2, 1, C(0xA0928A)) }
         r(-21, 2, 42, 2, shade)
+        // The water going over the lips, either side: an arc leaning out as it falls, a splash where it lands.
+        let arcs = [(11, 51, 2), (12, 50, 5), (13, 46, 4), (14, 43, 4), (15, 40, 4),
+                    (19, 38, 2), (20, 37, 7), (21, 31, 7), (22, 25, 7), (23, 19, 4)]
+        for side in [-1, 1] {
+            for (out, top, h) in arcs { c.rect(side < 0 ? cx - (out + 2) * s : cx + out * s, g - top * s, 2 * s, h * s, water) }
+            r(side < 0 ? -13 : 9, 27, 4, 1, waterL)
+            r(side < 0 ? -21 : 17, 12, 4, 1, waterL)
+        }
     }
 
     /// The charred stump, half as big again as its units: black and split, its top jagged, a broken branch, roots
@@ -998,14 +1012,14 @@ extension Scenes {
         let cx = f.fountain, tick = Int(t * 5)
         for k in 0..<5 {
             let n = noise(tick * 7 + k * 13)
-            let (y, span) = k < 3 ? (g - 13 * s, 46) : (g - 28 * s, 24)
+            let (y, span) = k < 3 ? (g - 17 * s, 46) : (g - 38 * s, 24)
             let bx = cx - span * s / 2 + Int(n * Double(span * s))
             c.rect(bx, y, s, s, C(0xF0FFFF, 0.9))
             if noise(tick * 7 + k * 13 + 1) > 0.5 { c.rect(bx - s, y, 3 * s, s, C(0xF0FFFF, 0.5)) }
         }
         for k in 0..<4 {
             let rise = (t * 0.5 + Double(k) * 0.25).truncatingRemainder(dividingBy: 1)
-            let baseY = k % 2 == 0 ? g - 14 * s : g - 29 * s
+            let baseY = k % 2 == 0 ? g - 18 * s : g - 39 * s
             let x = cx + (k - 2) * 7 * s + Int(sin(t * 1.5 + Double(k)) * Double(2 * s))
             c.ellipse(x, baseY - Int(rise * 16) * s, (2 + Int(rise * 3)) * s, (1 + Int(rise * 2)) * s, C(0xF4F8F8, 0.22 * (1 - rise)))
         }
