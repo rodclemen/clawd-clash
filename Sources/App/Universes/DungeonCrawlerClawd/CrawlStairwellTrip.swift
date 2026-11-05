@@ -48,8 +48,12 @@ extension CrawlTrip {
         }
 
         // The shaft. `u` is depth (a course of stone a unit), running on as we go down; `a` the way round, turning.
+        // Courses grow toward the rim until they're about 18 pixels deep, then stay that size: the window's strip
+        // stretches them sideways, and they'd otherwise turn into slabs at its ends. More blocks to a ring there too.
         let reach = hh * hh / 7
-        let run = k * 9, turn = k * 1.6
+        let flat = (18 / ax * reach).squareRoot()
+        let run = 8 + k * 9, turn = k * 1.6
+        let cols: Double = art.wide ? 24 : 18
         let flick = Int(k * 40)
         for y in 0..<h {
             for x in 0..<w {
@@ -57,12 +61,11 @@ extension CrawlTrip {
                 if end > 0 && dd < end { continue }
                 if end > 0 && dd < end + 1.2 { c.px(x, y, C(0xFFF0C8)); continue }   // the pale rim of the opening
                 if dd < 2.5 { c.px(x, y, C(0x08080C)); continue }
-                let u = reach / dd + run
+                let u = (dd < flat ? reach / dd : reach / flat - (dd - flat) * reach / (flat * flat)) + run
                 let dx = (Double(x) + 0.5 - cx) / ax, dy = Double(y) + 0.5 - cy
                 let a0 = atan2(dy, dx) / (2 * .pi) + 0.5
                 let a = (a0 + turn).truncatingRemainder(dividingBy: 1)
                 let row = Int(floor(u)), fu = u - floor(u)
-                let cols = 18.0
                 let ca = a * cols + (row % 2 == 0 ? 0 : 0.5)
                 let col = Int(floor(ca)) % Int(cols), fa = ca - floor(ca)
                 // The steps: a helix round the wall, three courses to a turn, each step a block of the course.
