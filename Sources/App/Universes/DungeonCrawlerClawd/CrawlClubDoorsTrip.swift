@@ -8,8 +8,9 @@ import Foundation
 extension CrawlTrip {
     /// The Club Doors, `k` (0…1) through its own part, over the whole of `r`. A pair of tall doors, hinged at the
     /// frame's sides, swing in over the old place, faster and faster (0–0.24): deep purple velvet tufted in diamonds,
-    /// a gold stud at every tuft, gold frames, brass handles at the middle; they slam shut and shudder (0.24–0.3), their
-    /// neon trim buzzes on in fits (0.28–0.36), and purple light glows in the crack between them and under them,
+    /// a gold stud at every tuft, gold frames, brass handles at the middle, and high up a dark plaque on each, DESPERADO
+    /// on the left and CLUB on the right; they slam shut and shudder (0.24–0.3), their neon trim and the letters buzz
+    /// on in fits (0.28–0.36), and purple light glows in the crack between them and under them,
     /// brighter and brighter (0.3–0.46). Then they swing open away from us, foreshortened and darkening as they turn
     /// (0.46–0.78): the light spills out of the gap, a pink-white blaze at first, then rays fanning out over the doors
     /// and a glow thrown across the floor, the new place inside washed in the club's neon purple; the purple fades off
@@ -43,11 +44,15 @@ extension CrawlTrip {
 
         // The doors.
         if turn < 1 {
-            let door = clubDoor(half, h, neon: neon, t: t)
+            // The right door is the left one mirrored, with its own plaque drawn the right way round.
+            let doors = [clubDoor(half, h, neon: neon, t: t), clubDoor(half, h, neon: neon, t: t)]
+            doors[1].flipHorizontally()
+            clubSign(doors[0], "DESPERADO", neon: neon, t: t)
+            clubSign(doors[1], "CLUB", neon: neon, t: t)
             let sink = sin(turn * .pi / 2)
             let shade = (sink * 4).rounded() / 4 * 0.55
             for side in 0..<2 {
-                let vw = gapL
+                let vw = gapL, door = doors[side]
                 guard vw > 0 else { continue }
                 for sx in 0..<vw {
                     let u = (Double(sx) + 0.5) / Double(vw)
@@ -110,6 +115,33 @@ extension CrawlTrip {
         }
 
         art.show(ctx)
+    }
+}
+
+/// The club's name on a door, high up in the middle: a dark plaque edged in gold, as wide as DESPERADO needs on either
+/// door so the pair match, and `text` in neon: dull glass until `neon` comes up, then pink-white with a purple halo.
+/// A short word has a gold diamond either side of it to fill the plaque.
+private func clubSign(_ c: PixelCanvas, _ text: String, neon: Double, t: Double) {
+    let f = max(3, c.h / 36), room = c.w - 2 * (f + 3)
+    var s = 3
+    while s > 1 && crawlTextWidth("DESPERADO", scale: s) + 8 > room { s -= 1 }
+    let pw = crawlTextWidth("DESPERADO", scale: s) + 8, ph = 5 * s + 8
+    let px = (c.w - pw) / 2, py = c.h * 9 / 100
+    let gold = C(0xE4AC2C), goldL = C(0xFFE47E), goldD = C(0x9A6814)
+    c.rect(px - 1, py - 1, pw + 2, ph + 2, C(0x1A0A10))
+    c.rect(px, py, pw, ph, gold); c.rect(px, py, pw, 1, goldL); c.rect(px, py + ph - 1, pw, 1, goldD)
+    c.rect(px + 2, py + 2, pw - 4, ph - 4, C(0x160824))
+    let tw = crawlTextWidth(text, scale: s), tx = px + (pw - tw) / 2, ty = py + 4
+    if neon > 0 {
+        let halo = C(0xC040FF, 0.5 * neon * (0.85 + 0.15 * sin(t * 40)))
+        for (ox, oy) in [(-1, 0), (1, 0), (0, -1), (0, 1)] { crawlText(c, tx + ox, ty + oy, text, halo, scale: s) }
+    }
+    crawlText(c, tx, ty, text, neon > 0 ? C(0xFFD0FF) : C(0x6A4478), scale: s)
+    if tw + 8 * s < pw {
+        for dx in [(px + tx) / 2 + 1, (tx + tw + px + pw) / 2 - 1] {
+            for dy in -3...3 { c.rect(dx - (3 - abs(dy)), py + ph / 2 + dy, 2 * (3 - abs(dy)) + 1, 1, gold) }
+            c.rect(dx - 1, py + ph / 2 - 1, 2, 1, goldL)
+        }
     }
 }
 
