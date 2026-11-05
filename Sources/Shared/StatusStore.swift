@@ -670,12 +670,23 @@ enum StatusStore {
     static func prune(_ s: inout StatusFile, now: Double) {
         clampFuture(&s, now: now)
         s.agents.removeAll { now - $0.lastSeen > agentTTL }
-        s.sessions = s.sessions.filter { now - $0.value.updated < sessionTTL && isAlive($0.value.pid, started: $0.value.pidStart) }
+        s.sessions = s.sessions.filter { lasts($0.value, now: now) }
         let sessions = Set(s.sessions.keys)
         // An agent whose session is gone goes after a minute; an Agent call still waiting for its SubagentStart after
         // two minutes isn't coming.
         s.agents.removeAll { !sessions.contains($0.session) && now - $0.started > 60 }
         s.pending = (s.pending ?? []).filter { now - $0.at < 120 && sessions.contains($0.session) }
+    }
+
+    /// Does this record still stand for a session? A session can sit idle for days with its process running, and losing
+    /// the record would pass it off as one whose hooks never fired. So past `sessionTTL` a record stays while its process
+    /// is an AI session, not just any process (a host can outlive its sessions), and only with its start time known (or
+    /// a recycled pid could hold on to it).
+    static func lasts(_ rec: SessionRecord, now: Double) -> Bool {
+        guard isAlive(rec.pid, started: rec.pidStart) else { return false }
+        if now - rec.updated < sessionTTL { return true }
+        guard let pid = rec.pid, rec.pidStart != nil else { return false }
+        return ClaudeProcesses.isSession(pid)
     }
 
     /// Is the session's process still running? With its start time known, a different process that has
@@ -811,7 +822,7 @@ enum StatusStore {
                          processes: [ClaudeProcesses.Info]? = nil) -> [SessionSnapshot] {
         var s = s
         clampFuture(&s, now: now)
-        var live = s.sessions.filter { now - $0.value.updated < sessionTTL && isAlive($0.value.pid, started: $0.value.pidStart) }
+        var live = s.sessions.filter { lasts($0.value, now: now) }
         if let processes {
             let running = Set(processes.map(\.pid))
             live = live.filter { $0.value.pid.map { running.contains($0) } ?? true }

@@ -9,6 +9,11 @@ Its first three universes started as separate apps. Their changelogs from before
 
 Doctor Clawd, the fourth, was made for Clawd Clash ([doctor-clawd](https://github.com/rodclemen/doctor-clawd)), so its whole history is below, from 3.1.0.
 
+## Unreleased
+
+### Fixed
+- **A session left idle for hours no longer looks disconnected.** Its record was dropped after 3 hours without news, even with its process still running. It then showed as having no live status, and if the app had been restarted, a small burst of CPU could bring up an "isn't reporting" warning, though its hooks were fine. A session's record now stays for as long as its process does.
+
 ## 4.2.0 (2026-10-29)
 
 ### Added

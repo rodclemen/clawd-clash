@@ -193,6 +193,9 @@ enum ClaudeProcesses {
         return nil
     }
 
+    /// Is this process an AI's interactive session? One process's arguments, for the hook, where `running` is too much.
+    static func isSession(_ pid: Int32) -> Bool { classify(pid).assistant != nil }
+
     /// Which AI an interactive session process belongs to (nil if it isn't one), and Claude Code's client.
     private static func classify(_ pid: Int32) -> (assistant: String?, client: String?) {
         let args = arguments(pid)
