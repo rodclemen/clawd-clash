@@ -60,16 +60,15 @@ private func drawCarl(_ c: PixelCanvas, _ p: Pose) {
     for x in [22, 27, 32] { c.rect(x, 36, 1, 2, boxerD) }
     c.rect(27, 37, 2, 1, boxerD)   // the fly
 
-    // 5. The leather jacket, hanging open over his bare chest: lit on the left, the far side in shade, a turned
-    //    collar, creases, and on the near side the shoulder burnt raw where the sleeve was, its charred edge ragged.
-    c.rect(18, 32, 20, 3, leather)
-    c.rect(26, 32, 4, 3, clawdOrange); c.rect(26, 34, 4, 1, clawdShade)   // the open front, his chest
-    c.rect(24, 32, 2, 3, leatherL); c.rect(30, 32, 2, 3, leatherD)          // the lapels
-    c.rect(18, 32, 1, 3, leatherL); c.rect(19, 32, 4, 1, leatherL)
-    c.rect(36, 32, 2, 3, leatherD)
-    c.px(21, 33, leatherD); c.px(34, 33, leatherD)
-    c.rect(18, 34, 6, 1, leatherD); c.rect(32, 34, 4, 1, leatherD)
-    c.pattern(34, 31, ["c.c.", ".cc.", "c..c"], ["c": char])   // the burnt edge at the shoulder
+    // 5. The leather jacket, hanging wide open: a panel down each side of him, framing his bare chest, rather than a
+    //    band across it (a band at this height reads as a moustache). Lit on the left, the far side in shade, its hem
+    //    flaring in a little at the bottom, and on the near side the shoulder burnt raw where the sleeve was.
+    c.rect(18, 28, 3, 7, leather); c.rect(21, 32, 2, 3, leather)
+    c.rect(35, 28, 3, 7, leather); c.rect(33, 32, 2, 3, leather)
+    c.rect(18, 28, 1, 7, leatherL); c.rect(20, 28, 1, 4, leatherL); c.rect(21, 32, 2, 1, leatherL)
+    c.rect(37, 28, 1, 7, leatherD); c.rect(35, 28, 1, 4, leatherD); c.rect(33, 32, 2, 1, leatherD)
+    c.rect(18, 34, 5, 1, leatherD); c.rect(33, 34, 5, 1, leatherD)
+    c.pattern(35, 27, ["c.c", ".cc", "c.c"], ["c": char])      // the burnt edge at the shoulder
     c.px(38, 33 - raise, C(0xA85A3A))                         // a singe on the bare arm
 
     // 6. The face is Clawd's own: brows, which knit when the boom comes.
@@ -89,18 +88,21 @@ private func drawCarl(_ c: PixelCanvas, _ p: Pose) {
         "Hh....................",
     ], ["H": hair, "h": hairD, "l": hairL])
 
-    // 8. The near fist in the War Gauntlet: steel, its plates picked out, a spike on each knuckle.
+    // 8. The near fist in the War Gauntlet: a big steel fist, far bigger than his hand, its top plate lit, a seam across
+    //    it, shaded underneath, and a spike standing off each knuckle.
     func gauntlet(_ x: Int, _ y: Int, _ a: Double) {
         let steel = C(0x9AA2AE, a), steelD = C(0x5E6672, a), steelL = C(0xD0D6DE, a)
-        c.rect(x - 1, y - 1, 3, 3, steel); c.px(x - 1, y - 1, steelL); c.rect(x - 1, y + 1, 3, 1, steelD)
-        c.px(x + 2, y - 1, steelL); c.px(x + 2, y + 1, steelL)   // the knuckle spikes
+        c.rect(x - 2, y - 2, 5, 5, steel)
+        c.rect(x - 2, y - 2, 5, 1, steelL); c.px(x - 2, y - 1, steelL)
+        c.rect(x - 2, y + 2, 5, 1, steelD); c.rect(x - 1, y, 3, 1, steelD)
+        for dy in [-2, 0, 2] { c.px(x + 3, y + dy, steelL) }   // the knuckle spikes
     }
     if let a = p.melee {
         crawlPunch(c, angle: a, trail: p.trail, arm: clawdOrange, fist: gauntlet)
     } else if holding || flying {
-        gauntlet(39, 33 - raise, 1)
+        gauntlet(41, 29, 1)
     } else {
-        gauntlet(39, 34, 1); c.rect(37, 34, 1, 2, C(0x5E6672))   // the cuff at his wrist
+        gauntlet(41, 34, 1); c.rect(38, 33, 1, 3, C(0x5E6672))   // the cuff at his wrist
     }
 
     // 9. The dynamite: a red stick held high, its fuse fizzing with sparks; then thrown, tumbling up and away out of
@@ -175,11 +177,12 @@ private func drawDonut(_ c: PixelCanvas, _ p: Pose) {
     }
 
     // 4. Her body: the fawn fur, lit on top and the left, shaded under and on the far side, then the ginger saddle
-    //    over her back, lit along its top.
+    //    over her back, lit along its top. It stops above her eyes: on it the copper eyes vanish, and it reads as dark
+    //    glasses.
     c.rect(18, 26, 20, 12, fur)
     c.rect(18, 26, 20, 1, furL); c.rect(18, 26, 1, 12, furL)
     c.rect(37, 26, 1, 12, furD); c.rect(18, 37, 20, 1, furD)
-    c.rect(19, 26, 14, 4, saddle); c.rect(19, 26, 14, 1, saddleL)
+    c.rect(19, 26, 14, 2, saddle); c.rect(19, 26, 14, 1, saddleL)
     // The long fur: a few soft tufts along her back and the bottom of her sides.
     for x in [20, 25, 30, 35] { c.px(x, 25, x < 33 ? saddleL : furL) }
     for (x, y) in [(17, 30), (17, 34), (38, 30)] { c.px(x, y, fur) }
@@ -200,20 +203,22 @@ private func drawDonut(_ c: PixelCanvas, _ p: Pose) {
     c.pattern(17, 23, ["FF..", "FFF.", "FpFF"], ["F": saddle, "p": C(0x8A5A5A)])
     c.pattern(35, 23, ["..FF", ".FFF", "FFpF"], ["F": fur, "p": C(0x8A5A5A)])
     if posing {
-        c.rect(21, 30, 3, 1, ink); c.px(21, 29, ink)
-        c.rect(32, 30, 3, 1, ink); c.px(34, 29, ink)
+        c.rect(20, 30, 4, 1, ink); c.px(20, 29, ink)
+        c.rect(32, 30, 4, 1, ink); c.px(35, 29, ink)
     } else {
-        for x in [21, 32] {
-            c.rect(x, 28, 3, 3, C(0xE0902A)); c.rect(x + 1, 28, 1, 3, ink); c.px(x, 28, C(0xFFF6E0))
-            c.rect(x, 27, 3, 1, furD)
+        for x in [20, 32] {
+            c.rect(x, 28, 4, 1, C(0x4A2A14))                                   // the heavy lid
+            c.rect(x, 29, 4, 2, C(0xE0902A)); c.rect(x + 1, 31, 2, 1, C(0xE0902A))
+            c.rect(x + 1, 29, 2, 2, ink); c.px(x + 1, 29, C(0xFFF6E0))
         }
     }
-    c.pattern(25, 30, [
-        ".CCCCC.",
-        "CCcNcCC",
-        ".CcccC.",
-    ], ["C": cream, "c": creamD, "N": nose])
-    for y in [31, 33] { c.rect(19, y, 3, 1, C(0xF8F4EC, 0.8)); c.rect(34, y, 3, 1, C(0xF8F4EC, 0.8)) }
+    // The flat face: the nose up level with her eyes, the cream muzzle right under it, a sulky mouth.
+    c.pattern(24, 29, [
+        "...NN...",
+        ".CCCCCC.",
+        "CkkCCkkC",
+    ], ["C": cream, "k": C(0x7A5038), "N": nose])
+    for y in [31, 33] { c.rect(18, y, 2, 1, C(0xF8F4EC, 0.8)); c.rect(36, y, 2, 1, C(0xF8F4EC, 0.8)) }
 
     // 8. The crown, small, gold with a pink gem in its front point.
     c.pattern(23, 20, [
