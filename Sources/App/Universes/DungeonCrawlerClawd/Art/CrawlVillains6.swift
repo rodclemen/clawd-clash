@@ -13,11 +13,11 @@ let crawlVillains6: [CrawlVillain: Persona] = [
                       magic: Magic(core: C(0xFF6A6A), glow: C(0x8A0E1E), jagged: false, spell: true), pivot: (43, 32),
                       headTop: 19, signature: 3.2, draw: drawTsarina),
     .vrah: Persona(name: "Vrah", weapon: .blaster, motion: .fly, shot: .arrow, muzzle: (50, 34), handGun: false,
-                   headTop: 13, signature: 2.6, draw: drawVrah),
+                   headTop: 6, signature: 2.6, draw: drawVrah),
     .stalwart: Persona(name: "Stalwart", weapon: .saber, bulk: 2, headTop: 15, signature: 2.8, draw: drawStalwart),
     .loita: Persona(name: "Loita", headTop: 15, signature: 3.2, draw: drawLoita),
     .harbinger: Persona(name: "Harbinger", weapon: .lightning,
-                        magic: Magic(core: C(0xFFE0E0), glow: C(0xC8102A), jagged: false, touch: true), pivot: (45, 32),
+                        magic: Magic(core: C(0xFFE0E0), glow: C(0xC8102A), jagged: false, touch: true), pivot: (47, 35),
                         headTop: 14, signature: 3.0, draw: drawHarbinger),
     .astrid: Persona(name: "Astrid", weapon: .blaster, motion: .fly, shot: .energy(core: C(0xFFE4EA), glow: C(0xFF3050)),
                      muzzle: (45, 33), handGun: false, headTop: 17, signature: 3.2, draw: drawAstrid),
@@ -110,8 +110,8 @@ private func v6Foot(_ i: Int, _ step: Int) -> Int { step >= 0 && i % 2 == step ?
 
 // MARK: - Burcu
 
-/// Burcu: a badger-headed swashbuckler, Clawd with grey fur and a badger's face: white, a black stripe running up
-/// through each amber eye, a short white snout pushed forward with a black nose. A black cavalier hat with a gold band,
+/// Burcu: a badger-headed swashbuckler, Clawd with grey fur and a badger's head from the front: a white wedge narrowing
+/// to a black nose, a black stripe from each little round ear down through the amber eye. A black cavalier hat with a gold band,
 /// its brim pinned up at the back, a great white plume sweeping back off it. A crimson coat with gold buttons, a white
 /// lace jabot and cuffs, a black sash with a gold buckle, grey breeches and tall black boots with turned-down tops. He
 /// fights with a curved sabre, a gold basket guard round the grip. Signature: a fencer's salute, the blade brought up
@@ -165,31 +165,42 @@ private func drawBurcu(_ c: PixelCanvas, _ p: Pose) {
     c.rect(18, 26, 20, 1, furL); c.rect(18, 26, 1, 7, furL)
     c.px(15, 33, coatL); c.rect(15, 35, 3, 1, coatD)
 
-    // 4. The badger's face: white, a black stripe up through each eye, grey at the cheeks; amber eyes in the stripes.
-    c.rect(20, 26, 16, 7, wht)
-    c.rect(20, 32, 16, 1, whtD)
-    c.rect(21, 26, 4, 7, black); c.rect(31, 26, 4, 7, black)
-    c.rect(18, 28, 2, 5, fur); c.rect(36, 28, 1, 5, furD)
-    for x in [22, 32] { c.rect(x, 29, 2, 2, C(0xE0A040)); c.px(x + 1, 29, ink); c.px(x, 29, C(0xFFE0A0)) }
-    // The snout: short and white, pushed forward, the black nose at its tip, the mouth under it.
-    c.pattern(36, 28, [
-        "WWWW..",
-        "WWWWWN",
-        "WWWWWN",
-        "wwww..",
-    ], ["W": wht, "w": whtD, "N": black])
-    c.rect(37, 32, 3, 1, furD)
-
-    // 5. The coat: crimson, lit on the left, the far side and hem in shade, a gold-edged hem; two rows of gold buttons,
+    // 4. The coat: crimson, lit on the left, the far side and hem in shade, a gold-edged hem; two rows of gold buttons,
     //    the white lace jabot at the throat, the black sash with its gold buckle, and the coat's skirts over his thighs.
+    //    Its high collar rises round his jaw, so the head above it narrows to a badger's wedge, not a square.
     c.rect(18, 33, 20, 5, coat)
     c.rect(18, 33, 1, 5, coatL); c.rect(36, 33, 2, 5, coatD)
+    c.pattern(18, 29, [
+        "C..................D",
+        "CC................DD",
+        "CCC..............DDD",
+        "CCCCC..........DDDDD",
+    ], ["C": coat, "D": coatD])
+    c.rect(18, 29, 1, 4, coatL)
     c.rect(17, 38, 22, 1, coat); c.px(17, 38, coatL); c.rect(37, 38, 2, 1, coatD); c.rect(17, 39, 22, 1, goldD)
     c.rect(22, 38, 1, 2, coatD); c.rect(33, 38, 1, 2, coatD)
     for y in [34, 37] { c.px(23, y, gold); c.px(32, y, gold) }
-    c.pattern(26, 33, ["WwWw", ".WW.", ".wW."], ["W": wht, "w": whtD])
+    c.pattern(25, 34, ["WwWwWw", ".WwWW."], ["W": wht, "w": whtD])
     c.rect(18, 36, 18, 1, black); c.rect(36, 36, 2, 1, C(0x0E0D10)); c.rect(27, 36, 2, 1, gold)
     c.rect(38, 33, 1, 3, wht)   // the near lace cuff
+
+    // 5. The badger's head, seen from the front: white, narrowing to the snout, a black stripe from each ear down
+    //    through the eye to the nose, amber eyes in the stripes; little round white-tipped ears out to the sides.
+    c.pattern(15, 26, [".WW", "WKK", "WKK", ".KK"], ["W": wht, "K": black])
+    c.pattern(38, 26, ["WW.", "KKW", "KKw", "KK."], ["W": wht, "w": whtD, "K": black])
+    c.pattern(18, 26, [
+        "WWWKKKKWWWWWWKKKKWWW",
+        "WWWKKKKWWWWWWKKKKWWw",
+        ".WWWKKKKWWWWKKKKWWw.",
+        "..WWKKKKWWWWKKKKWw..",
+        "...WWKKKWWWWKKKWw...",
+        "....WWWKKWWKKWWw....",
+        ".....WWWWWWWWww.....",
+        "........NNNN........",
+        ".........NN.........",
+    ], ["W": wht, "w": whtD, "K": black, "N": black])
+    for x in [22, 32] { c.rect(x, 28, 2, 2, C(0xE0A040)); c.px(x + (x == 22 ? 1 : 0), 28, ink) }
+    c.px(27, 33, feltL)   // a glint on the nose
 
     // 6. The hat: black felt, a lit run on the crown, a gold band, the brim wide, pinned up at the back; the white plume
     //    sweeping back off it, its barbs picked out.
@@ -405,8 +416,8 @@ private func drawAgatha(_ c: PixelCanvas, _ p: Pose) {
 
 // MARK: - Tsarina Signet
 
-/// Tsarina Signet: Clawd in luminous pale sea-green scales, covered in black and red tattoos that never sit still,
-/// curling slowly over her skin. Long plum-red hair falling straight past her shoulders, a gold circlet with a red
+/// Tsarina Signet: Clawd in luminous pale sea-green scales, bold black and red tattoos that never sit still curling
+/// slowly over her chest, arms and legs. Long plum-red hair falling straight past her shoulders, a gold circlet with a red
 /// signet stone at her brow, dark eyes, dark red lips, a black bodice laced in red and a skirt of red and black
 /// ribbons. Her hands glow yellow; her magic is blood and ink, red and black. Signature: the tattoos swirl into a
 /// spiral round her and spin, her hands blazing brighter.
@@ -421,21 +432,19 @@ private func drawTsarina(_ c: PixelCanvas, _ p: Pose) {
     let swirl = v6Arc(s, 0.06, 0.94, edge: 0.15)
     let t = p.lt
 
-    // The tattoos at a pixel of skin: wavy black lines one way and thinner red ones the other, drifting; or, in the
-    // signature, a spinning spiral round her middle.
+    // The tattoos at a pixel of skin: a few bold wavy bands, two pixels and more across so they show at 1×, drifting
+    // slowly over her, every third one red; or, in the signature, a broad spinning spiral round her middle.
     func tattoo(_ x: Int, _ y: Int) -> Px? {
         let fx = Double(x), fy = Double(y)
         if swirl > 0.5 {
             let dx = fx - 28, dy = fy - 32
-            let v = atan2(dy, dx) * 2 + hypot(dx, dy) * 0.5 - t * 7
-            if abs(sin(v)) < 0.3 { return Int(hypot(dx, dy) / 3) % 2 == 0 ? tatInk : tatRed }
+            let v = atan2(dy, dx) + hypot(dx, dy) * 0.45 - t * 6
+            if abs(sin(v)) < 0.55 { return Int(floor(v / .pi)) % 2 == 0 ? tatInk : tatRed }
             return nil
         }
-        let a = fx * 0.55 + fy * 0.35 + sin(fy * 0.5 + t) * 1.4 - t * 0.8
-        if abs(sin(a)) < 0.24 { return tatInk }
-        let b = fx * 0.3 - fy * 0.6 + cos(fx * 0.4 + t * 0.7) * 1.2 + t * 0.6
-        if abs(sin(b * 0.8)) < 0.16 { return tatRed }
-        return nil
+        let a = fx * 0.42 + fy * 0.42 + sin(fy * 0.45 + t * 0.8) * 1.1 - t * 0.5
+        guard abs(sin(a)) < 0.58 else { return nil }
+        return Int(floor(a / .pi)) % 3 == 0 ? tatRed : tatInk
     }
 
     // 1. The legs in scaled skin, tattooed, dark red slippers.
@@ -475,22 +484,34 @@ private func drawTsarina(_ c: PixelCanvas, _ p: Pose) {
     for y in stride(from: 27, to: 34, by: 2) {
         for x in stride(from: 19 + (y / 2) % 2 * 2, to: 36, by: 4) { c.rect(x, y, 2, 1, scale) }
     }
-    for y in 26...33 {
+    // Her face stays clear (a bold band across it reads as a wound or an eye patch): the ink starts at her throat. Only
+    // the signature's spiral sweeps up over it, in black, for that moment, still clear of her eyes and mouth.
+    for y in (swirl > 0.5 ? 26 : 33)...35 {
         for x in 18...37 {
-            let nearEye = (x >= 21 && x <= 24 || x >= 31 && x <= 34) && y >= 28 && y <= 31
-            if nearEye || (x >= 25 && x <= 30 && y >= 31) { continue }
+            let nearEye = (x >= 21 && x <= 24 || x >= 31 && x <= 34) && y >= 27 && y <= 32
+            let mouth = x >= 25 && x <= 30 && y >= 31 && y <= 33
+            if y <= 33 {
+                if swirl > 0.5 {
+                    if !nearEye && !mouth && tattoo(x, y) != nil { c.px(x, y, tatInk) }
+                } else if y == 33 && (x < 21 || x > 34), let col = tattoo(x, y) {
+                    c.px(x, y, col)
+                }
+                continue
+            }
             if let col = tattoo(x, y) { c.px(x, y, col) }
         }
     }
     for y in 33...35 { for x in 15...16 { if let col = tattoo(x, y) { c.px(x, y, col) } } }
 
-    // 5. The bodice: black, laced up the front in red, red trim along its top; the ribbon skirt over her thighs.
-    c.rect(18, 34, 20, 4, bodice)
-    c.rect(18, 34, 20, 1, C(0xA8182A)); c.rect(18, 35, 1, 3, bodiceL)
-    c.pattern(26, 35, ["r..r", ".rr.", "r..r"], ["r": C(0xC8202E)])
+    // 5. The bodice: black, low-cut so the tattoos show on her chest, laced up the front in red, red trim along its
+    //    top; the ribbon skirt over her thighs.
+    c.rect(18, 36, 20, 2, bodice)
+    c.rect(18, 36, 20, 1, C(0xA8182A)); c.rect(18, 37, 1, 1, bodiceL)
+    c.pattern(26, 37, ["r..r"], ["r": C(0xC8202E)])
+    // The ribbon ends hang between her legs, not over them, so the ink on her legs shows.
     for (i, x) in stride(from: 17, through: 37, by: 2).enumerated() {
         c.rect(x, 38, 2, 1, i % 2 == 0 ? C(0xA8182A) : bodice)
-        c.px(x, 39, i % 2 == 0 ? C(0x7A101E) : bodiceL)
+        if ![19, 23, 31, 35].contains(x) { c.px(x, 39, i % 2 == 0 ? C(0x7A101E) : bodiceL) }
     }
 
     // 6. The face: dark almond eyes with a gold glint, fine dark brows, dark red lips.
@@ -532,11 +553,12 @@ private func drawTsarina(_ c: PixelCanvas, _ p: Pose) {
 
 // MARK: - Vrah
 
-/// Vrah: a mantis hunter, Clawd in bright jade chitin: two great red compound eyes bulging at the top corners, long
-/// antennae, a pair of mandibles jutting forward at the front of her face, a pale belly plate in segments, and her long
-/// abdomen out behind under folded wings. No trophies. She hunts with a crossbow in her spiked raptor arm: a dark
-/// stock, pale bowed limbs, a red-fletched bolt. She flies, her wings blurring. Signature: her mandibles click, open
-/// and shut, her antennae twitching.
+/// Vrah: a mantis hunter, Clawd in bright jade chitin, a long neck rising from the front of her body to a mantis's
+/// triangular head: two great red compound eyes at its top corners, narrowing to a small pair of mandibles at the
+/// point, short antennae swept back. A pale belly plate in segments, and her long abdomen out behind under long wings
+/// folded down her back. No trophies. Her spiked raptor arms are folded in front of her, the far one up in prayer, the
+/// near one holding her crossbow: a dark stock, pale bowed limbs, a red-fletched bolt. She flies, her wings blurring.
+/// Signature: her mandibles click, open and shut, her antennae twitching.
 private func drawVrah(_ c: PixelCanvas, _ p: Pose) {
     let chit = C(0x6CAE3C), chitD = C(0x4A7E28), chitL = C(0x9CD460), belly = C(0xC8DC96)
     let eye = C(0xD8482A), eyeD = C(0x8E2A1A), eyeL = C(0xFFA070)
@@ -564,9 +586,8 @@ private func drawVrah(_ c: PixelCanvas, _ p: Pose) {
     for x in [9, 12, 15] { c.rect(x, 30, 1, 5, chitD) }
     c.rect(7, 30, 6, 1, chitL)
 
-    // 4. The wings: folded flat along her back over the abdomen; lifted and blurring while she flies, the hind pair
-    //    a faint flicker behind.
-    let folded: [(Double, Double)] = [(22, 26), (14, 26.5), (6, 29), (3, 32), (7, 33.5), (20, 30)]
+    // 4. Flying, the wings lift and blur behind her, the hind pair a faint flicker behind.
+    let folded: [(Double, Double)] = [(33, 26), (14, 26.5), (6, 29), (3, 32), (7, 33.5), (29, 31)]
     let root = (21.0, 27.0)
     if p.flying {
         let up = Int(p.t * 24) % 2 == 0
@@ -577,11 +598,6 @@ private func drawVrah(_ c: PixelCanvas, _ p: Pose) {
         let tip = w[3], mid = w[2]
         c.glowLine(root.0, root.1, tip.0, tip.1, core: wingD, glow: C(0, 0), coreR: 0.5, glowR: 0.6)
         c.glowLine(root.0, root.1, mid.0, mid.1, core: wingD, glow: C(0, 0), coreR: 0.4, glowR: 0.5)
-    } else {
-        v6Fill(c, folded, wing)
-        c.glowLine(21, 27.5, 4.5, 32, core: wingD, glow: C(0, 0), coreR: 0.5, glowR: 0.6)
-        c.rect(12, 27, 8, 1, wingL)
-        for x in [9, 14, 18] { c.px(x, 30, wingD); c.px(x, 31, wingD) }
     }
 
     // 5. The body in chitin, lit along the top, the pale belly plate in segments.
@@ -592,42 +608,45 @@ private func drawVrah(_ c: PixelCanvas, _ p: Pose) {
     c.rect(20, 33, 16, 1, chitD)
     c.px(15, 33, chitL)
 
-    // 6. The eyes: two great compound eyes bulging at the top corners, red, a lit facet up on the left of each, a
-    //    darker false pupil looking forward.
-    for cx in [19, 36] {
-        c.ellipse(cx, 25, 3, 3, eye)
-        c.rect(cx - 2, 27, 5, 1, eyeD)
-        c.px(cx - 2, 23, eyeL); c.px(cx - 1, 23, eyeL); c.px(cx - 2, 24, eyeL)
-        c.rect(cx + 1, 25, 1, 2, eyeD)
+    // 6. At rest, the long wings folded down her back, from her shoulders to past the tip of her abdomen.
+    if !p.flying {
+        v6Fill(c, folded, wing)
+        c.glowLine(31, 27.5, 4.5, 32, core: wingD, glow: C(0, 0), coreR: 0.5, glowR: 0.6)
+        c.rect(14, 27, 16, 1, wingL)
     }
 
-    // 7. The antennae: long and fine, up off her brow, twitching.
-    v6Curve(c, (25, 25), (22, 16), (17 + twitch, 12), chitD)
-    v6Curve(c, (31, 25), (34, 15), (40 - twitch, 12), chitD)
+    // 7. The far raptor arm, in shade, folded up in front of her in prayer, its hook hanging.
+    v6Rope(c, [(38, 24), (44, 20.5), (46.5, 24), (45.5, 27)], r0: 1.1, r1: 0.6, chitD)
 
-    // 8. The face: a lit run down the middle of her brow, and the mandibles jutting forward, shut or clicking open.
-    c.rect(27, 27, 2, 4, chitL); c.px(27, 31, chitD); c.px(28, 31, chitD)
+    // 8. The neck, long and thin, rising from the front of her body, lit down its left.
+    c.rect(35, 17, 4, 10, chit); c.rect(35, 17, 1, 10, chitL); c.rect(38, 17, 1, 10, chitD)
+    c.rect(35, 21, 4, 1, chitD)
+
+    // 9. The antennae: short and fine, swept back off the top of her head, twitching.
+    v6Curve(c, (34, 11), (30, 7), (25 + twitch, 8), chitD)
+    v6Curve(c, (38, 11), (36, 6), (31 - twitch, 6), chitD)
+
+    // 10. The head: a mantis's triangle, the great compound eyes at its top corners, red, a lit facet on each and a
+    //     false pupil looking forward, narrowing to the mandibles at its point, shut or clicking open.
+    c.pattern(30, 9, [
+        ".rrr.......rrr.",
+        "rllrCCCCCCCrrrd",
+        "rlrpCLLLLLCprrd",
+        "rrrrCCCCCCCrrrd",
+        ".rrrCCCCCCCrrd.",
+        "...CCCCCCCCC...",
+        "....CCCCCCC....",
+        ".....dCCCd.....",
+    ], ["r": eye, "l": eyeL, "d": eyeD, "p": eyeD, "C": chit, "L": chitL])
+    c.rect(35, 16, 5, 1, chitD)
     if open {
-        c.pattern(37, 27, [
-            "....jJ",
-            "jjjjJ.",
-            "PP....",
-            "PP....",
-            "jjjjJ.",
-            "....jJ",
-        ], ["j": jaw, "J": jawD, "P": chitD])
-        c.px(45, 26, C(0xFFFFFF, 0.8)); c.px(46, 30, C(0xFFFFFF, 0.8)); c.px(45, 33, C(0xFFFFFF, 0.8))
+        c.pattern(34, 17, ["jj...jj", ".J...J."], ["j": jaw, "J": jawD])
+        c.px(32, 18, C(0xFFFFFF, 0.8)); c.px(42, 18, C(0xFFFFFF, 0.8))
     } else {
-        c.pattern(37, 28, [
-            "jjjj..",
-            "jjjjjJ",
-            "jjjjjJ",
-            "jjjj..",
-        ], ["j": jaw, "J": jawD])
-        c.rect(38, 29, 3, 1, C(0xB0904A))
+        c.pattern(35, 17, ["jjjjj", ".JjJ."], ["j": jaw, "J": jawD])
     }
 
-    // 9. The crossbow: the dark stock under her raptor arm, pale bowed limbs at the front, the string drawn back to
+    // 11. The crossbow: the dark stock under her raptor arm, pale bowed limbs at the front, the string drawn back to
     //    the nut and a bolt on it, red-fletched, or the string slack just after a shot.
     c.rect(35, 34, 13, 2, stock); c.rect(35, 34, 13, 1, stockL)
     c.rect(38, 36, 1, 2, stock)
@@ -640,9 +659,10 @@ private func drawVrah(_ c: PixelCanvas, _ p: Pose) {
         c.rect(41, 33, 7, 1, C(0x8A6A3A)); c.px(48, 33, C(0xC8CCD4)); c.px(49, 33, C(0xE8ECF4))
         c.px(41, 32, C(0xD8302A)); c.px(42, 32, C(0xD8302A))
     }
-    // The raptor arm over the stock, spikes along its underside.
-    c.rect(38, 33, 4, 2, chit); c.px(38, 33, chitL)
-    c.px(39, 35, chitL); c.px(41, 35, chitL)
+    // 12. The near raptor arm: out from the neck to the elbow, folded back down to grip the stock, two spikes under it.
+    v6Rope(c, [(37, 25), (43, 27.5), (41, 33.5)], r0: 1.3, r1: 1.0, chit)
+    c.glowLine(37, 24.5, 43, 27, core: chitL, glow: C(0, 0), coreR: 0.4, glowR: 0.5)
+    c.rect(38, 28, 1, 2, chit); c.rect(40, 29, 1, 2, chit)
 }
 
 // MARK: - Stalwart
@@ -868,7 +888,8 @@ private func drawLoita(_ c: PixelCanvas, _ p: Pose) {
 /// you and stares, his six eyes burning brighter.
 private func drawHarbinger(_ c: PixelCanvas, _ p: Pose) {
     let coat = C(0x1E1C26), coatD = C(0x111017), coatL = C(0x3C3A4C), sheen = C(0x5A5870)
-    let fur = C(0x4A4440), furD = C(0x322E2C), furL = C(0x6A625C), beard = C(0x9A948C)
+    let fur = C(0x4A4440), furD = C(0x322E2C), furL = C(0x6A625C), beard = C(0xD0CAC0)
+    let muzzle = C(0x9A9088), muzzleL = C(0xC4BAB0)
     let horn = C(0xD4C8AA), hornD = C(0x9A8C70), hornL = C(0xF0E8D0)
     let red = C(0xE02A2A), redL = C(0xFF8A80)
     let s = p.signature ?? -1
@@ -926,28 +947,32 @@ private func drawHarbinger(_ c: PixelCanvas, _ p: Pose) {
         c.px(x, 28, stare ? C(0xFFFFFF) : redL)
     }
 
-    // 8. The muzzle: long and goatish, pushing forward, lit on top, a dark nose at the end, the mouth a thin line;
-    //    the pale beard hanging under his chin in strands.
-    c.pattern(34, 29, [
-        "LLLLLLLL.",
-        "FFFFFFFFN",
-        "FFFFFFFFN",
-        "ddddddd..",
-    ], ["L": furL, "F": fur, "N": C(0x0E0C10), "d": furD])
-
-    // 9. The coat's top: silky black, a standing collar up round his jaw, the sheen down the lit side, its buttons
+    // 8. The coat's top: silky black, a standing collar up round his jaw, the sheen down the lit side, its buttons
     //    hidden; the sleeves.
     c.rect(18, 31, 18, 7, coat)
     c.rect(18, 31, 1, 7, sheen); c.rect(19, 32, 1, 5, coatL); c.rect(30, 32, 1, 5, coatL); c.rect(36, 31, 2, 7, coatD)
     c.pattern(17, 29, ["CC", "CC", ".C"], ["C": coatL])
     c.rect(26, 31, 1, 7, coatD)
     c.px(15, 33, coatL); c.rect(15, 35, 3, 1, coatD)
-    c.pattern(36, 33, ["BBBb", "BbBb", ".BBb", ".Bb.", "..b."], ["B": beard, "b": C(0x6E6862)])
 
-    // 10. The near hand: long grey fingers, one pointing out to send his dread.
+    // 9. The muzzle: long and goatish, pale ash against all that black, pushing right out past his coat, lit on top, a
+    //    dark nose at the end, the mouth a dark line; the pale beard hanging under his chin in strands.
     let ny = 33 - p.armRaise
-    c.rect(41, ny + 1, 2, 2, fur)
-    if p.zap != nil || stare { c.rect(43, ny + 1, 2, 1, furL) }
+    c.pattern(36, 29, [
+        "LLLLL......",
+        "MMMMMLLL...",
+        "MMMMMMMMLL.",
+        "MMMMMMMMMNN",
+        "MMMMMMMMMNN",
+        ".dddddddd..",
+        "..MMMMMM...",
+    ], ["L": muzzleL, "M": muzzle, "N": C(0x0E0C10), "d": furD])
+    c.pattern(38, 36, ["BBBBb", "BbBBb", ".BBb.", ".Bb..", "..b.."], ["B": beard, "b": C(0x6E6862)])
+
+    // 10. The near hand: long grey fingers out past the beard, under the muzzle, one pointing out to send his dread.
+    let hy = max(ny + 2, 35)
+    c.rect(43, hy, 2, 2, fur)
+    if p.zap != nil || stare { c.rect(45, hy, 2, 1, furL) }
 }
 
 // MARK: - Astrid
