@@ -327,8 +327,8 @@ private func crawlDrawFans(_ c: PixelCanvas, e: Double, cycle: Int, over: Int, c
     let a = min(1, k / 0.06, (1 - k) / 0.35)
     guard a > 0 else { return }
     let green = C(0x7AF08A, a), strip = C(0x103A1E, a * 0.85)
-    // "+10" and "000 VIEWERS" with a comma drawn between (the letters have none), 58 pixels in all.
-    let w = 58, x = crawlPropWidth / 2 - w / 2, top = over - 7 - Int((k * 10).rounded())
+    // "+10" and "000 VIEWERS" with a comma drawn between (the letters have none).
+    let w = 15 + crawlTextWidth("000 VIEWERS"), x = crawlPropWidth / 2 - w / 2, top = over - 7 - Int((k * 10).rounded())
     c.rect(x - 2, top - 2, w + 4, 10, strip)
     crawlText(c, x, top, "+10", green)
     c.px(x + 13, top + 4, green); c.px(x + 12, top + 5, green)
