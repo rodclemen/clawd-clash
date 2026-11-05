@@ -236,10 +236,10 @@ func crawlStageJitter(_ a: OnStage, others: [OnStage], place: Location?, t: Doub
 // MARK: - The prop: what's drawn over and round them
 
 /// The achievements the System hands out for standing about, in its block letters, a line or two each, a word of
-/// twelve letters at most so the toast stays small.
+/// thirteen letters at most so the toast stays small.
 private let crawlAchievements: [[String]] = [
     ["STOOD THERE"], ["PROFESSIONAL", "LOITERER"], ["BREATHED IN", "AND OUT"], ["NOT DEAD YET"],
-    ["IDLE HANDS"], ["TAKING PART", "TROPHY"], ["STILL HERE"], ["VERY VERY", "AVERAGE"],
+    ["IDLE HANDS"], ["PARTICIPATION", "TROPHY"], ["STILL HERE"], ["SPECTACULARLY", "AVERAGE"],
 ]
 
 /// The prop's canvas: art pixels wide (centred on the character), and rows over a sprite's for what goes over its
