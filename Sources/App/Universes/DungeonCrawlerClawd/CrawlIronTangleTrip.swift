@@ -109,9 +109,9 @@ extension CrawlTrip {
 }
 
 /// One car of the train, `w` wide from `x` and the frame's full `h` tall: a dark roof with its lit edge, the silver
-/// body lit along the top and shaded at the bottom, four warm windows with passengers (Clawds, mostly) and a pair of
-/// doors, the red stripe with IRON TANGLE and the car's number under it, and the bogies with their wheels spinning on
-/// the rail, throwing sparks.
+/// body lit along the top, four warm windows with passengers (Clawds, mostly) and a pair of doors, the red stripe,
+/// fluted steel under it with IRON TANGLE and the car's number on dark plates, a shaded skirt with its vents, and the
+/// bogies with their wheels spinning on the rail, throwing sparks.
 private func tangleCar(_ c: PixelCanvas, x: Int, w: Int, h: Int, jolt: Int, seed: Int, frame: Int) {
     let hh = Double(h)
     func y(_ f: Double) -> Int { Int((hh * f).rounded()) + jolt }
@@ -122,7 +122,7 @@ private func tangleCar(_ c: PixelCanvas, x: Int, w: Int, h: Int, jolt: Int, seed
     c.rect(x, y(0.1), w, y(0.84) - y(0.1), body)
     c.rect(x, y(0.1), w, 2, bodyL); c.rect(x, y(0.8), w, y(0.84) - y(0.8), bodyD)
     c.rect(x, y(0.1), 2, y(0.84) - y(0.1), bodyD); c.rect(x + w - 2, y(0.1), 2, y(0.84) - y(0.1), bodyL)
-    // The windows, warm, a passenger's head in most: Clawd's orange block with two dark eyes, now and then a goblin.
+    // The windows, warm, a passenger standing in most: Clawd, whole, on his four legs, now and then a goblin.
     let wins = [0.05, 0.23, 0.62, 0.8]
     let ww = Int(Double(w) * 0.15)
     for (k, f) in wins.enumerated() {
@@ -131,13 +131,7 @@ private func tangleCar(_ c: PixelCanvas, x: Int, w: Int, h: Int, jolt: Int, seed
         c.rect(wx, wy, ww, wh, C(0xE8D898)); c.rect(wx, wy, ww, 2, C(0xB8A868))
         let n = noise(seed * 31 + k * 7 + 50)
         if n > 0.25 {
-            let goblin = n > 0.88
-            let head = goblin ? C(0x5A8A3A) : C(0xD8784A), dark = goblin ? C(0x2A4A16) : C(0x3A1A10)
-            let px = wx + ww / 4 + Int(noise(seed * 31 + k * 7 + 51) * Double(ww / 3)), size = wh * 5 / 9
-            c.rect(px, wy + wh - size, size, size, head)
-            c.rect(px, wy + wh - size, size, 1, lerp(head, C(0xFFFFFF), 0.3))
-            c.rect(px + size / 4, wy + wh - size + size / 3, 2, 2, dark)
-            c.rect(px + size * 3 / 4 - 1, wy + wh - size + size / 3, 2, 2, dark)
+            tanglePassenger(c, x: wx, w: ww, floor: wy + wh, goblin: n > 0.88, armUp: noise(seed * 31 + k * 7 + 51) > 0.5)
         }
     }
     // The doors in the middle.
@@ -149,11 +143,30 @@ private func tangleCar(_ c: PixelCanvas, x: Int, w: Int, h: Int, jolt: Int, seed
     }
     // The red stripe along the side, the network's name under it, and the seams between the body's panels.
     c.rect(x, y(0.58), w, y(0.65) - y(0.58), C(0xB03428)); c.rect(x, y(0.58), w, 1, C(0xD04A3A))
-    for f in [0.21, 0.6, 0.98] { c.rect(x + Int(Double(w) * f), y(0.66), 1, y(0.8) - y(0.66), bodyD) }
-    let s = hh >= 140 ? 2 : 1, label = "IRON TANGLE"
-    let lx = x + Int(Double(w) * 0.21) + (Int(Double(w) * 0.39) - crawlTextWidth(label, scale: s)) / 2
-    crawlText(c, lx, y(0.69), label, C(0x4A4E58), scale: s)
-    crawlText(c, x + Int(Double(w) * 0.82), y(0.69), "\(seed + 1)0\(seed + 3)", C(0x4A4E58), scale: s)
+    // The steel under it, fluted: broad ribs along the car, each lit on top and shaded under, stopping at the doors.
+    let rib = max(4, h / 26)
+    for ry in stride(from: y(0.65), to: y(0.8), by: rib) {
+        let rh = min(rib, y(0.8) - ry)
+        for (from, to) in [(x, dx), (dx + dw, x + w)] {
+            c.rect(from, ry, to - from, 1, bodyL)
+            c.rect(from, ry + rh - 1, to - from, 1, bodyD)
+        }
+    }
+    for f in [0.6, 0.98] { c.rect(x + Int(Double(w) * f), y(0.65), 1, y(0.8) - y(0.65), bodyD) }
+    // The network's name and the car's number, pale on dark plates.
+    let s = hh >= 140 ? 2 : 1, label = "IRON TANGLE", number = "\(seed + 1)0\(seed + 3)"
+    let py = (y(0.65) + y(0.8) - 5 * s) / 2
+    let lx = x + (Int(Double(w) * 0.42) - crawlTextWidth(label, scale: s)) / 2, nx = x + Int(Double(w) * 0.8)
+    for (px, text) in [(lx, label), (nx, number)] {
+        let tw = crawlTextWidth(text, scale: s)
+        c.rect(px - 3, py - 2, tw + 6, 5 * s + 4, C(0x2A2E36)); c.rect(px - 3, py - 2, tw + 6, 1, C(0x4A4E58))
+        crawlText(c, px, py, text, C(0xE8ECF2), scale: s)
+    }
+    // The skirt: a row of dark vents along it.
+    let vent = max(8, h / 12)
+    for vx in stride(from: x + vent / 2, to: x + w - vent, by: vent * 2) where vx + vent < dx || vx > dx + dw {
+        c.rect(vx, y(0.81), vent, max(2, y(0.83) - y(0.81)), C(0x34363E))
+    }
     // The bogies and the wheels, spokes turning, sparks off the rail.
     c.rect(x, y(0.84), w, 2, C(0x2A2A30))
     let rad = max(3, Int(hh * 0.065))
@@ -175,6 +188,28 @@ private func tangleCar(_ c: PixelCanvas, x: Int, w: Int, h: Int, jolt: Int, seed
         }
     }
     c.rect(x, h - 1, w, 1, C(0x8A8E96))                               // the rail, polished
+}
+
+/// A passenger standing in a window `w` wide from `x`, on its sill at `floor`: Clawd as he always is, the wide orange
+/// block with its shaded side, two tall dark eyes, an arm nub each side (one up, holding on, if `armUp`) and his four
+/// legs; or a goblin, the same in green with pointed ears. Sized to fill the window's width.
+private func tanglePassenger(_ c: PixelCanvas, x: Int, w: Int, floor: Int, goblin: Bool, armUp: Bool) {
+    let q = Double(w) / 27
+    func u(_ n: Double) -> Int { max(1, Int((n * q).rounded())) }
+    let body = goblin ? C(0x5A8A3A) : clawdOrange, shade = goblin ? C(0x3E6A26) : clawdShade
+    let eye = goblin ? C(0x1A2A0E) : C(0x16161B)
+    let bw = u(20), bh = u(12), legH = u(6), legW = max(2, u(2))
+    let bx = x + (w - bw) / 2, by = floor - legH - bh
+    for lx in [1.0, 5.0, 13.0, 17.0] { c.rect(bx + u(lx), by + bh, legW, legH, shade) }
+    c.rect(bx, by, bw, bh, body)
+    c.rect(bx, by + bh - 1, bw, 1, shade); c.rect(bx + bw - 1, by, 1, bh, shade)
+    let arm = u(3)
+    c.rect(bx - arm, by + u(7), arm, arm, shade)
+    c.rect(bx + bw, by + (armUp ? u(1) : u(7)), arm, arm, shade)
+    c.rect(bx + u(4), by + u(3), u(2), u(3), eye); c.rect(bx + u(14), by + u(3), u(2), u(3), eye)
+    if goblin {
+        for ex in [bx, bx + bw - u(3)] { c.rect(ex, by - u(3), u(3), u(3), body) }
+    }
 }
 
 /// The cab at the front, its tip at `head`, `nose` long, its sloped front along `edge`: the silver body curving
