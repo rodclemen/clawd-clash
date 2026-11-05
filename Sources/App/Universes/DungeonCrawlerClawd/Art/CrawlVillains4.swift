@@ -13,13 +13,13 @@ let crawlVillains4: [CrawlVillain: Persona] = [
     .bigTina: Persona(name: "Big Tina", weapon: .lightning,
                       magic: Magic(core: C(0xFFE4E4), glow: C(0xFF2A3A), jagged: false), pivot: (54.5, 24.5),
                       bulk: 5, headTop: 5, signature: 3.4, draw: drawBigTina),
-    .goreGore: Persona(name: "Gore-Gore", weapon: .saber, headTop: 11, signature: 3.0, draw: drawGoreGore),
+    .goreGore: Persona(name: "Gore-Gore", weapon: .saber, headTop: 8, signature: 3.0, draw: drawGoreGore),
     .dismember: Persona(name: "Dismember", weapon: .lightning,
                         magic: Magic(core: C(0xF4E4FF), glow: C(0x9A4AD8)), pivot: (44, 33),
                         headTop: 19, signature: 3.2, draw: drawDismember),
     .imogen: Persona(name: "Queen Imogen", weapon: .lightning,
                      magic: Magic(core: C(0xFFF6D0), glow: C(0xE8B830), jagged: false, rings: true), pivot: (45, 33),
-                     headTop: 8, signature: 3.2, draw: drawImogen),
+                     headTop: 5, signature: 3.2, draw: drawImogen),
     .shiMaria: Persona(name: "Shi Maria", weapon: .lightning,
                        magic: Magic(core: C(0xFFFFFF), glow: C(0xC87AF0), jagged: false, touch: true), pivot: (56, 27),
                        bulk: 4, headTop: 18, signature: 3.0, draw: drawShiMaria),
@@ -131,7 +131,7 @@ private func drawGrimaldi(_ c: PixelCanvas, _ p: Pose) {
     let boot = C(0x4A2E20), bootL = C(0x6E4A34)
     let beard = C(0xA45A2A), beardD = C(0x6E3A1A), beardL = C(0xCC7C40)
     let hat = C(0x1C1A22), hatD = C(0x0E0C12), hatL = C(0x403E4A), band = C(0x9A1E26)
-    let vine = C(0x9CCC86), vineL = C(0xD4F0C4), leaf = C(0xB8E4A0)
+    let vine = C(0x9CCC86), vineL = C(0xD4F0C4), vineD = C(0x3E7A3A), leaf = C(0xB8E4A0)
     let lash = C(0x2A2224), lashL = C(0x4A3E40), grip = C(0x7A4A28)
     let s = p.signature ?? -1
     let cracking = s > 0.06 && s < 0.92
@@ -224,20 +224,24 @@ private func drawGrimaldi(_ c: PixelCanvas, _ p: Pose) {
         }
     } else if let a = p.melee {
         for (i, ta) in p.trail.enumerated() {
-            let pts = v4Chain(from: Sprite.hand, angle: ta, bend: 3, n: 12, step: 1.4)
+            let pts = v4Chain(from: Sprite.hand, angle: ta, bend: 3, n: 14, step: 1.5)
             for k in 0..<(pts.count - 1) {
-                v4Line(c, pts[k].0, pts[k].1, pts[k + 1].0, pts[k + 1].1, vine.alpha(0.3 / Double(i + 1)), 0.5)
+                v4Line(c, pts[k].0, pts[k].1, pts[k + 1].0, pts[k + 1].1, vine.alpha(0.5 / Double(i + 1)), 1)
             }
         }
-        let pts = v4Chain(from: Sprite.hand, angle: a, bend: 3, n: 12, step: 1.4)
+        // The lash itself: a dark green edge the whole way along, so it stands out on any place, the pale vine on it.
+        let pts = v4Chain(from: Sprite.hand, angle: a, bend: 3, n: 14, step: 1.5)
         for k in 0..<(pts.count - 1) {
-            v4Line(c, pts[k].0, pts[k].1, pts[k + 1].0, pts[k + 1].1, k % 5 == 2 ? vineL : vine, k < 6 ? 1 : 0.75)
+            v4Line(c, pts[k].0, pts[k].1, pts[k + 1].0, pts[k + 1].1, vineD, k < 8 ? 1.8 : 1.4)
         }
-        for k in [4, 8] {
+        for k in 0..<(pts.count - 1) {
+            v4Line(c, pts[k].0, pts[k].1, pts[k + 1].0, pts[k + 1].1, k % 5 == 2 ? vineL : vine, k < 8 ? 1 : 0.7)
+        }
+        for k in [5, 10] {
             let x = Int(pts[k].0.rounded(.down)), y = Int(pts[k].1.rounded(.down))
-            c.pattern(x - 1, y - 2, [".L", "LL"], ["L": leaf])
+            c.pattern(x - 1, y - 4, ["..L", ".LL", "LLD", "LD."], ["L": leaf, "D": vineD])
         }
-        if let end = pts.last { c.px(Int(end.0.rounded()), Int(end.1.rounded()) + 1, vine) }
+        if let end = pts.last { c.rect(Int(end.0.rounded()), Int(end.1.rounded()), 2, 2, vine) }
     } else {
         v4Vine(c, (42, 35), (46, 38), (44, 43), vine, vineL, leaf, leaves: [0.4, 0.75])
     }
@@ -247,9 +251,9 @@ private func drawGrimaldi(_ c: PixelCanvas, _ p: Pose) {
 // MARK: - Heather the Bear
 
 /// Heather the Bear: a mother bear in clown costume, sad and eerie rather than frightening: Clawd in brown fur, round
-/// ears either side of a faded cream clown hat with red and blue polka dots and a limp red pompom, a pale muzzle with
-/// a black nose and a downturned mouth, white clown paint round her drooping eyes and a blue painted tear; a white
-/// frilled ruff, a faded pink tutu, and white roller skates with pink wheels. She swipes with her glowing worm-paws:
+/// ears either side of a faded cream clown hat with red and blue polka dots and a limp red pompom; a mask of white
+/// clown paint over her face, two hollow black sockets with a pale pinpoint staring out of each, a black nose, a thin
+/// painted frown, a blue painted tear and grey paint running from the other eye; a white frilled ruff, a faded pink tutu, and white roller skates with pink wheels. She swipes with her glowing worm-paws:
 /// pale sea-green worms of light wriggling out of the pads. Signature: a wobbly roller-skate twirl, arms out, turning
 /// round twice and wobbling to a stop.
 private func drawHeather(_ c: PixelCanvas, _ p: Pose) {
@@ -276,8 +280,8 @@ private func drawHeather(_ c: PixelCanvas, _ p: Pose) {
 /// Heather herself (drawn into a canvas of her own and turned round for her twirl). `twirl`: her paws held out wide.
 private func drawHeatherBody(_ c: PixelCanvas, _ p: Pose, twirl: Bool) {
     let fur = C(0x7A5236), furD = C(0x573A26), furL = C(0x9C6E4C)
-    let muzzle = C(0xC8A47E), muzzleD = C(0xA08060)
-    let paint = C(0xF2EEE8), tear = C(0x6A9AE0)
+    let muzzleD = C(0xA08060)
+    let paint = C(0xF2EEE8), paintD = C(0x9AA0AC), tear = C(0x6A9AE0), lip = C(0x8A2A36)
     let hat = C(0xE8DCBC), hatD = C(0xBEB290), dotR = C(0xC85060), dotB = C(0x5A7AC0), pom = C(0xC85A68)
     let ruff = C(0xF2EEE6), ruffD = C(0xC4BEB4)
     let tutu = C(0xE0A0BA), tutuD = C(0xB87894), tutuL = C(0xF2C6D8)
@@ -306,18 +310,28 @@ private func drawHeatherBody(_ c: PixelCanvas, _ p: Pose, twirl: Bool) {
     for (x, y) in [(20, 27), (25, 26), (30, 27), (35, 26), (19, 31), (36, 31)] { c.px(x, y, furD); c.px(x + 1, y + 1, furD) }
     if twirl { c.rect(13, 30, 2, 3, fur); c.rect(41, 30, 2, 3, fur) }
 
-    // 4. The face: white clown paint round each drooping eye, the lids heavy, painted brows high and sad, the blue tear.
-    c.pattern(21, 26, ["..P.", ".PP.", "....", "....", ".PP.", "..P."], ["P": paint])
-    c.pattern(31, 26, [".P..", ".PP.", "....", "....", ".PP.", ".P.."], ["P": paint])
-    c.rect(22, 28, 2, 2, ink); c.rect(32, 28, 2, 2, ink); c.px(22, 28, furD); c.px(33, 28, furD)
-    c.pattern(19, 26, ["...kk", ".kk..", "k...."], ["k": ink])        // the far brow, rising to the middle
-    c.pattern(33, 26, ["kk...", "..kk.", "....k"], ["k": ink])
-    c.rect(34, 30, 1, 3, tear); c.px(34, 30, C(0xA8CCFF)); c.px(35, 32, tear)
+    // 4. The face: a mask of cracked white clown paint over the fur, two hollow black sockets drooping at their outer
+    //    corners, a pale sea-green pinpoint far back in each, staring. Grey paint run down from the far socket, the
+    //    blue tear from the near.
+    c.pattern(20, 26, [
+        "...PPPPPPPPPP...",
+        ".PPPPPPPPPPPPPP.",
+        "PPPPPPPPPPPPPPPP",
+        "PPPPPPPPPPPPPPPP",
+        "PPPPPPPPPPPPPPPP",
+        "PPPPPPPPPPPPPPPP",
+        ".PPPPPPPPPPPPPP.",
+        "..PPPPPPPPPPPP..",
+    ], ["P": paint])
+    c.pattern(21, 27, [".kkk..", "kkkkk.", "kkkkk.", "kk...."], ["k": ink])
+    c.pattern(30, 27, ["..kkk.", ".kkkkk", ".kkkkk", "....kk"], ["k": ink])
+    c.px(23, 29, worm); c.px(32, 29, worm)
+    c.rect(22, 31, 1, 3, paintD)
+    c.rect(33, 31, 1, 3, tear); c.px(33, 31, C(0xA8CCFF))
 
-    // 5. The muzzle: pale, the black nose with its shine, a small downturned mouth.
-    c.rect(25, 29, 6, 5, paint); c.rect(24, 30, 8, 3, paint); c.rect(25, 33, 6, 1, muzzle)
-    c.rect(26, 29, 4, 2, ink); c.px(26, 29, C(0x5A5058))
-    c.rect(27, 31, 2, 1, muzzleD); c.rect(26, 32, 4, 1, muzzleD); c.px(25, 33, muzzleD); c.px(30, 33, muzzleD)
+    // 5. The black nose with its shine, and a thin painted mouth turned down at both ends.
+    c.rect(26, 30, 4, 2, ink); c.px(26, 30, C(0x5A5058))
+    c.rect(25, 32, 6, 1, lip); c.px(24, 33, lip); c.px(31, 33, lip)
 
     // 6. The ruff: white frills round her neck and over her shoulders, scalloped.
     c.rect(17, 34, 22, 1, ruff)
@@ -643,8 +657,9 @@ private func tinaWand(_ c: PixelCanvas, _ p: Pose, spinning: Bool) {
 
 // MARK: - Gore-Gore
 
-/// Gore-Gore: a train engineer with a second, smaller torso growing up out of the top of his head: two Clawds, one on
-/// the other, each with a band of blue warpaint across the eyes. The lower one wears blue denim bib overalls with
+/// Gore-Gore: a train engineer with a second, smaller torso growing up out of the top of his head: broad shoulders
+/// over a narrow chest and a belted waist, its arms hanging clear of it, a small head on top; each head has a band of blue
+/// warpaint across the eyes. The lower one wears blue denim bib overalls with
 /// brass buttons over a red shirt, and work boots; the upper one, a red shirt and a striped hickory engineer's cap with
 /// its brim forward. All four fists are in brown leather work gloves, and he punches with both near ones. Signature:
 /// both torsos flex, all four arms up, three pumps.
@@ -689,47 +704,50 @@ private func drawGoreGore(_ c: PixelCanvas, _ p: Pose) {
     c.rect(19, 28, 18, 3, paint); c.rect(19, 28, 18, 1, paintL); c.rect(36, 28, 1, 3, C(0x2050A8))
     c.rect(22, 28, 2, 3, ink); c.rect(32, 28, 2, 3, ink)
 
-    // 5. The upper torso, smaller, growing up out of his head: its red shirt, its own warpaint and eyes, its arms.
-    let ux = 22, uy = 16
-    c.rect(ux, uy, 12, 10, clawdOrange); c.rect(ux + 11, uy, 1, 10, clawdShade)
-    c.rect(ux, uy + 6, 12, 4, shirt); c.rect(ux, uy + 6, 1, 4, shirtL); c.rect(ux + 10, uy + 6, 2, 4, shirtD)
-    c.rect(ux + 4, uy + 6, 4, 1, clawdOrange)                             // its open collar
-    c.rect(ux, uy + 2, 12, 2, paint); c.rect(ux, uy + 2, 12, 1, paintL)
-    c.rect(ux + 2, uy + 2, 2, 2, ink); c.rect(ux + 8, uy + 2, 2, 2, ink)
+    // 5. The upper torso, smaller, growing up out of his head: a bar of broad shoulders over a narrow chest and a belted
+    //    waist, with wide gaps either side so its arms hang clear; a small head of its own on top, with its warpaint.
+    c.rect(15, 19, 26, 2, shirt); c.rect(15, 19, 24, 1, shirtL); c.rect(39, 19, 2, 2, shirtD)
+    c.rect(22, 21, 12, 4, shirt); c.rect(22, 21, 1, 4, shirtL); c.rect(32, 21, 2, 4, shirtD)
+    c.rect(22, 25, 12, 1, gloveD); c.rect(27, 25, 2, 1, brass)            // its belt and buckle
+    c.pattern(26, 19, ["OOOO", ".OO."], ["O": clawdOrange])               // its open collar
+    c.rect(23, 13, 10, 6, clawdOrange); c.rect(32, 13, 1, 6, clawdShade); c.rect(23, 18, 10, 1, clawdShade)
+    c.rect(23, 15, 10, 2, paint); c.rect(23, 15, 10, 1, paintL)
+    c.rect(25, 15, 2, 2, ink); c.rect(30, 15, 2, 2, ink)
     c.rect(18, 26, 20, 1, clawdShade)                                     // where the two meet
 
     // 6. The engineer's cap: hickory stripes, blue and white, the brim forward.
-    c.pattern(ux - 1, uy - 5, [
-        "..WBWBWBWB....",
-        ".BWBWBWBWBW...",
-        "WBWBWBWBWBWB..",
-        "WBWBWBWBWBWBW.",
-        "BBBBBBBBBBBBBBBB",
+    c.pattern(22, 8, [
+        "..WBWBWBW.....",
+        ".BWBWBWBWB....",
+        "WBWBWBWBWBW...",
+        "WBWBWBWBWBW...",
+        "BBBBBBBBBBBBBB",
     ], ["W": capL, "B": cap])
-    c.rect(ux + 9, uy, 6, 1, C(0x1E2E50))
+    c.rect(31, 13, 5, 1, C(0x1E2E50))
 
-    // 7. The fists: the far ones at the sides, the near ones punching, or all four up as he flexes.
+    // 7. The fists: the far ones at the sides, the near ones punching, or all four up as he flexes. The upper arms
+    //    hang out from its shoulders, clear of its waist.
     if flexing {
         let up = pump
         v4Line(c, 38, 33, 41, 29 - Double(up), shirt, 1.1); fist(41, 27 - up, 1); c.px(40, 30 - up, shirtL)
         v4Line(c, 17, 33, 14, 29 - Double(up), shirt, 1.1); fist(14, 27 - up, 1); c.px(15, 30 - up, shirtL)
         let u2 = 2 - up
-        v4Line(c, 34, 22, 37, 18 - Double(u2), shirt, 0.9); fist(37, 16 - u2, 1)
-        v4Line(c, 21, 22, 18, 18 - Double(u2), shirt, 0.9); fist(18, 16 - u2, 1)
-        c.px(36, 20 - u2, shirtL); c.px(19, 20 - u2, shirtL)
+        v4Line(c, 39, 20, 43, 16 - Double(u2), shirt, 1.1); fist(43, 14 - u2, 1)
+        v4Line(c, 16, 20, 12, 16 - Double(u2), shirt, 1.1); fist(12, 14 - u2, 1)
+        c.px(41, 18 - u2, shirtL); c.px(14, 18 - u2, shirtL)
     } else {
         fist(16, 34, 1)
-        c.rect(19, 21, 3, 2, shirt); fist(20, 23, 1)
+        c.rect(15, 21, 3, 2, shirt); c.rect(15, 21, 1, 2, shirtL); fist(16, 24, 1)
         if let a = p.melee {
             crawlPunch(c, angle: a, trail: p.trail, arm: shirt, fist: fist)
             let a2 = min(10, max(-60, (p.trail.first ?? a) - 30))
-            let sh = (34.5, 21.5)
-            v4Line(c, sh.0, sh.1, crawlReach(sh, a2, 4).x, crawlReach(sh, a2, 4).y, shirt, 0.9)
-            let e = crawlReach(sh, a2, 5)
+            let sh = (39.5, 20.5)
+            v4Line(c, sh.0, sh.1, crawlReach(sh, a2, 5).x, crawlReach(sh, a2, 5).y, shirt, 1.1)
+            let e = crawlReach(sh, a2, 6)
             fist(Int(e.x.rounded()), Int(e.y.rounded()), 1)
         } else {
             fist(39, 35, 1)
-            c.rect(34, 21, 2, 2, shirt); fist(36, 23, 1)
+            c.rect(38, 21, 3, 2, shirt); c.rect(40, 21, 1, 2, shirtD); fist(39, 24, 1)
         }
     }
 }
@@ -839,13 +857,13 @@ private func drawDismember(_ c: PixelCanvas, _ p: Pose) {
 // MARK: - Queen Imogen
 
 /// Queen Imogen: Clawd as a queen of the ballroom, her face painted in gold leaf round the eyes and across the brow,
-/// gold lips, long lashes; her near-black hair piled up high in a tall beehive, strands swept up round it and gold
-/// pins through it; a gown to the floor that shifts slowly through its colours, a gold collar at its neckline and a
+/// gold lips, long lashes; her near-black hair piled up in a tall domed beehive, strands wound round it on the slant
+/// and gold pins through it; a gown to the floor that shifts slowly through its colours, a gold collar at its neckline and a
 /// gold sash at the waist, gold slippers peeping under the hem; long curved gold claws for nails. Her telekinesis
 /// ripples out in gold rings. Signature: her gown shimmers through every colour, a light running down it as it turns.
 private func drawImogen(_ c: PixelCanvas, _ p: Pose) {
     let gold = C(0xE8BE48), goldD = C(0xB08A28), goldL = C(0xFFE68A)
-    let hair = C(0x7A2836), hairD = C(0x4E1622), hairL = C(0xA84A5A)
+    let hair = C(0x3E1C2A), hairD = C(0x26101A), hairL = C(0x8A3E56), hairS = C(0x74324A)
     let s = p.signature ?? -1
     let shimmer = v4Arc(s, 0.06, 0.94, edge: 0.1)
     let hue = 0.45 + 0.05 * sin(p.lt * 0.25) + (s > 0 ? v4Ease(s, 0.06, 0.94) : 0)
@@ -886,22 +904,28 @@ private func drawImogen(_ c: PixelCanvas, _ p: Pose) {
     c.px(21, 29, ink); c.px(34, 29, ink); c.px(20, 28, ink); c.px(35, 28, ink)
     c.rect(27, 32, 2, 1, goldD)
 
-    // 6. The hair: piled up high in a tall beehive, strands swept up round it, lit on the left, gold pins through it,
-    //    and falling either side of her face.
-    c.pattern(17, 8, [
-        "........HHHHHH......",
-        "......HHlHHHHhHH....",
-        ".....HlHHHHhHHHHH...",
-        "....HHlHHHhHHHHHHH..",
-        "....HlHHHhHHHHHhHH..",
-        "...HHlHHhHHHHHhHHHH.",
-        "...HlHHhHHHHHhHHHHH.",
-        "...HlHHhHHHHhHHHHHH.",
-        "...HlHHHhHHHhHHHHHh.",
-        "...HHlHHhHHHHhHHHHh.",
-        "....HlHHHhHHHhHHHh..",
-        "....HHlHHhHHHHhHHh..",
-        ".....HHHHHhHHHhHh...",
+    // 6. The hair: a tall beehive, one dome rising straight out of the hair round her face to a rounded peak, wound
+    //    with slanting strands that show at any size, lit down the left, gold pins through it; and falling either side
+    //    of her face.
+    c.pattern(19, 5, [
+        ".....lHHHHHHh.....",
+        "....lHHHHHHHHh....",
+        "...lHHHHHHHHHHh...",
+        "...lHHHHHHHHsss...",
+        "...lHHHHHsssHHh...",
+        "...lHHsssHHHHHh...",
+        "..lsssHHHHHHHsss..",
+        "..lHHHHHHHsssHHh..",
+        "..lHHHHsssHHHHHh..",
+        "..lHsssHHHHHHHHh..",
+        ".lsssHHHHHHHHHsss.",
+        ".lHHHHHHHHHsssHHh.",
+        ".lHHHHHHsssHHHHHh.",
+        ".lHHHsssHHHHHHHHh.",
+        "lsssHHHHHHHHHHHsss",
+        "lHHHHHHHHHHHHHHHHh",
+    ], ["H": hair, "h": hairD, "l": hairL, "s": hairS])
+    c.pattern(17, 21, [
         "...HHHHHHHHhHHHHHHH.",
         "..HHlHHHHHHHHHhHHHHH",
         ".HHlHHHHHHHHHHHHhHHH",
@@ -913,7 +937,7 @@ private func drawImogen(_ c: PixelCanvas, _ p: Pose) {
         ".H..................",
     ], ["H": hair, "h": hairD, "l": hairL])
     c.rect(18, 25, 20, 1, hairD)
-    for (x, y) in [(22, 11), (32, 13), (27, 9)] { c.px(x, y, goldL); c.px(x + 1, y + 1, gold) }
+    for (x, y) in [(24, 8), (32, 13), (24, 17)] { c.px(x, y, goldL); c.px(x + 1, y + 1, gold) }
     c.rect(19, 21, 18, 1, gold); c.rect(19, 21, 5, 1, goldL)                 // the band round the base of it
 
     // 7. The near hand and its long gold claws: down at her side, or held out as she casts.
