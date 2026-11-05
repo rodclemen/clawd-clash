@@ -9,24 +9,26 @@ import Foundation
 
 extension CrawlTrip {
     /// Loot Box, `k` (0…1) through its own part, over the whole of `r`. The box drops out of the top into the middle
-    /// of the old place, its shadow growing under it (0–0.14), and lands with a thump: the scene jolts, dust puffs out
-    /// either side (0.14–0.24); the old place dims and the box rattles in bursts that come closer together, light
-    /// leaking round its lid and glints escaping up (0.2–0.5); it bursts open, a flash, the lid spinning up and away,
+    /// of the old place, its shadow growing under it (0–0.14), and lands with a thump: the scene jolts, dust rolls out
+    /// either side in chunky clouds along the ground (0.14–0.34); the old place dims and the box rattles in bursts that
+    /// come closer together, light leaking round its lid and glints escaping up (0.2–0.5); it bursts open, a flash, the
+    /// lid spinning up and away,
     /// rays fanning up out of its mouth and sparkles rising (0.5–0.8); its light floods out in a widening oval, rimmed
-    /// white and the tier's glow, swallowing the box, solid light inside (0.54–0.78), and the light thins off the new
-    /// place in eighths (0.72–0.98). The box is drawn on the art's grid, every pixel of New Achievement!'s box a square
-    /// of three or four.
+    /// white and the tier's glow, swallowing the box, solid light inside in stepped rings, white at the middle (a
+    /// silver box's cool blue, a sheen sweeping over it), and the light clears off the new place from the middle
+    /// outward in quarters, the top-left corner among the last but done before the System box comes (0.68–0.84). The
+    /// box is drawn on the art's grid, every pixel of New Achievement!'s box a square of three or four.
     func drawLootBox(_ ctx: CGContext, old: CGImage, new: CGImage, k: Double, in r: CGRect) {
         guard k > 0 else { ctx.drawShot(old, in: r); return }
-        guard k < 0.98 else { ctx.drawShot(new, in: r); return }
+        guard k < 0.85 else { ctx.drawShot(new, in: r); return }
         let art = CrawlArt(r)
         let c = art.c, w = art.w, h = art.h
-        let tier = lootTier, glowHex = lootHex(tier.glow)
+        let tier = lootTier
         let t = k * CrawlWipe.lootBox.effect
         let s = art.wide ? max(3, h / 32) : max(2, h / 40)       // art pixels to one of the box's
         let cx = w / 2, ground = h * 68 / 100
         let fall = Self.span(k, 0, 0.14), rattle = Self.span(k, 0.2, 0.5)
-        let open = k >= 0.5, flood = Self.span(k, 0.54, 0.78), clear = Self.span(k, 0.72, 0.98)
+        let open = k >= 0.5, flood = Self.span(k, 0.54, 0.78), clear = Self.span(k, 0.68, 0.84)
 
         // Where the box is: falling (accelerating) from above the frame, then on the ground; shaking and hopping in
         // bursts while it rattles, its lid lifting on a line of light.
@@ -63,9 +65,26 @@ extension CrawlTrip {
             if !inside.isEmpty {
                 ctx.saveGState(); ctx.clip(to: inside)
                 ctx.drawShot(new, in: r)
-                Self.wash(ctx, glowHex, 1 - Self.ease(clear), in: r)
-                Self.wash(ctx, 0xFFFFFF, 0.5 * (1 - Self.span(clear, 0, 0.5)), in: r)
                 ctx.restoreGState()
+            }
+            // The light over it: stepped rings, clearing from the middle out, a ring of quarters at a time.
+            let rings = lootFloodRings(tier)
+            let front = clear * 1.5 - 0.5
+            for y in 0..<h {
+                for x in 0..<w {
+                    let dd = d(x, y)
+                    guard dd < reach else { continue }
+                    let u = dd / corner
+                    let a = (Self.clamp((u - front) / 0.5) * 4).rounded(.up) / 4
+                    guard a > 0 else { continue }
+                    var col = rings[min(rings.count - 1, Int(u * 5))]
+                    if tier == .silver {
+                        // The sheen: broad bright bars sweeping across, as off polished metal.
+                        let bar = Int(Double(x) + Double(y) * 1.3 + 2000 - t * 120) % (h * 3 / 4)
+                        if bar < h / 8 { col = lerp(col, C(0xFFFFFF), 0.6) }
+                    }
+                    c.px(x, y, col.alpha(a))
+                }
             }
         }
         // The burst's flash over everything, in steps.
@@ -91,14 +110,22 @@ extension CrawlTrip {
             let spread = Int(Double(7 * s) * (0.4 + 0.6 * fall))
             c.ellipse(cx, ground + 1, spread, max(1, s / 2), C(0x000000, 0.3 + 0.3 * fall))
         }
-        let dust = Self.span(k, 0.14, 0.26)
+        let dust = Self.span(k, 0.14, 0.34)
         if dust > 0 && dust < 1 {
-            for i in 0..<10 {
+            // Two clouds rolling out along the ground from under the box: fat round puffs, lit on top and shaded under
+            // so they show on a pale floor as well as a dark one, swelling and then thinning in quarters.
+            let thin = (1 - Self.span(dust, 0.55, 1)) * 4
+            let a = thin.rounded(.up) / 4
+            for i in 0..<12 {
                 let side = i % 2 == 0 ? -1.0 : 1.0
-                let out = Double(7 * s) + dust * Double(s) * (3 + noise(i * 5) * 5)
-                let rise = dust * Double(s) * (0.5 + noise(i * 5 + 1) * 2.5)
-                let size = max(1, s / 2 + (i % 3 == 0 ? 1 : 0))
-                c.rect(cx + Int(side * out), ground - Int(rise) - size, size, size, C(0xE8DCB8, 0.9 * (1 - dust)))
+                let lane = noise(i * 5)
+                let out = Double(6 * s) + (1 - pow(1 - dust, 2.2)) * Double(s) * (2 + lane * 10)
+                let rad = Double(s) * (0.9 + noise(i * 5 + 2) * 1.1) * (0.6 + 0.8 * dust)
+                let rise = dust * Double(s) * (0.3 + noise(i * 5 + 1) * 1.6)
+                let px = cx + Int(side * out), py = ground - Int(rise + rad * 0.6)
+                c.circle(px, py + 1, Int(rad.rounded()), C(0x8A7A62, a))
+                c.circle(px, py, Int((rad * 0.86).rounded()), C(0xCDBE9C, a))
+                c.circle(px - Int(rad / 4), py - Int(rad / 3), Int((rad * 0.5).rounded()), C(0xF4EAD0, a))
             }
         }
         if rattle > 0 && !open {
@@ -194,8 +221,13 @@ extension CrawlTrip {
     }
 }
 
-/// A colour as 0xRRGGBB, for the trips' washes.
-private func lootHex(_ p: Px) -> UInt32 { UInt32(p.r) << 16 | UInt32(p.g) << 8 | UInt32(p.b) }
+/// The flood's light from its middle out, in steps: white, then down through the tier's glow. Silver's own glow is
+/// nearly white, so it goes on to a cool steel blue, or the whole flood would be one flat pale grey.
+private func lootFloodRings(_ tier: CrawlLootTier) -> [Px] {
+    if tier == .silver { return [C(0xFFFFFF), C(0xE6F3FF), C(0xBCD8F6), C(0x92B8E6), C(0x7096D0)] }
+    let g = tier.glow, white = C(0xFFFFFF)
+    return [white, lerp(g, white, 0.7), lerp(g, white, 0.4), lerp(g, white, 0.15), g]
+}
 
 /// New Achievement!'s loot box at `s` art pixels to one of its own, its body from `x0` (13 wide) and `bodyTop` to
 /// `bottom`, its lid (15 wide, 3 tall, a pixel wider each side) from `lidTop`: a dark outline round it so it stands
