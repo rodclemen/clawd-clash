@@ -9,6 +9,14 @@ Its first three universes started as separate apps. Their changelogs from before
 
 Doctor Clawd, the fourth, was made for Clawd Clash ([doctor-clawd](https://github.com/rodclemen/doctor-clawd)), so its whole history is below, from 3.1.0.
 
+## 4.2.1 (2026-11-06)
+
+### Added
+- **A character can shoot more than one way, taking turns** (`Persona.shotTurns`): each shot takes the next look and muzzle in the list, in fights, solo practice and sky shots alike. Engine work for a coming universe; every character in the app today is unchanged.
+
+### Fixed
+- **A terminal nobody has typed in no longer gets the red "isn't reporting" warning.** Any session that had never reported and showed a single reading over 3% CPU counted as having run a turn, and that stuck for the life of the process, so an unused Claude Code terminal could be told to check `/hooks` after one blip of startup or housekeeping. Claude Code no longer depends on CPU for this: a session with no transcript has never had a prompt, so it can't be silent. CPU varies from machine to machine, so it's only the fallback, for the other AIs and whenever Claude Code's session file can't be read, and there it now takes 20 seconds of unbroken work to count as a turn. That can miss a silent session whose turns are mostly waiting on the AI, which only means no warning.
+
 ## 4.2.0 (2026-10-29)
 
 ### Added
