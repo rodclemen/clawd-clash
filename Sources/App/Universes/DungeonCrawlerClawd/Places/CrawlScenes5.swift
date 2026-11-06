@@ -100,16 +100,18 @@ extension Scenes {
         if tall { crawlTangleGirders(c, g, f.girders, f.columns) }
 
         // The station's name: a maroon mosaic tablet with a cream border, the letters big and cream.
-        let label = "IRON TANGLE", lw = crawlTextWidth(label, scale: 2 * s)
-        let nw = lw + 12 * s, nh = 18 * s, nx = c.w / 2 - nw / 2, ny = g - 62 * s
+        // Where the first column and the departures board leave too little room, smaller letters, so it isn't hidden.
+        let ts = c.w * 32 / 100 >= 108 * s ? 2 * s : s
+        let label = "IRON TANGLE", lw = crawlTextWidth(label, scale: ts)
+        let nw = lw + 12 * s, nh = 18 * s, nx = c.w / 2 - nw / 2, ny = g - 62 * s, ty = ny + (nh - 5 * ts) / 2
         c.rect(nx - 2 * s, ny - 2 * s, nw + 4 * s, nh + 4 * s, C(0xD8CCA8))
         c.rect(nx - 2 * s, ny + nh + s, nw + 4 * s, s, C(0xA89C7C))
         c.rect(nx - s, ny - s, nw + 2 * s, nh + 2 * s, C(0x3A1A16))
         c.rect(nx, ny, nw, nh, C(0x6A2622))
         for y in stride(from: ny + 2 * s, to: ny + nh, by: 4 * s) { c.rect(nx, y, nw, max(1, s / 2), C(0x5A1E1A)) }
         for x in stride(from: nx + 3 * s, to: nx + nw, by: 4 * s) { c.rect(x, ny, max(1, s / 2), nh, C(0x5A1E1A)) }
-        crawlText(c, nx + 6 * s + s, ny + 4 * s + s, label, C(0x2A100C), scale: 2 * s)
-        crawlText(c, nx + 6 * s, ny + 4 * s, label, C(0xF0E2C0), scale: 2 * s)
+        crawlText(c, nx + 6 * s + s, ty + s, label, C(0x2A100C), scale: ts)
+        crawlText(c, nx + 6 * s, ty, label, C(0xF0E2C0), scale: ts)
 
         // The network's map on the left: a black frame, cream paper, four coloured lines knotted together, white
         // stations at the knots.
