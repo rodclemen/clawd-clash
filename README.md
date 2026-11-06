@@ -23,7 +23,7 @@ https://github.com/user-attachments/assets/f2da9a7e-9e3d-422b-a75a-22a8136e33e5
 
 <p align="center"><sub>Full 1080p version: <a href="promo/clawd-clash-promo.mp4">promo/clawd-clash-promo.mp4</a></sub></p>
 
-Clawd Clash is one app with many universes: **[Star Clawds](https://github.com/rodclemen/star-clawds)** (formerly Clawd Wars), **[Marvelous Clawds](https://github.com/rodclemen/marvelous-clawds)** (formerly Clawdvengers: Clawd Wars), **[Detective Clawds](https://github.com/rodclemen/detective-clawds)** (formerly Justice Clawds: Clawd Wars), **[Doctor Clawd](https://github.com/rodclemen/doctor-clawd)**, **[The Clawd Files](https://github.com/rodclemen/the-clawd-files)**, **[Stevie Clawdberg](https://github.com/rodclemen/stevie-clawdberg)**, **[Clawd of the Rings](https://github.com/rodclemen/clawd-of-the-rings)**, **[Clawd Slayer](https://github.com/rodclemen/clawd-slayer)**, **[Stranger Clawds](https://github.com/rodclemen/stranger-clawds)**, **[Superclawdtural](https://github.com/rodclemen/superclawdtural)** and **[Clawds of the Universe](https://github.com/rodclemen/clawds-of-the-universe)**. Pick one in Settings, or Clawd Royale for all of them at once. The universes' own pages show each one on its own; this one is the app.
+Clawd Clash is one app with many universes: **[Star Clawds](https://github.com/rodclemen/star-clawds)** (formerly Clawd Wars), **[Marvelous Clawds](https://github.com/rodclemen/marvelous-clawds)** (formerly Clawdvengers: Clawd Wars), **[Detective Clawds](https://github.com/rodclemen/detective-clawds)** (formerly Justice Clawds: Clawd Wars), **[Doctor Clawd](https://github.com/rodclemen/doctor-clawd)**, **[The Clawd Files](https://github.com/rodclemen/the-clawd-files)**, **[Stevie Clawdberg](https://github.com/rodclemen/stevie-clawdberg)**, **[Clawd of the Rings](https://github.com/rodclemen/clawd-of-the-rings)**, **[Clawd Slayer](https://github.com/rodclemen/clawd-slayer)**, **[Stranger Clawds](https://github.com/rodclemen/stranger-clawds)**, **[Superclawdtural](https://github.com/rodclemen/superclawdtural)**, **[Clawds of the Universe](https://github.com/rodclemen/clawds-of-the-universe)** and **Dungeon Crawler Clawd**. Pick one in Settings, or Clawd Royale for all of them at once. The universes' own pages show each one on its own; this one is the app.
 
 | Star Clawds | Marvelous Clawds |
 |---|---|
@@ -88,14 +88,15 @@ You run Claude Code in three terminals. One is thinking, one is waiting for your
   <img src="docs/desktop-clawd-slayer.png" alt="Clawd Slayer sessions and agents fighting along the bottom of the screen"><br>
   <img src="docs/desktop-stranger-clawds.png" alt="Stranger Clawds sessions and agents fighting along the bottom of the screen"><br>
   <img src="docs/desktop-superclawdtural.png" alt="Superclawdtural sessions and agents fighting along the bottom of the screen"><br>
-  <img src="docs/desktop-clawds-of-the-universe.png" alt="Clawds of the Universe sessions and agents fighting along the bottom of the screen">
+  <img src="docs/desktop-clawds-of-the-universe.png" alt="Clawds of the Universe sessions and agents fighting along the bottom of the screen"><br>
+  <img src="docs/desktop-dungeon-crawler-clawd.png" alt="Dungeon Crawler Clawd sessions and agents fighting along the bottom of the screen">
 </p>
 
 ## The universes
 
 Pick one in **Settings… → Universe**:
 
-- **One universe:** Star Clawds, Marvelous Clawds, Detective Clawds, Doctor Clawd, The Clawd Files, Stevie Clawdberg, Clawd of the Rings, Clawd Slayer, Stranger Clawds, Superclawdtural or Clawds of the Universe.
+- **One universe:** Star Clawds, Marvelous Clawds, Detective Clawds, Doctor Clawd, The Clawd Files, Stevie Clawdberg, Clawd of the Rings, Clawd Slayer, Stranger Clawds, Superclawdtural, Clawds of the Universe or Dungeon Crawler Clawd.
 - **Random:** a different universe on its own every 1, 5, 10, 15, 30 or 60 minutes.
 - **Clawd Royale:** every cast in one scene, heroes against villains, each character as itself. The place is a random one from any universe and changes every ten minutes (the Location menu is greyed out meanwhile).
 
@@ -313,6 +314,26 @@ The screen saver follows your pick with "The same as Clawd Clash", or has a univ
 <p align="center"><img src="docs/locations-clawds-of-the-universe.png" alt="All Clawds of the Universe places" width="760"></p>
 </details>
 
+### Dungeon Crawler Clawd
+
+- **Cast:** 44 villains, 51 heroes, from all eight Dungeon Crawler Carl books, everyone under the books' own name
+- **Places:** 20, from a safe room and Carl's street on the night of the collapse to the Desperado Club, Iron Tangle station, Odette's studio and Emberus's High Temple
+- **Weapons:** Carl's goblin dynamite and gauntlet, Donut's Magic Missiles, Katia's fists, Tserendolgor's Crisper flamethrower, Eva's four swords, Sister Ines's thrown bolts, Princess Formidable's arm cannon and the Reminiscence Hydra's heads, which take turns shooting
+- **Set pieces:**
+  - Arch-enemies face off first
+  - Katia's monster truck picks up the crawlers, sinking on its springs as the ladder unrolls; the villains walk
+  - When an Earth crawler's session compacts its context, a blue System box slams down, NEW ACHIEVEMENT! YOU FORGOT EVERYTHING!, and a loot box drops at their feet and bursts open: usually bronze, rarely legendary, now and then celestial. Same session, same face
+  - Camera flashes go off round Princess Donut and +10,000 VIEWERS floats up; Mongo nips her tail and she swats his snout ("Bad Mongo! BAD!"); when Prepotente screams the crew jump; and the System hands idlers petty achievements (STOOD THERE, PARTICIPATION TROPHY)
+  - Every change of place ends with the System's box naming it, and the Collapse is the rarest of the twelve
+  - The Hoarder never leaves her lair, and Garret, the Scatterer bugs, the goblins, the Tusklings, the Pookas and the Krakaren clonelings only turn up as agents
+- **Sides:** Claude Code plays the crawlers when another AI runs
+
+<details>
+<summary><b>The Dungeon Crawler Clawd cast and places</b></summary>
+<p align="center"><img src="docs/roster-dungeon-crawler-clawd.png" alt="All Dungeon Crawler Clawd characters" width="760"></p>
+<p align="center"><img src="docs/locations-dungeon-crawler-clawd.png" alt="All Dungeon Crawler Clawd places" width="760"></p>
+</details>
+
 ## Window mode and the screen saver
 
 It opens in a window by default (switch to the desktop from the menu): the whole crew in a scene set where the first session's character belongs, with a card for every session: its project, what it's doing right now, your last prompt, its last reply, and its agents in a little tree.
@@ -338,6 +359,7 @@ Every 10 minutes it moves somewhere new, with a transition from the universe it'
 - **Stranger Clawds:** one of ten: the opening titles in red neon, the place draining into the Upside Down, a gate cracking open, walkie-talkie static, Eleven's void, the Mind Flayer's storm, Vecna's grandfather clock, a natural 20, the Starcourt fireworks and an arcade's INSERT COIN. Then Joyce's Christmas lights spell out the new place's name.
 - **Superclawdtural:** one of twelve: The Road So Far on grainy film, the Impala's headlights, a grave salted and burned, a devil's trap, demon smoke, angel light with wing shadows, hellhound claws, a cold spot frosting over, the Ghostfacers' camcorder, the motel's wallpaper, the Leviathan's grin and Chuck rewriting the page.
 - **Clawds of the Universe:** one of twelve, each ending with the new place's name carved in stone: By the Power of Greyskull's sword and lightning, Greyskull's jawbridge, Zoar swooping across, Orkko's trick (two wrong places first), the Havoc Staff cracking the scene, a crystal orb, the Wind Raider's cloud, For the Honour of Greyskull's rainbow spiral, the Horde bat, Shadow Weaver's strands, a portal between worlds and Light Hope's rainbow.
+- **Dungeon Crawler Clawd:** one of twelve, each ending with the System's blue box naming the new place: the Collapse (the street sinks, WELCOME, CRAWLER! slams in and the crew fall), down the stairwell with its floor counter, a loot box, a Recap Episode, a red countdown and a falling floor, the Iron Tangle's train, Ping over a dungeon map, goblin dynamite, the Desperado Club's velvet doors, the Death Watch wheel, Donut's Hole and Emberus's wall of fire.
 
 Its **Options…** button in System Settings picks the universe: the same as the app, any one universe, Clawd Royale, or Random (a new pick on each trip). To keep your work private from anyone walking past, turn off the banner along the bottom and the session cards, in its Options or in **Settings… → Screen Saver**: the characters, their names, how they're doing and what they say stay.
 

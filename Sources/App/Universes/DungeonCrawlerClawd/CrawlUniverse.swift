@@ -85,10 +85,17 @@ struct CrawlUniverse: UniverseModule {
     /// pairs fighting each other and the odd one cheering, and the social preview's title, line and cast.
     var docs: DocsInfo {
         DocsInfo(lineup: [
-            LineupSlot.pair(.villain(CrawlVillain.maestro), true, "", 60, .hero(CrawlHero.carl), true, "", 150),
-            [LineupSlot(who: .hero(CrawlHero.donut), leader: true, label: "", x: 230, facing: 1, role: .cheer)],
-            [LineupSlot(who: .hero(CrawlHero.mongo), leader: false, label: "Open the loot box", x: 300, facing: -1, role: .cheer)],
+            LineupSlot.pair(.villain(CrawlVillain.maestro), true, "", 30, .hero(CrawlHero.carl), true, "", 98),
+            LineupSlot.pair(.hero(CrawlHero.bautista), false, "Check git history", 130,
+                            .villain(CrawlVillain.juicer), false, "Write changelog", 170),
+            LineupSlot.pair(.hero(CrawlHero.mongo), false, "Plan the refactor", 214,
+                            .villain(CrawlVillain.bigTina), false, "Review Overlay.swift", 256),
+            LineupSlot.pair(.hero(CrawlHero.donut), true, "", 302, .villain(CrawlVillain.shiMaria), true, "", 360),
+            [LineupSlot(who: .hero(CrawlHero.prepotente), leader: false, label: "Run the test suite", x: 412, facing: 1,
+                        role: .cheer)],
         ], social: (title: Universe.crawl.title.uppercased(), subtitle: "Your AI sessions as a pixel-art dungeon crawl on your desktop",
-                    cast: [.hero(CrawlHero.carl), .hero(CrawlHero.donut), .hero(CrawlHero.mongo), .villain(CrawlVillain.maestro)]))
+                    cast: [.hero(CrawlHero.carl), .hero(CrawlHero.donut), .hero(CrawlHero.mongo), .hero(CrawlHero.katia),
+                           .villain(CrawlVillain.maestro), .villain(CrawlVillain.bigTina), .villain(CrawlVillain.shiMaria),
+                           .villain(CrawlVillain.juicer)]))
     }
 }
