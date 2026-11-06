@@ -141,6 +141,7 @@ final class OverlayController: NSObject, NSMenuDelegate, NSApplicationDelegate, 
     }
     private var notifiedSilent: Set<Int32> = []
     private var seenBusy: Set<Int32> = []            // pids seen working (a turn ran, so a working hook would have fired)
+    private static let turnBusySeconds = 20.0        // unbroken CPU that counts as a turn having run, for `seenBusy`
     private var reported: Set<Int32> = []            // pids whose hooks have fired: their hooks work, even once SessionEnd drops the record
     private var lastLive: [Int32: Double] = [:]      // when each pid last had a live record
     private let shotPath = ProcessInfo.processInfo.environment["CLAWD_SHOT"]     // "%d" in the path → numbered frames
@@ -453,8 +454,11 @@ final class OverlayController: NSObject, NSMenuDelegate, NSApplicationDelegate, 
             reported.formUnion(sessions.filter(\.live).compactMap(\.pid))
             for i in sessions.indices where !sessions[i].live {
                 guard let pid = sessions[i].pid, !reported.contains(pid) else { continue }
-                if sessions[i].mood == .working { seenBusy.insert(pid) }
-                if let since = hooksSince[sessions[i].assistant], let st = startedAt[pid], st > since + 2, seenBusy.contains(pid) {
+                // A turn is sustained work: one blip of CPU (starting up, housekeeping) in a terminal nobody has typed in
+                // isn't one, and would call a session that has simply never been used silent.
+                if let busy = busySince[pid], now - busy >= Self.turnBusySeconds { seenBusy.insert(pid) }
+                if let since = hooksSince[sessions[i].assistant], let st = startedAt[pid], st > since + 2, seenBusy.contains(pid),
+                   !(sessions[i].assistant == "claude" && ContextUsage.neverPrompted(claude: pid)) {
                     sessions[i].hookSilent = true
                 }
             }
