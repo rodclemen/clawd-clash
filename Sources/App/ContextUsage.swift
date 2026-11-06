@@ -17,6 +17,17 @@ enum ContextUsage {
     private static var files: [String: URL] = [:]
     private static var cache: [String: (modified: Date, value: Double?)] = [:]
 
+    /// Whether this Claude Code process is sure never to have been given a prompt: Claude Code writes down which session
+    /// each process runs (`~/.claude/sessions/<pid>.json`), and a session's transcript only appears with its first prompt.
+    /// That file isn't documented, so anything unexpected answers false and the caller goes by what else it knows.
+    static func neverPrompted(claude pid: Int32) -> Bool {
+        let url = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".claude/sessions/\(pid).json")
+        guard let data = try? Data(contentsOf: url),
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let id = json["sessionId"] as? String, !id.isEmpty else { return false }
+        return file(for: id, assistant: "claude") == nil
+    }
+
     static func fraction(session id: String, assistant: String, record: SessionRecord?) -> Double? {
         if assistant == "qwen" || assistant == "pi" { return record?.context }
         let model = record?.model
