@@ -70,7 +70,8 @@ func crawlBoss(_ ctx: CGContext, local: Double, t: Double) {
             var a = Actor(cast: who, x: x, facing: 1, session: false, mode: .idle)
             a.sitting = true
             a.lift = 8 - fall * fall * 260
-            draw(a, ctx, t: t)
+            // Held as they sat when the floor went, so Donut's idle Magic Missile doesn't fire on the way down.
+            draw(a, ctx, t: t - fall)
         }
         return
     }

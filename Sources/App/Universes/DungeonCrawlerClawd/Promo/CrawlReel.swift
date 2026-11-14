@@ -123,13 +123,13 @@ func crawlEndcard(_ ctx: CGContext, local: Double, t: Double) {
 let crawlBeats: [(key: Double, beat: Beat)] = [
     (1.5, ("THE COLLAPSE", "Rain on Carl's street at night. The ground cracks and the buildings start to sink.", "", "rain, a low rumble")),
     (2.6, ("WELCOME, CRAWLER!", "The blue System box slams in over the sinking street.", "SYSTEM MESSAGE: WELCOME, CRAWLER!", "a game-show brass sting, our own notes")),
-    (4.0, ("THE TITLE", "The glittering title sweeps up and knocks the box away.", "\(Universe.crawl.title.uppercased())", "a chiptune pulse starts")),
-    (5.4, ("THE FALL", "The floor goes and the crew fall through bands of System blue.", "", "a rushing wind, the pulse climbing")),
+    (4.0, ("THE TITLE", "The glittering title sweeps up and knocks the box away.", "\(Universe.crawl.title.uppercased())", "the crawl tune starts on a held chord")),
+    (5.4, ("THE FALL", "The floor goes and the crew fall through bands of System blue.", "", "a rushing wind, the tune's hook comes in")),
     (7.5, ("A SAFE ROOM", "They land in a safe room, and the System names it.", "ENTERING: A SAFE ROOM", "a thump, a ping")),
-    (10.5, ("ON THE SOFA", "Carl and Donut on Odette's cream sofa, ON AIR glowing.", "", "polite studio applause")),
+    (10.5, ("ON THE SOFA", "Carl and Donut on Odette's cream sofa, ON AIR glowing.", "", "polite studio applause over the tune's game-show beat")),
     (12.0, ("THE TRAPDOOR", "The floor opens under the sofa and they drop out of shot.", "", "a clunk, a falling whistle")),
-    (14.5, ("BOSS ROOM", "The Juicer's gym, the lights gone red. Carl punches, Donut fires Magic Missiles, Mongo leaps in.", "", "boss music, pew, a screech")),
-    (17.4, ("BOSS DEFEATED", "The Juicer falls. The System box drops in.", "BOSS DEFEATED, “Mongo is appalled.”", "a fanfare, a loot-box rattle")),
+    (14.5, ("BOSS ROOM", "The Juicer's gym, the lights gone red. Carl punches, Donut fires Magic Missiles, Mongo leaps in.", "", "the tune again, heavier drums, pew, a screech")),
+    (17.4, ("BOSS DEFEATED", "The Juicer falls. The System box drops in.", "BOSS DEFEATED, “Mongo is appalled.”", "the tune's fanfare on brass, a loot-box rattle")),
     (app + 1.5, ("THE HOOK", "The desktop, busy with terminals, zooming in slowly.", "“Three AIs. Nine agents. One very confused crawler.” “Sound familiar?”", "keys clicking, the groove fading in")),
     (app + 6.0, ("THE DESKTOP", "\(Cast.hero(CrawlHero.carl).name) and \(Cast.villain(CrawlVillain.maestro).name) drop onto the desktop and fight along the bottom of the screen.",
            "DESKTOP MODE, “Welcome to the dungeon. Your desktop is the dungeon.”", "footsteps, dynamite and a crackle of magic")),
@@ -142,7 +142,7 @@ let crawlBeats: [(key: Double, beat: Beat)] = [
 
 // MARK: The sound
 
-/// The score and effects: the shared groove under the app shots, each shot's effects, the trips' own sounds, and a
+/// The score and effects: the opening's own tune (CrawlReelSound.swift), the shared groove under the app shots, each shot's effects, the trips' own sounds, and a
 /// last chord on the end card. A finished trailer has music of its own in the franchise's spirit, never its notes.
 func crawlSound(_ m: Mix) {
     crawlOpeningSound(m)
