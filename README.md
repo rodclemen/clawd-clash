@@ -5,7 +5,7 @@
 <h1 align="center">Clawd Clash</h1>
 
 <p align="center">
-  <b>Your Claude Code sessions, and those of every other AI you run, as a pixel-art Star Clawds, Marvelous Clawds, Detective Clawds, Doctor Clawd, The Clawd Files, Stevie Clawdberg, Clawd of the Rings, Clawd Slayer, Stranger Clawds, Superclawdtural or Clawds of the Universe battle on your desktop.</b><br>
+  <b>Your Claude Code sessions, and those of every other AI you run, as a pixel-art Star Clawds, Marvelous Clawds, Detective Clawds, Doctor Clawd, The Clawd Files, Stevie Clawdberg, Clawd of the Rings, Clawd Slayer, Stranger Clawds, Superclawdtural, Clawds of the Universe or Dungeon Crawler Clawd battle on your desktop.</b><br>
   Every session is a hero or a villain, every subagent joins in, and they fight while they work.
 </p>
 
@@ -23,7 +23,7 @@ https://github.com/user-attachments/assets/f2da9a7e-9e3d-422b-a75a-22a8136e33e5
 
 <p align="center"><sub>Full 1080p version: <a href="promo/clawd-clash-promo.mp4">promo/clawd-clash-promo.mp4</a></sub></p>
 
-Clawd Clash is one app with many universes: **[Star Clawds](https://github.com/rodclemen/star-clawds)** (formerly Clawd Wars), **[Marvelous Clawds](https://github.com/rodclemen/marvelous-clawds)** (formerly Clawdvengers: Clawd Wars), **[Detective Clawds](https://github.com/rodclemen/detective-clawds)** (formerly Justice Clawds: Clawd Wars), **[Doctor Clawd](https://github.com/rodclemen/doctor-clawd)**, **[The Clawd Files](https://github.com/rodclemen/the-clawd-files)**, **[Stevie Clawdberg](https://github.com/rodclemen/stevie-clawdberg)**, **[Clawd of the Rings](https://github.com/rodclemen/clawd-of-the-rings)**, **[Clawd Slayer](https://github.com/rodclemen/clawd-slayer)**, **[Stranger Clawds](https://github.com/rodclemen/stranger-clawds)**, **[Superclawdtural](https://github.com/rodclemen/superclawdtural)**, **[Clawds of the Universe](https://github.com/rodclemen/clawds-of-the-universe)** and **Dungeon Crawler Clawd**. Pick one in Settings, or Clawd Royale for all of them at once. The universes' own pages show each one on its own; this one is the app.
+Clawd Clash is one app with many universes: **[Star Clawds](https://github.com/rodclemen/star-clawds)** (formerly Clawd Wars), **[Marvelous Clawds](https://github.com/rodclemen/marvelous-clawds)** (formerly Clawdvengers: Clawd Wars), **[Detective Clawds](https://github.com/rodclemen/detective-clawds)** (formerly Justice Clawds: Clawd Wars), **[Doctor Clawd](https://github.com/rodclemen/doctor-clawd)**, **[The Clawd Files](https://github.com/rodclemen/the-clawd-files)**, **[Stevie Clawdberg](https://github.com/rodclemen/stevie-clawdberg)**, **[Clawd of the Rings](https://github.com/rodclemen/clawd-of-the-rings)**, **[Clawd Slayer](https://github.com/rodclemen/clawd-slayer)**, **[Stranger Clawds](https://github.com/rodclemen/stranger-clawds)**, **[Superclawdtural](https://github.com/rodclemen/superclawdtural)**, **[Clawds of the Universe](https://github.com/rodclemen/clawds-of-the-universe)** and **[Dungeon Crawler Clawd](https://github.com/rodclemen/dungeon-crawler-clawd)**. Pick one in Settings, or Clawd Royale for all of them at once. The universes' own pages show each one on its own; this one is the app.
 
 | Star Clawds | Marvelous Clawds |
 |---|---|
@@ -421,7 +421,7 @@ brew trust rodclemen/tap      # newer Homebrew asks you to trust a third-party t
 brew install --cask clawd-clash
 ```
 
-`rodclemen/tap/star-clawds`, `rodclemen/tap/marvelous-clawds`, `rodclemen/tap/detective-clawds` and `rodclemen/tap/clawds-of-the-universe` install the same app, starting in Star Clawds, Marvelous Clawds, Detective Clawds or Clawds of the Universe. Or download the zip from [Releases](https://github.com/rodclemen/clawd-clash/releases), unzip it and drag **Clawd Clash** to Applications.
+`rodclemen/tap/star-clawds`, `rodclemen/tap/marvelous-clawds`, `rodclemen/tap/detective-clawds`, `rodclemen/tap/clawds-of-the-universe` and `rodclemen/tap/dungeon-crawler-clawd` install the same app, starting in Star Clawds, Marvelous Clawds, Detective Clawds, Clawds of the Universe or Dungeon Crawler Clawd. Or download the zip from [Releases](https://github.com/rodclemen/clawd-clash/releases), unzip it and drag **Clawd Clash** to Applications.
 
 **From source** (no Xcode project, no packages, only Apple's free Command Line Tools):
 
