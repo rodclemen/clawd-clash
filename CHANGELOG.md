@@ -9,6 +9,11 @@ Its first three universes started as separate apps. Their changelogs from before
 
 Doctor Clawd, the fourth, was made for Clawd Clash ([doctor-clawd](https://github.com/rodclemen/doctor-clawd)), so its whole history is below, from 3.1.0.
 
+## Unreleased
+
+### Changed
+- **The README plays Dungeon Crawler Clawd's trailer** in the empty cell beside Clawds of the Universe in the universes' table, the 720p cut uploaded to GitHub, so all twelve universes have their trailer on the front page.
+
 ## 4.3.0 (2026-11-14)
 
 ### Added
