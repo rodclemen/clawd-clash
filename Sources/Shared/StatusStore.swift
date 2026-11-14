@@ -30,6 +30,8 @@ struct SessionRecord: Codable {
     var context: Double?     // how near its next compaction, 0…1, where the AI's hooks say (Qwen's Stop, our pi extension)
     var transcript: String?  // its session log, where the hooks name it and the app reads it (Gemini CLI's chat file)
     var background: [String]? // what it left running in the background (a render, a build), until it's woken up again
+    var backgroundIds: [String]? // each job's tool call id, alongside `background` ("" where the AI gives none), so
+                                 // the notice of that job ending clears just that job
 }
 
 struct AgentRecord: Codable {
@@ -320,11 +322,20 @@ enum StatusStore {
                 return flat.count > n ? String(flat.prefix(n - 1)) + "…" : flat
             }
             if let title = clip(json["session_title"], 80) { s.sessions[session]?.title = title }
-            // Its first event after a background wait: a job it left running has finished and woken it (or you
-            // typed something), so it's at work again. Which job isn't said, so they all count as done; any it
-            // starts again are counted afresh.
-            if agentId == nil, s.sessions[session]?.state == "background", event != "Notification" && event != "PreCompact" {
-                s.sessions[session]?.background = nil
+            // A job it left running ends. Claude Code says which: the turn it wakes up for is a `<task-notification>`
+            // naming the job's tool call, and one that ends mid-turn is written to the transcript the same way, so
+            // only that job is done, and whatever you type in the meantime doesn't end the others. Where the AI names
+            // no job (its first event after a background wait), every job without an id counts as done.
+            if agentId == nil, s.sessions[session]?.background?.isEmpty == false {
+                if event == "UserPromptSubmit", let prompt = json["prompt"] as? String {
+                    dropJobs(&s, session, ids: finishedJobIds(prompt))
+                }
+                if event == "Stop" || event == "UserPromptSubmit", let path = json["transcript_path"] as? String {
+                    dropJobs(&s, session, ids: finishedJobIds(inTranscript: path, of: s.sessions[session]?.backgroundIds ?? []))
+                }
+                if s.sessions[session]?.state == "background", event != "Notification" && event != "PreCompact" {
+                    dropJobs(&s, session, ids: [""])
+                }
             }
 
             switch event {
@@ -354,7 +365,10 @@ enum StatusStore {
                     if let job = backgroundJob(assistant, json["tool_name"] as? String ?? "", json["tool_input"] as? [String: Any] ?? [:],
                                                 cwd: json["cwd"] as? String) {
                         let jobs = (s.sessions[session]?.background ?? []) + [job]
+                        let known = s.sessions[session]?.backgroundIds ?? []
+                        let ids = known + Array(repeating: "", count: max(0, jobs.count - 1 - known.count)) + [json["tool_use_id"] as? String ?? ""]
                         s.sessions[session]?.background = jobs
+                        s.sessions[session]?.backgroundIds = ids
                     }
                     let toolsCount = (s.sessions[session]?.tools ?? 0) + 1
                     s.sessions[session]?.tools = toolsCount
@@ -455,6 +469,51 @@ enum StatusStore {
                 break
             }
         }
+    }
+
+    /// Takes the jobs with these tool call ids off a session's background list ("" for the jobs that have none).
+    static func dropJobs(_ s: inout StatusFile, _ session: String, ids: Set<String>) {
+        guard !ids.isEmpty, let jobs = s.sessions[session]?.background else { return }
+        let known = s.sessions[session]?.backgroundIds ?? []
+        let idOf = jobs.indices.map { $0 < known.count ? known[$0] : "" }
+        let keep = jobs.indices.filter { !ids.contains(idOf[$0]) }
+        s.sessions[session]?.background = keep.isEmpty ? nil : keep.map { jobs[$0] }
+        s.sessions[session]?.backgroundIds = keep.isEmpty ? nil : keep.map { idOf[$0] }
+    }
+
+    /// The tool call ids of the jobs Claude Code says have ended, from the `<task-notification>`s in `text`: each
+    /// names its job's `<tool-use-id>` and a `<status>`; one still running (a Monitor's line) isn't the end of it.
+    static func finishedJobIds(_ text: String) -> Set<String> {
+        var ids = Set<String>()
+        for block in text.components(separatedBy: "<task-notification>").dropFirst() {
+            let body = block.components(separatedBy: "</task-notification>")[0]
+            func tag(_ name: String) -> String? {
+                guard let a = body.range(of: "<\(name)>"), let b = body.range(of: "</\(name)>", range: a.upperBound..<body.endIndex)
+                else { return nil }
+                return body[a.upperBound..<b.lowerBound].trimmingCharacters(in: .whitespacesAndNewlines)
+            }
+            guard let id = tag("tool-use-id"), !id.isEmpty else { continue }
+            if let status = tag("status")?.lowercased(), status == "running" { continue }
+            ids.insert(id)
+        }
+        return ids
+    }
+
+    /// Which of these jobs' ends are in the session's transcript: a job that finishes while a turn is running is
+    /// handed over inside that turn, with no prompt of its own. Read only when there are ids to look for.
+    static func finishedJobIds(inTranscript path: String, of pending: [String]) -> Set<String> {
+        let wanted = pending.filter { !$0.isEmpty }
+        guard !wanted.isEmpty, let data = FileManager.default.contents(atPath: path) else { return [] }
+        var found = Set<String>()
+        for id in wanted {
+            // The transcript stores the notice as JSON text, so its tags and their status sit on one escaped line.
+            guard let needle = "<tool-use-id>\(id)</tool-use-id>".data(using: .utf8), let at = data.range(of: needle) else { continue }
+            let tail = data[at.upperBound..<min(data.endIndex, at.upperBound + 400)]
+            let after = String(decoding: tail, as: UTF8.self)
+            if after.contains("<status>running</status>") && !after.contains("<status>completed</status>") { continue }
+            found.insert(id)
+        }
+        return found
     }
 
     /// What a tool call leaves running in the background, by its description ("Render the promo"), or nil when it

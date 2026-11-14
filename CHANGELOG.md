@@ -27,6 +27,9 @@ Doctor Clawd, the fourth, was made for Clawd Clash ([doctor-clawd](https://githu
   - **Its own page and cask:** [dungeon-crawler-clawd](https://github.com/rodclemen/dungeon-crawler-clawd) shows it off, and `brew install --cask dungeon-crawler-clawd` installs Clawd Clash starting there.
 - **Tools/Preview lists every one of a universe's art files for Dungeon Crawler Clawd**, not only the first hero and villain file, so its batch sheets cover the whole cast.
 
+### Fixed
+- **Claude Code keeps its hourglass while a background job is still running.** WAITING ON A JOB used to end at the session's next event of any kind, because the hook couldn't tell which job had finished: the first of two builds to finish, a subagent reporting back, or anything you typed cleared every job, and the session showed as idle while the rest were still running. Now each job is remembered by its tool call, and only the notice of that job ending (the `<task-notification>` that wakes the session, or one handed over mid-turn and read from the transcript at the end of the turn) takes it off the list. Typing in the meantime leaves the others counting. The other AIs, which don't name their jobs, work as before.
+
 _Wrote a whole game-show tune for the dungeon, then learned the hard way that a trailer's music should not stop every time somebody throws dynamite. Donut, meanwhile, had been firing Magic Missiles at nothing the whole time, and nobody noticed for a week._
 
 ## 4.2.1 (2026-11-06)
